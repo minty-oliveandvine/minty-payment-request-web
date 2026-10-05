@@ -58,7 +58,7 @@ export const PAYMENT_REQUEST_API_URL = process.env.E2E_PAYMENT_REQUEST_API_URL |
 export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || 'http://localhost:8010';
 
 export async function requireStack(): Promise<void> {
-  test.skip(!(await reachable((process.env.E2E_BASE_URL || 'http://localhost:3020') + '/module-selection')), 'Next (:3020) is not answering');
+  test.skip(!(await reachable((process.env.E2E_BASE_URL || 'http://localhost:3020') + '/landing')), 'Next (:3020) is not answering');
   test.skip(!(await reachable(PAYMENT_REQUEST_API_URL + '/api/docs')) && !(await reachable(PAYMENT_REQUEST_API_URL + '/')), 'minty-payment-request-api (:8020) is not answering');
 }
 

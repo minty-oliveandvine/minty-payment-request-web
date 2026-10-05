@@ -107,20 +107,15 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  if (
-    pathname === "/module-selection" ||
-    pathname.startsWith("/module-selection/") ||
-    pathname === "/landing" ||
-    pathname.startsWith("/landing/")
-  ) {
+  if (pathname === "/landing" || pathname.startsWith("/landing/")) {
     return NextResponse.next();
   }
 
+  // No token: back into Minty, whose /entity sends a signed-in person to the entity list
+  // (minty-web's) and anyone else to sign in. Choosing a module is minty-web's page since
+  // phase 2 (2026-10-05); this app's /module-selection is gone.
   if (!token) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/module-selection";
-    url.search = "";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(`${resolveMintyModuleUrl().replace(/\/+$/, "")}/entity`);
   }
 
   return NextResponse.next();

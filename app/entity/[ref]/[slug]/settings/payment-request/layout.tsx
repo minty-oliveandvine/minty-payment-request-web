@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Payment Settings",
+  title: "Payment Request Settings",
   description: "Settings",
 };
 

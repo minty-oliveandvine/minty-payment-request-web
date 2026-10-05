@@ -43,8 +43,8 @@ package will take as injection; the lift deletes the copies and keeps the host.
 | Manage subscriptions (always; no switch since 2026-10-01) | minty-web's portal, through Minty's `/handoff/minty-web` |
 | Petty Cash › Dashboard, Reports (company has Petty Cash) | Minty, through `/entity/<id>/enter` |
 | Payment Request › Bills | the company's list, `/entity/<shortid>/<name>/payment-request` |
-| **Settings** | **this app's own Payment Settings** (`/entity/<shortid>/<name>/settings/payment-request`) — Settings opens the settings of the app it is pressed in (the user's call, 2026-09-30); minty-web's menu keeps its module page |
-| Logout | ends the session everywhere: `POST /api/auth/logout` (presence), the cookies and the Easy view choice go, then Minty's `/logout` (the user's call, 2026-09-30 — it used to leave Minty signed in on its entity list). While Payment Settings has unsaved ticks it **asks first** ("Leave without saving?"): nothing runs until Discard changes; Go Back stays, signed in ([settings.md](settings.md)) |
+| **Settings** | **this app's own Payment Request Settings** (`/entity/<shortid>/<name>/settings/payment-request`) — Settings opens the settings of the app it is pressed in (the user's call, 2026-09-30); minty-web's menu keeps its module page |
+| Logout | ends the session everywhere: `POST /api/auth/logout` (presence), the cookies and the Easy view choice go, then Minty's `/logout` (the user's call, 2026-09-30 — it used to leave Minty signed in on its entity list). While Payment Request Settings has unsaved ticks it **asks first** ("Leave without saving?"): nothing runs until Discard changes; Go Back stays, signed in ([settings.md](settings.md)) |
 
 ## My Profile
 
@@ -74,8 +74,8 @@ menu's name are drawn outside the drawer, they are plain links to Minty's `/prof
 
 `e2e/05_sidebar.spec.ts` (Flask's profile and the billing API stubbed): the initials open My
 Profile (440 px, plan line, role, the overview's figures, *Manage Subscription*'s way), ‹ and
-Escape; the menu's links from here, Settings = this app's Payment Settings; a save sends only what changed and
+Escape; the menu's links from here, Settings = this app's Payment Request Settings; a save sends only what changed and
 the header follows; a refusal shown in the card; a failed subscriptions read shows the card's
 error and Try again re-reads; Logout clears the cookies and leaves for Minty's `/logout`.
-`e2e/07_settings_leave.spec.ts`: Logout over unsaved Payment Settings asks first, and Go Back
+`e2e/07_settings_leave.spec.ts`: Logout over unsaved Payment Request Settings asks first, and Go Back
 logs nobody out.

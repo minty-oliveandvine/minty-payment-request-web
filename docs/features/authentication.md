@@ -13,13 +13,14 @@ Minty links **Payments** to `/landing?token=<jwt>&entity_id=&entity_name=&next=&
 (`app/landing/page.tsx`). The page stores the token, the entity id and name in cookies
 (`lib/auth.ts`: `billing_token`, `billing_entity_id`, `billing_entity_name`, `SameSite=Lax`,
 `Secure` on https, **8 hours**) and forwards to `next` (Flask sends the company's list or its
-Payment Settings - see Addresses below; `/module-selection` when there is none; a path on this
+Payment Request Settings - see Addresses below; `/`, the company's list, when there is none; a path on this
 origin only - `lib/safeNext.ts`, a COPY of minty-web's: no `//host`, backslash or control
 character, which until 2026-10-05 let `next=/%5Cevil.com` leave the site); `from` is
 ignored since 2026-10-01 (its `billing_from` cookie served only the deleted profile pages' back
-links). Without a token the middleware sends every page except `/landing` and
-`/module-selection` to `/module-selection` (`middleware.ts`), which offers the way back into
-Minty.
+links). Without a token the middleware sends every page except `/landing` back into Minty's
+`/entity` (`middleware.ts`; `/landing` itself does the same): the entity list for a signed-in
+person, sign-in otherwise. Choosing between Petty Cash and Payment Request is minty-web's page
+since phase 2 (2026-10-05) - this app's `/module-selection` is gone.
 
 The old profile and payer-portal addresses (`/profile/*`) are forwarded by the middleware
 BEFORE that check - an old email link arrives with no cookie - to minty-web through Minty:
@@ -41,7 +42,7 @@ The pages live under the company's address, Flask's scheme (`Minty/docs/features
 |---|---|
 | The list | `/entity/<shortid>/<name>/payment-request` |
 | One payment request | `/entity/<shortid>/<name>/payment-request/<Payment No.>` - the id when it has none |
-| Payment Settings | `/entity/<shortid>/<name>/settings/payment-request` |
+| Payment Request Settings | `/entity/<shortid>/<name>/settings/payment-request` |
 
 The company is still the cookie's - every API call sends its id - so `middleware.ts` checks the
 address against the cookie before a page renders:

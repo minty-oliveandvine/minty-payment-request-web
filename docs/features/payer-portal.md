@@ -15,5 +15,5 @@ and with its query string, to minty-web through Minty (Flask):
 
 `next` is URL-encoded. `public/profile/*` (the drawer's icons) is still served — the matcher
 skips dotted paths. Pinned by `e2e/03_payer_portal.spec.ts`. What stays here: the sidebar's My
-Profile panel and Subscriptions Overview ([sidebar.md](sidebar.md)) and Payment Settings
+Profile panel and Subscriptions Overview ([sidebar.md](sidebar.md)) and Payment Request Settings
 ([settings.md](settings.md)).

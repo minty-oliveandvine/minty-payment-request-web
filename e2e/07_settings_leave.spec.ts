@@ -120,7 +120,7 @@ const backLink = (page: Page) => page.getByRole('banner').getByRole('link', { na
 async function arriveWithASoftEntry(page: Page): Promise<{ run: Run; first: number }> {
   const run = await arrive(page);
   const first = await historyIndex(page);
-  await page.getByRole('link', { name: 'Payment Settings', exact: true }).click();
+  await page.getByRole('link', { name: 'Payment Request Settings', exact: true }).click();
   await expect(page).toHaveURL((u) => isSettings(u) && u.searchParams.get('tab') === 'bill');
   await expect.poll(() => historyIndex(page)).toBe(first + 1);
   return { run, first };

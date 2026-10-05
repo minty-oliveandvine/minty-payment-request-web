@@ -1,25 +1,26 @@
-# Payment Settings (`/entity/<shortid>/<name>/settings/payment-request`) and the maintenance page
+# Payment Request Settings (`/entity/<shortid>/<name>/settings/payment-request`) and the maintenance page
 
 Moved out of `payer-portal.md` on 2026-10-01, when the profile and payer-portal pages left this
 app for minty-web.
 
-## Payment Settings (`components/settings/`)
+## Payment Request Settings (`components/settings/`)
 
 At `/entity/<shortid>/<name>/settings/payment-request` since 2026-10-05 (`/settings` moves there -
 [authentication.md](authentication.md#addresses-entityshortidname-2026-10-05)).
 
 The settings pills mirror Minty's tabs (Users, Entity & Integration, Petty Cash
-Settings, Payment Settings, Module — `SettingsPills.tsx`). Only **Payment Settings** lives here:
+Settings, Payment Request Settings ("Payment Settings" until 2026-10-05), Modules — `SettingsPills.tsx`). Only **Payment Settings** lives here:
 the account-code picker (`AccountCodeSettings.tsx` — which of the entity's bill account
 codes are offered, default and order; elevated roles, backed by
 `/api/entity-bill-accounts/*`). The other four are plain links (`<a href>`, no token in
-them) to Minty's settings pages for the entity (`lib/mintyUrls.ts`; Module hands over to
-minty-web), with a placeholder while unresolved. The sidebar's **Settings** opens this page
+them) to Minty's settings pages for the entity (`lib/mintyUrls.ts`; Users, Entity & Integration
+and Module hand over to minty-web, whose tabs they are since phase 2 - 2026-10-05), with a
+placeholder while unresolved. The sidebar's **Settings** opens this page
 ([sidebar.md](sidebar.md)).
 
 ### "Leave without saving?" (2026-10-01)
 
-While Payment Settings has ticks not saved yet (`hasChanges` in `AccountCodeSettings.tsx`),
+While Payment Request Settings has ticks not saved yet (`hasChanges` in `AccountCodeSettings.tsx`),
 every way out of the page asks first (`lib/leaveGuard.ts`, `useLeaveGuard`): minty-web's
 `LeaveDialog` (Figma A-11), portaled to `<body>` at z-250 so it sits above the sidebar's drawer
 (z-200).
@@ -45,7 +46,7 @@ Which clicks ask - a left click with no modifier key on an `<a href>`, unless:
 - its `href` attribute starts with `#` or `javascript:`, or its address is not http(s);
 - it is a fragment of this very page (`<settings>#x`).
 
-A link to exactly this address (the sidebar's Settings on Payment Settings) DOES ask: it reloads.
+A link to exactly this address (the sidebar's Settings on Payment Request Settings) DOES ask: it reloads.
 
 **The browser's Back** (2026-10-01; it used to leave without asking) is held by a SENTINEL: when
 the page turns dirty it pushes one history entry at its own address (Next's state object kept).
@@ -55,7 +56,7 @@ off and goes back once more; Go Back and Escape stay. Forward needs nothing (the
 forward entries off). When the page is clean again - saved, ticks put back by hand, or discarded
 through a link - the sentinel is taken off with `history.back()` (that `popstate` is swallowed,
 the router never sees it) and a discarded link is replayed only after it, so Back from the next
-page lands on Payment Settings once.
+page lands on Payment Request Settings once.
 
 **A jump of several entries at once** (the long-press history menu, `history.go(-3)`) is held
 too, since 2026-10-01. The Navigation API's entry index (`navigation.currentEntry.index`) says

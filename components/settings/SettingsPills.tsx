@@ -12,16 +12,16 @@ const TABS: { id: SettingsTabId; label: string }[] = [
   { id: "users", label: "Users" },
   { id: "xero", label: "Entity & Integration" },
   { id: "entity", label: "Petty Cash Settings" },
-  { id: "bill", label: "Payment Settings" },
-  { id: "modules", label: "Module" },
+  { id: "bill", label: "Payment Request Settings" },
+  { id: "modules", label: "Modules" },
 ];
 
 export const SETTINGS_TAB_LABELS: Record<SettingsTabId, string> = {
   users: "Users",
   xero: "Entity & Integration",
   entity: "Petty Cash Settings",
-  bill: "Payment Settings",
-  modules: "Module",
+  bill: "Payment Request Settings",
+  modules: "Modules",
 };
 
 export function getSettingsTabFromSearchParams(tab: string | null): SettingsTabId {

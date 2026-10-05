@@ -1,6 +1,6 @@
 "use client";
 
-// COPY of minty-web/features/subscription/components/ModalFrame.tsx (2026-10-01) - lifted into @minty/shared at Part 3 step 4;
+// COPY of minty-web/components/ui/ModalFrame.tsx (2026-10-01; there since 2026-10-05) - lifted into @minty/shared at Part 3 step 4;
 // change all three (minty-web, here, Flask's port: Minty static/js/minty_dialog.js + static/css/minty_dialog.css).
 
 /**

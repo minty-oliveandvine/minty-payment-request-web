@@ -11,9 +11,10 @@ test.describe('handoff and list', () => {
     await requireStack();
   });
 
-  test('without a token the app falls back to module selection', async ({ page }) => {
+  test('without a token the app goes back into Minty (the entity list, or sign-in)', async ({ page }) => {
+    const left = page.waitForRequest((r) => r.isNavigationRequest() && new URL(r.url()).pathname === '/entity');
     await page.goto('/landing');
-    await expect(page).toHaveURL(/\/module-selection/);
+    expect(new URL((await left).url()).pathname).toBe('/entity');
   });
 
   test('the handoff stores the token and opens the payment-request list for the entity', async ({ page }) => {

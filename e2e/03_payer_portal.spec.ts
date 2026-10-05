@@ -36,7 +36,7 @@ async function locationOf(request: APIRequestContext, path: string, cookie?: str
 
 test.describe('old /profile addresses forward to minty-web through Minty', () => {
   test.beforeEach(async () => {
-    test.skip(!(await reachable(`${BASE_URL}/module-selection`)), 'Next (:3020) is not answering');
+    test.skip(!(await reachable(`${BASE_URL}/landing`)), 'Next (:3020) is not answering');
   });
 
   for (const [from, to] of FORWARDS) {

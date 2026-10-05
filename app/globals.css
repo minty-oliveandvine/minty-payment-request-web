@@ -103,21 +103,6 @@ body {
   }
 }
 
-.module-buttons-group .module-btn .module-btn-icon {
-  opacity: 1;
-  transition: opacity 0.35s ease-in-out;
-}
-.module-buttons-group:has(.module-btn:hover) .module-btn:not(:hover) .module-btn-icon {
-  opacity: 0.4;
-}
-
-@media (hover: hover) {
-  .module-btn.group:hover .module-btn-cat {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 /* Hide native date icon; custom button + input onClick both call showPicker() (see lib/openDatePicker.ts). */
 input[type="date"].pr-date-input {
   cursor: pointer;
