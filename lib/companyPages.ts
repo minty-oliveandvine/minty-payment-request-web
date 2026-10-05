@@ -14,7 +14,12 @@ import { companyRef, shortIdOf, slugifyName } from "@/lib/companyRef";
 
 export type CompanyPages = {
   list: string;
-  request: (id: string) => string;
+  /**
+   * One payment request: by its Payment No. (`reference`) when it has one, else by its id
+   * (2026-10-05). The details page looks a Payment No. up (`lib/useRequestId.ts`) and turns an
+   * id address into the Payment No. one once the request has loaded.
+   */
+  request: (id: string, reference?: string | null) => string;
   settings: string;
 };
 
@@ -28,7 +33,7 @@ export const COMPANY_PAGE =
 export function pagesUnder(base: string): CompanyPages {
   return {
     list: `${base}/${LIST}`,
-    request: (id) => `${base}/${LIST}/${encodeURIComponent(id)}`,
+    request: (id, reference) => `${base}/${LIST}/${encodeURIComponent(reference?.trim() || id)}`,
     settings: `${base}/${SETTINGS}`,
   };
 }

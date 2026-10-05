@@ -40,7 +40,7 @@ The pages live under the company's address, Flask's scheme (`Minty/docs/features
 | Page | Address |
 |---|---|
 | The list | `/entity/<shortid>/<name>/payment-request` |
-| One payment request | `/entity/<shortid>/<name>/payment-request/<id>` |
+| One payment request | `/entity/<shortid>/<name>/payment-request/<Payment No.>` - the id when it has none |
 | Payment Settings | `/entity/<shortid>/<name>/settings/payment-request` |
 
 The company is still the cookie's - every API call sends its id - so `middleware.ts` checks the

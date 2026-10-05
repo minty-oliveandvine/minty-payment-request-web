@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useUserRole } from "@/lib/useUserRole";
@@ -65,6 +65,7 @@ import {
 import { recordPaymentDetailButtonClass, returnPaymentRequestButtonClass } from "./paymentRequestButtonClasses";
 import { useToast } from "@/components/Toast";
 import { useCompanyPages } from "@/lib/useCompanyPages";
+import { rememberRequest, useRequestId } from "@/lib/useRequestId";
 export type PaymentRequestDetailBodyProps = {
   /** Called after the bill is refreshed from the server so the header status badge can update. */
   onBillUpdated?: () => void;
@@ -200,8 +201,9 @@ function computePaymentHistoryPanelStyle(anchorRoot: HTMLDivElement | null): CSS
 
 export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetailBodyProps) {
   const entityCurrency = useEntityCurrency();
-  const params = useParams();
-  const requestId = typeof params?.id === "string" ? params.id : "";
+  const params = useParams<{ ref?: string }>();
+  const router = useRouter();
+  const { requestId, pending: lookupPending, error: lookupError } = useRequestId();
   const pages = useCompanyPages();
   const { isElevated, isViewOnly } = useUserRole();
 
@@ -374,9 +376,10 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
 
   useEffect(() => {
     if (!requestId) {
+      // a Payment No. still being looked up, or one this company does not have
       setBill(null);
-      setLoadingBill(false);
-      setLoadError(null);
+      setLoadingBill(lookupPending);
+      setLoadError(lookupError);
       attachmentUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
       attachmentUrlsRef.current = [];
       setAttachments([]);
@@ -411,11 +414,22 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     return () => {
       cancelled = true;
     };
-  }, [requestId]);
+  }, [requestId, lookupPending, lookupError]);
 
   useEffect(() => {
     setDeleteBillConfirmOpen(false);
   }, [requestId]);
+
+  // The address names the request by its Payment No. (2026-10-05): an id address (Flask's
+  // hand-off, an old link) becomes the Payment No. one once the request has loaded, and an edit
+  // that changes the Payment No. moves the address with it - replace, so Back is unchanged.
+  useEffect(() => {
+    if (!bill || bill.id !== requestId) return;
+    const wanted = pages.request(bill.id, bill.reference);
+    if (window.location.pathname === wanted) return;
+    rememberRequest((params?.ref ?? "").toLowerCase(), bill.reference ?? "", bill.id);
+    router.replace(`${wanted}${window.location.search}${window.location.hash}`, { scroll: false });
+  }, [bill, requestId, pages, params?.ref, router]);
 
   useEffect(() => {
     if (typeof window === "undefined" || loadingBill || loadError) return;
@@ -1066,7 +1080,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         amountLabel: `(${formatMoney(p.amount || "0", currencyLabel)})`,
         statusLabel,
         invoiceNo: ref,
-        invoiceHref: forThisBill ? "#" : pages.request(p.bill_id),
+        invoiceHref: forThisBill ? "#" : pages.request(p.bill_id, p.bill_reference),
         isOtherBill: !forThisBill,
       };
     });

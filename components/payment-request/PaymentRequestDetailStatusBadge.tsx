@@ -1,17 +1,16 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchBill } from "@/lib/api";
 import { billStatusToDisplayLabel, statusDisplayBadgeClass } from "@/lib/billStatusDisplay";
+import { useRequestId } from "@/lib/useRequestId";
 
 export type PaymentRequestDetailStatusBadgeProps = {
   refreshSignal?: number;
 };
 
 export function PaymentRequestDetailStatusBadge({ refreshSignal = 0 }: PaymentRequestDetailStatusBadgeProps) {
-  const params = useParams();
-  const id = typeof params?.id === "string" ? params.id : "";
+  const { requestId: id } = useRequestId();
   const [label, setLabel] = useState<string | null>(null);
 
   useEffect(() => {

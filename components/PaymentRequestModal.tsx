@@ -528,7 +528,7 @@ export function PaymentRequestModal({
 
       onConfirm?.();
       onClose();
-      router.push(pages.request(bill.id));
+      router.push(pages.request(bill.id, bill.reference));
     } catch (err) {
       console.error("Failed to create bill:", err);
       if (isDuplicateBillReferenceError(err)) {

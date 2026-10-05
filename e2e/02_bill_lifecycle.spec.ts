@@ -69,7 +69,8 @@ test.describe.serial('payment request lifecycle', () => {
   test('the draft opens on its detail page with the request and its actions', async ({ page }) => {
     await page.getByRole('tab', { name: 'Draft' }).click();
     await page.getByRole('link', { name: new RegExp(FX.supplierName) }).first().click();
-    await expect(page).toHaveURL(/\/payment-request\/[0-9a-f-]{36}/);
+    // by its Payment No. since 2026-10-05 (the id when it has none)
+    await expect(page).toHaveURL(/\/payment-request\/[^/?#]+(?:[?#]|$)/);
     const body = page.locator('body');
     await expect(body).toContainText(FX.supplierName);
     await expect(body).toContainText(moneyRegex(AMOUNT));

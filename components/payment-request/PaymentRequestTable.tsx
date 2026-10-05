@@ -27,6 +27,8 @@ export type PaymentRequestColumnTitle = (typeof COLUMN_TITLES)[number];
 
 export type PaymentRequestRow = {
   id: string;
+  /** The Payment No. - the details address uses it when there is one. */
+  reference?: string;
   contactTitle: string;
   contactCaption: string;
   invoiceDate: string;
@@ -298,7 +300,7 @@ type PaymentRequestTableProps = {
   onRowDelete?: (rowId: string) => void;
   onRowPublish?: (rowId: string) => void | Promise<void>;
   onRowRepublish?: (rowId: string) => void | Promise<void>;
-  onRowClick?: (rowId: string) => void;
+  onRowClick?: (rowId: string, reference?: string) => void;
   loading?: boolean;
   /** Sort is owned by the parent so the page slice is taken after sorting. */
   sort?: { key: SortKey | null; dir: "asc" | "desc" };
@@ -464,11 +466,11 @@ export function getBankSlipDetailsForRow(row: PaymentRequestRow): BankSlipDetail
  * Interactive content in the same cell must sit in a `relative z-[1]` wrapper to
  * stay above this overlay.
  */
-function RowLinkOverlay({ rowId, label }: { rowId: string; label: string }) {
+function RowLinkOverlay({ rowId, reference, label }: { rowId: string; reference?: string; label: string }) {
   const pages = useCompanyPages();
   return (
     <a
-      href={pages.request(rowId)}
+      href={pages.request(rowId, reference)}
       aria-label={label}
       tabIndex={-1}
       className="absolute inset-0 z-0"
@@ -759,8 +761,8 @@ export function PaymentRequestTable({
                       : statusTagClass;
             const articleClassName = `rounded-xl border border-gray-200 p-4 shadow-sm transition-colors ${isVoided ? "bg-[#F5F5F5]" : isPaid ? "bg-[#F5F5F5]" : isPaymentRequested ? "bg-secondary/10" : isPartiallyPaid ? "bg-[#70ebba]/10" : isReturned ? "bg-[#EA9713]/10" : "bg-[#F5F5F5]"} ${isVoided ? "cursor-pointer active:bg-gray-200/60" : isPaid ? "cursor-pointer active:bg-gray-200/60" : isPaymentRequested ? "cursor-pointer active:bg-secondary/20" : isPartiallyPaid ? "cursor-pointer active:bg-[#70ebba]/20" : isReturned ? "cursor-pointer active:bg-[#EA9713]/20" : "cursor-pointer active:bg-gray-200/60"}`;
             return (
-              <article key={row.id} role="listitem" className={`${articleClassName} relative`} onClick={() => { onRowClick?.(row.id); }}>
-                <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+              <article key={row.id} role="listitem" className={`${articleClassName} relative`} onClick={() => { onRowClick?.(row.id, row.reference); }}>
+                <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                 <div className="flex gap-3">
                   <div className="relative z-[1] hidden shrink-0 pt-0.5 sm:block" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={selectedIds.has(row.id)} disabled={isVoided} onChange={() => onToggleRow?.(row.id)} className={`${HEADER_CHECKBOX_CLASS} disabled:cursor-not-allowed disabled:opacity-40`} aria-label={isVoided ? `Voided — cannot select ${row.contactTitle}` : `Select row ${row.contactTitle}`} suppressHydrationWarning />
@@ -956,7 +958,7 @@ export function PaymentRequestTable({
                 const xeroConnected = !isDraft && row.xeroActive;
                 const isRowPublishing = rowPublishPending?.rowId === row.id;
                 return (
-                  <tr key={row.id} className={`transition-colors duration-150 ease-out cursor-pointer hover:bg-gray-50`} onClick={() => { onRowClick?.(row.id); }}>
+                  <tr key={row.id} className={`transition-colors duration-150 ease-out cursor-pointer hover:bg-gray-50`} onClick={() => { onRowClick?.(row.id, row.reference); }}>
                     <td className="border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3">
                       <input type="checkbox" checked={selectedIds.has(row.id)} disabled={isVoided} onChange={() => onToggleRow?.(row.id)} onClick={(e) => e.stopPropagation()} className={`${HEADER_CHECKBOX_CLASS} disabled:cursor-not-allowed disabled:opacity-40`} aria-label={isVoided ? `Voided — cannot select ${row.contactTitle}` : `Select row ${row.contactTitle}`} suppressHydrationWarning />
                     </td>
@@ -967,7 +969,7 @@ export function PaymentRequestTable({
                         case "Supplier / Description":
                           return (
                             <td key={title} className={`${contactCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+                              <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                               <div className="flex min-w-0 flex-col gap-0.5">
                                 <span className="text-sm font-semibold text-primary sm:text-base">{row.contactTitle}</span>
                                 {row.contactCaption ? <span className="text-xs text-primary/65 sm:text-sm">{row.contactCaption}</span> : null}
@@ -977,14 +979,14 @@ export function PaymentRequestTable({
                         case "Invoice Date":
                           return (
                             <td key={title} className={`${singleLineDateCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+                              <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                               {row.invoiceDate}
                             </td>
                           );
                         case "Status":
                           return (
                             <td key={title} className={`${singleLineStatusCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+                              <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                               {row.status ? (
                                 <span
                                   className={
@@ -1009,14 +1011,14 @@ export function PaymentRequestTable({
                         case "Submitted Date":
                           return (
                             <td key={title} className={`${invoiceDateCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+                              <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                               {row.submittedDate}
                             </td>
                           );
                         case "Unpaid Amount":
                           return (
                             <td key={title} className={`${unpaidAmountCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+                              <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                               {row.unpaidAmount || row.invoiceTotal ? (
                                 <div className="flex min-w-0 flex-col gap-0.5">
                                   {row.unpaidAmount ? <span className={"whitespace-nowrap text-sm font-semibold sm:text-base " + unpaidAmountTextClass(row.status)}>{row.unpaidAmount}</span> : null}
@@ -1035,7 +1037,7 @@ export function PaymentRequestTable({
                           const disabledViewPaid = isPaid && !isVoided && !isDraft && !isElevated;
                           return (
                             <td key={title} className={`${dataCellBase} align-middle text-left ${actionBodyCellBg} relative`}>
-                              <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+                              <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                               <div className="relative z-[1] inline-flex">
                               <button
                                 type="button"
@@ -1079,14 +1081,14 @@ export function PaymentRequestTable({
                         case "Paid Date":
                           return (
                             <td key={title} className={`${singleLineDateCellClass} ${actionBodyCellBg} relative`}>
-                              <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+                              <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                               {row.paidDate.trim() ? row.paidDate : <span className="text-primary/40 tabular-nums" aria-label="No paid date">-</span>}
                             </td>
                           );
                         case "Bankslip":
                           return (
                             <td key={title} className={`${invoiceDateCellClass} ${actionBodyCellBg} relative`}>
-                              <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+                              <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                               <div className="relative z-[1] flex items-center gap-2">
                                 <div>
                                   {row.bankslipFileCount != null && row.bankslipFileCount > 0 ? (
@@ -1143,7 +1145,7 @@ export function PaymentRequestTable({
                       }
                     })}
                     <td className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg} relative`}>
-                      <RowLinkOverlay rowId={row.id} label={`Open ${row.contactTitle}`} />
+                      <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
                       <img src={xeroConnected ? "/xero-active.png" : "/xero-inactive.png"} alt={xeroConnected ? "Xero connected" : "Xero not connected"} width={40} height={40} className="mx-auto h-10 w-10 max-h-10 max-w-10 object-contain" />
                     </td>
                     <td className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg}`}>

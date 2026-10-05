@@ -600,6 +600,11 @@ export function fetchBill(billId: string): Promise<BillDetail> {
   return apiFetch<BillDetail>(`/bills/${billId}`);
 }
 
+/** The company's payment request with this Payment No. (case-insensitive; a live one before a void one). */
+export function fetchBillByReference(reference: string): Promise<BillDetail> {
+  return apiFetch<BillDetail>(`/bills/by-reference/${encodeURIComponent(reference)}`);
+}
+
 /** Suggested bill number from backend (MBI + 3 name letters + HK time/date). */
 export function fetchSuggestedBillReference(): Promise<{ reference: string }> {
   return apiFetch<{ reference: string }>("/bills/suggested-reference/");

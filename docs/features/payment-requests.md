@@ -39,7 +39,15 @@ both dates and *at least one attachment* before sending, shows each field's erro
 (`role="alert"`), uploads the files right after the bill exists, then opens the new
 request's detail page.
 
-## The detail page (`/entity/<shortid>/<name>/payment-request/<id>`)
+## The detail page (`/entity/<shortid>/<name>/payment-request/<Payment No.>`)
+
+Addressed by the Payment No. (the bill's `reference`) since 2026-10-05, the id when there is none
+(`lib/companyPages.ts` `pages.request(id, reference)`). `lib/useRequestId.ts` turns the address
+into the bill id: an id as it is, a Payment No. through `GET /bills/by-reference/...` (case-
+insensitive; once, shared by the body and the header badge). Once the request has loaded, an id
+address (Flask's `?request=<id>` hand-off, an old link) is replaced by the Payment No. one, and an
+edit that changes the Payment No. moves the address with it (`router.replace`, so Back is
+unchanged). A Payment No. the company does not have shows "I couldn't find that payment request".
 
 `PaymentRequestDetailBody.tsx` for a submitted-or-later request,
 `EasyViewDraftDetailBody.tsx` for a draft. What it holds:

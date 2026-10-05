@@ -54,7 +54,8 @@ test.describe('publish to Xero', () => {
     await dlg.getByRole('button', { name: /^confirm$/i }).click();
 
     // Confirm submits the request and opens it
-    await expect(page).toHaveURL(/\/payment-request\/[0-9a-f-]{36}/, { timeout: 30_000 });
+    // by its Payment No. since 2026-10-05 (the id when it has none)
+    await expect(page).toHaveURL(/\/payment-request\/[^/?#]+(?:[?#]|$)/, { timeout: 30_000 });
     const body = page.locator('body');
     await expect(body).toContainText(fx.supplierName);
     await expect(body).toContainText(moneyRegex(AMOUNT));

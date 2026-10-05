@@ -93,6 +93,7 @@ function mapBillToRow(bill: BillListItem, entityCurrency = ""): PaymentRequestRo
 
   return {
     id: bill.id,
+    reference: bill.reference,
     contactTitle: bill.contact || "—",
     contactCaption: bill.description,
     currencyCode: iso,
@@ -840,7 +841,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 selectedBillId={easyViewSelectedBillId}
                 invoiceAttachments={easyViewInvoiceAttachments}
                 invoiceAttachmentsLoading={easyViewInvoiceLoading}
-                onRowClick={(rowId) => router.push(pages.request(rowId))}
+                onRowClick={(rowId, reference) => router.push(pages.request(rowId, reference))}
                 onPaymentRequestedPay={(rowId) => {
                   const isClosing = easyViewPayBillId === rowId;
                   setEasyViewPayReadOnly(false);
@@ -903,7 +904,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 onToggleAll={onToggleAll}
                 headerSlot={totalsBanner}
                 onRecordPayment={(rowId, readOnly) => setRecordPaymentTarget({ billId: rowId, readOnly: readOnly ?? false })}
-                onRowClick={(rowId) => router.push(pages.request(rowId))}
+                onRowClick={(rowId, reference) => router.push(pages.request(rowId, reference))}
                 onRowDelete={async (rowId) => {
                   try {
                     await deleteBill(rowId);

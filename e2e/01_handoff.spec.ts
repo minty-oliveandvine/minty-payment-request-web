@@ -21,7 +21,8 @@ test.describe('handoff and list', () => {
     await handoff(page, creds, '/');
     // an old `next=/` lands on the company's own address (`/entity/<shortid>/<name>/payment-request`)
     await expect(page).toHaveURL((u) => u.pathname === pagesOf(creds).list);
-    await expect(page.getByText(creds.entityName)).toBeVisible();
+    // exact: the route announcer also reads the tab title "Payment Request - <company>"
+    await expect(page.getByText(creds.entityName, { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Add Payment' })).toBeVisible();
     const cookies = await page.context().cookies();
     expect(cookies.find((c) => c.name === 'billing_token')?.value).toBeTruthy();
