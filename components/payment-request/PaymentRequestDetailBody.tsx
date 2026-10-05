@@ -64,6 +64,7 @@ import {
 } from "./PaymentRequestDetailedInfo";
 import { recordPaymentDetailButtonClass, returnPaymentRequestButtonClass } from "./paymentRequestButtonClasses";
 import { useToast } from "@/components/Toast";
+import { useCompanyPages } from "@/lib/useCompanyPages";
 export type PaymentRequestDetailBodyProps = {
   /** Called after the bill is refreshed from the server so the header status badge can update. */
   onBillUpdated?: () => void;
@@ -201,6 +202,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const entityCurrency = useEntityCurrency();
   const params = useParams();
   const requestId = typeof params?.id === "string" ? params.id : "";
+  const pages = useCompanyPages();
   const { isElevated, isViewOnly } = useUserRole();
 
   const [bill, setBill] = useState<BillDetail | null>(null);
@@ -1064,11 +1066,11 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         amountLabel: `(${formatMoney(p.amount || "0", currencyLabel)})`,
         statusLabel,
         invoiceNo: ref,
-        invoiceHref: forThisBill ? "#" : `/payment-request/${p.bill_id}`,
+        invoiceHref: forThisBill ? "#" : pages.request(p.bill_id),
         isOtherBill: !forThisBill,
       };
     });
-  }, [payments, requestId, currencyLabel, bill]);
+  }, [payments, requestId, currencyLabel, bill, pages]);
 
   const billIsDraft = useMemo(
     () => (bill?.status ?? "").trim().toLowerCase().replace(/-/g, "_") === "draft",

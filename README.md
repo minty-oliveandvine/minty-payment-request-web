@@ -1,7 +1,7 @@
 # minty-payment-request-web
 
 The Payment Request (Module 2) app: the bill list and detail screens, publishing to Xero, Payment
-Settings (`/settings`), and the sidebar drawer (menu, My Profile panel, Subscriptions Overview)
+Settings, all under the company's address (`/entity/<shortid>/<name>/...`), and the sidebar drawer (menu, My Profile panel, Subscriptions Overview)
 copied from minty-web. The profile and subscription PAGES live in minty-web since 2026-10-01; the
 old `/profile/*` addresses forward there through Minty (`middleware.ts`).
 Next.js 16 (App Router) + React 19, on **port 3020**.

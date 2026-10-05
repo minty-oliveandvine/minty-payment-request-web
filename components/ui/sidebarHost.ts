@@ -22,6 +22,7 @@ import { clearAuth, getAuth, isTokenExpiringSoon, redirectToLogin, refreshToken 
 import { guardLeave } from "@/lib/leaveGuard";
 import { getModuleClaims } from "@/lib/moduleClaims";
 import { buildMintyEnterUrl, buildMintyProfileUrl, MINTY_MODULE_URL } from "@/lib/mintyUrls";
+import { cookieCompanyPages } from "@/lib/useCompanyPages";
 
 /** minty-subscription-api - the Subscriptions Overview's read (`SUBSCRIPTION_API_URL`, lib/env.ts). */
 const SUBSCRIPTION_API_URL = env.SUBSCRIPTION_API_URL;
@@ -29,8 +30,8 @@ const SUBSCRIPTION_API_URL = env.SUBSCRIPTION_API_URL;
 /** minty-web's pages the menu leads to - reached through Flask's login-gated re-handoff. */
 const MINTY_WEB_SUBSCRIPTIONS = "/subscription";
 
-/** This app's settings page (app/settings). */
-const SETTINGS_PATH = "/settings";
+/** This app's settings page (app/entity/[ref]/[slug]/settings/payment-request). */
+const SETTINGS_PAGE = /^\/entity\/[^/]+\/[^/]+\/settings\/payment-request\/?$/;
 
 /** The home page's view choice (app/page.tsx) - this app's Logout always forgot it. */
 const EASY_VIEW_STORAGE_KEY = "payment-request-easy-view";
@@ -65,12 +66,13 @@ export const links = {
   subscriptions: () => handoff(MINTY_WEB_SUBSCRIPTIONS),
   pettyCashDashboard: () => buildMintyEnterUrl(),
   pettyCashReports: (id: string) => buildMintyEnterUrl(`/entity/${id}/reports`),
-  bills: () => "/",
+  /** The company's list - `/` (the middleware sends it there) when the cookie names none. */
+  bills: () => cookieCompanyPages()?.list ?? "/",
   /**
    * THIS app's settings (the user's call, 2026-09-30: Settings opens the settings of the app it
    * is pressed in) - the page this app's old drawer opened. minty-web's menu keeps its own.
    */
-  settings: () => SETTINGS_PATH,
+  settings: () => cookieCompanyPages()?.settings ?? "/",
   /** The initials' way in without the sidebar: Minty's profile router. */
   profile: () => buildMintyProfileUrl(),
 };
@@ -78,7 +80,7 @@ export const links = {
 /** Which menu item is the page being shown - Settings is the only one that is this app's page. */
 export function currentOf(): "profile" | "entities" | "subscriptions" | "settings" | null {
   const path = typeof window === "undefined" ? "" : window.location.pathname;
-  return path === SETTINGS_PATH || path.startsWith(`${SETTINGS_PATH}/`) ? "settings" : null;
+  return SETTINGS_PAGE.test(path) ? "settings" : null;
 }
 
 /** Hold the page still while the sidebar is open; the returned function lets it go. */

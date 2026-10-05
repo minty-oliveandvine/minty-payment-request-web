@@ -7,6 +7,7 @@ import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import type { PaymentItem } from "@/lib/api";
 import { formatDateInTimeZoneForDisplay, formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
 import { formatMoney } from "@/lib/amountFormat";
+import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export type OverpaymentWarningModalProps = {
   open: boolean;
@@ -65,6 +66,7 @@ export function OverpaymentWarningModal({
   onOpenPaymentHistory,
 }: OverpaymentWarningModalProps) {
   const router = useRouter();
+  const pages = useCompanyPages();
   const titleId = useId();
   const descId = useId();
 
@@ -84,7 +86,7 @@ export function OverpaymentWarningModal({
 
   if (!open || typeof document === "undefined") return null;
 
-  const paymentHistoryHref = `/payment-request/${encodeURIComponent(billId)}#payment-history`;
+  const paymentHistoryHref = `${pages.request(billId)}#payment-history`;
 
   const goToPaymentHistory = () => {
     onCancel();

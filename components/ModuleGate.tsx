@@ -112,7 +112,7 @@ export function ModuleNotActive({
   // Through `/enter` so the billing token buys a Flask session on arrival. A bare path
   // would land them on Minty's login form, which is a worse dead end than this page.
   const subscriptionUrl = entityId
-    ? buildMintyEnterUrl(`/entity/settings/module/${entityId}`)
+    ? buildMintyEnterUrl(`/entity/${encodeURIComponent(entityId)}/settings/modules`)
     : entityListUrl;
 
   return (

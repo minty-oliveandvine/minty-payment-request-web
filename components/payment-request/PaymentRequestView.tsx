@@ -44,6 +44,7 @@ import { compareRows, type SortKey } from "@/lib/paymentRequestRowSort";
 import { rowMatchesSearch, type SearchMode } from "@/lib/paymentRequestSearch";
 import { useUserRole } from "@/lib/useUserRole";
 import { useToast } from "@/components/Toast";
+import { useCompanyPages } from "@/lib/useCompanyPages";
 
 /** Rows requested per `fetchBills` call while walking the whole list. */
 const FETCH_PAGE_SIZE = 100;
@@ -145,6 +146,7 @@ export type PaymentRequestViewProps = {
 
 export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
   const router = useRouter();
+  const pages = useCompanyPages();
   const { isElevated, isViewOnly, isReadOnly } = useUserRole();
   const entityCurrency = useEntityCurrency();
   const [currentEntityId, setCurrentEntityId] = useState<string>("");
@@ -838,7 +840,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 selectedBillId={easyViewSelectedBillId}
                 invoiceAttachments={easyViewInvoiceAttachments}
                 invoiceAttachmentsLoading={easyViewInvoiceLoading}
-                onRowClick={(rowId) => router.push(`/payment-request/${rowId}`)}
+                onRowClick={(rowId) => router.push(pages.request(rowId))}
                 onPaymentRequestedPay={(rowId) => {
                   const isClosing = easyViewPayBillId === rowId;
                   setEasyViewPayReadOnly(false);
@@ -901,7 +903,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 onToggleAll={onToggleAll}
                 headerSlot={totalsBanner}
                 onRecordPayment={(rowId, readOnly) => setRecordPaymentTarget({ billId: rowId, readOnly: readOnly ?? false })}
-                onRowClick={(rowId) => router.push(`/payment-request/${rowId}`)}
+                onRowClick={(rowId) => router.push(pages.request(rowId))}
                 onRowDelete={async (rowId) => {
                   try {
                     await deleteBill(rowId);

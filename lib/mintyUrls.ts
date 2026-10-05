@@ -35,36 +35,3 @@ export function buildMintyProfileUrl(): string {
   }
   return `${MINTY_MODULE_URL}/profile`;
 }
-
-function mintyPathFromTemplate(template: string, entityId: string): string {
-  return template.replace(/\{entityId\}/g, encodeURIComponent(entityId));
-}
-
-/** Minty's paths, `{entityId}` filled in from the cookie. Constants - no env override. */
-const MINTY_USERS_PATH = "/entity/{entityId}/users";
-const MINTY_XERO_PATH = "/entity/{entityId}/xero";
-const MINTY_ENTITY_SETTINGS_PATH = "/entity/{entityId}/settings";
-
-/** The company's users page on Minty. */
-export function buildMintyUsersUrl(): string {
-  const auth = getAuth();
-  const template = MINTY_USERS_PATH;
-  if (!auth?.entityId) return `${MINTY_MODULE_URL}/entity`;
-  return buildMintyEnterUrl(mintyPathFromTemplate(template, auth.entityId));
-}
-
-/** The company's Xero integration page on Minty. */
-export function buildMintyXeroIntegrationUrl(): string {
-  const auth = getAuth();
-  const template = MINTY_XERO_PATH;
-  if (!auth?.entityId) return `${MINTY_MODULE_URL}/entity`;
-  return buildMintyEnterUrl(mintyPathFromTemplate(template, auth.entityId));
-}
-
-/** The company's settings page on Minty. */
-export function buildMintyEntitySettingsUrl(): string {
-  const auth = getAuth();
-  const template = MINTY_ENTITY_SETTINGS_PATH;
-  if (!auth?.entityId) return `${MINTY_MODULE_URL}/entity`;
-  return buildMintyEnterUrl(mintyPathFromTemplate(template, auth.entityId));
-}

@@ -4,7 +4,7 @@ The screens of the bills module. Every write goes to minty-payment-request-api (
 that service's rules are the ones that hold (`minty-payment-request-api/docs/features/payment-requests.md`);
 this page is what the person sees and where each piece of the screen lives.
 
-## The list (`/`, `components/payment-request/PaymentRequestView.tsx`)
+## The list (`/entity/<shortid>/<name>/payment-request`, `components/payment-request/PaymentRequestView.tsx`)
 
 - **Tabs** are the bill statuses (`PaymentRequestToolbar.PAYMENT_REQUEST_STATUS_FILTERS`):
   All, Payment Requested, Partially Paid, Returned, Paid, Draft, Voided — the display
@@ -39,7 +39,7 @@ both dates and *at least one attachment* before sending, shows each field's erro
 (`role="alert"`), uploads the files right after the bill exists, then opens the new
 request's detail page.
 
-## The detail page (`/payment-request/[id]`)
+## The detail page (`/entity/<shortid>/<name>/payment-request/<id>`)
 
 `PaymentRequestDetailBody.tsx` for a submitted-or-later request,
 `EasyViewDraftDetailBody.tsx` for a draft. What it holds:

@@ -10,6 +10,7 @@ import { useEntityCurrency } from "@/lib/entityCurrency";
 import { recordPaymentButtonClass } from "./paymentRequestButtonClasses";
 import { HEADER_CHECKBOX_CLASS } from "./paymentRequestCheckboxClasses";
 import { type SortKey } from "@/lib/paymentRequestRowSort";
+import { useCompanyPages } from "@/lib/useCompanyPages";
 
 const COLUMN_TITLES = [
   "Supplier / Description",
@@ -454,10 +455,6 @@ export function getBankSlipDetailsForRow(row: PaymentRequestRow): BankSlipDetail
   };
 }
 
-export function billDetailHref(rowId: string): string {
-  return `/payment-request/${rowId}`;
-}
-
 /**
  * Transparent anchor stretched over its positioned parent (a table cell or card).
  * Gives the browser a real link at every point of the row body, so right-click
@@ -468,9 +465,10 @@ export function billDetailHref(rowId: string): string {
  * stay above this overlay.
  */
 function RowLinkOverlay({ rowId, label }: { rowId: string; label: string }) {
+  const pages = useCompanyPages();
   return (
     <a
-      href={billDetailHref(rowId)}
+      href={pages.request(rowId)}
       aria-label={label}
       tabIndex={-1}
       className="absolute inset-0 z-0"

@@ -6,10 +6,12 @@ import { ModuleGate } from "@/components/ModuleGate";
 import { SettingsContent } from "@/components/settings/SettingsContent";
 import { getAuth, type AuthInfo } from "@/lib/auth";
 import { fetchXeroStatus } from "@/lib/api";
+import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export default function SettingsPage() {
   const [auth, setAuthState] = useState<AuthInfo | null>(null);
   const [xeroConnected, setXeroConnected] = useState<boolean>(false);
+  const pages = useCompanyPages();
 
   useEffect(() => {
     const a = getAuth();
@@ -25,7 +27,7 @@ export default function SettingsPage() {
       <Header
         title="Settings"
         showLogo={false}
-        backHref="/"
+        backHref={pages.list}
         backLabel="Payments"
         companyName={auth?.entityName || "Loading…"}
         xeroConnected={xeroConnected}

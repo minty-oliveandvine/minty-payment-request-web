@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { useEntitlements } from "@/lib/moduleClaims";
+import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export const SETTINGS_TAB_IDS = ["users", "xero", "entity", "bill", "modules"] as const;
 export type SettingsTabId = (typeof SETTINGS_TAB_IDS)[number];
@@ -40,14 +41,16 @@ const pillClass = (isActive: boolean) =>
 const FLASK_REDIRECT_TABS: Partial<
   Record<SettingsTabId, (module1Url: string, entityId: string) => string>
 > = {
+  // Flask's company addresses (/entity/<id>/settings/...). It shows them as
+  // /entity/<shortid>/<name>/settings/... - this app knows only the id (2026-10-05).
   users: (module1Url, entityId) =>
-    `${module1Url}/entity/settings/users/${encodeURIComponent(entityId)}`,
+    `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/users`,
   xero: (module1Url, entityId) =>
-    `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/xero`,
+    `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/integration`,
   entity: (module1Url, entityId) =>
-    `${module1Url}/entity/settings/entity/${encodeURIComponent(entityId)}`,
+    `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/petty-cash`,
   modules: (module1Url, entityId) =>
-    `${module1Url}/entity/settings/module/${encodeURIComponent(entityId)}`,
+    `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/modules`,
 };
 
 type SettingsPillsProps = {
@@ -61,6 +64,7 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
   // no sense for entities that don't have the petty cash module turned on, and
   // would land them on a screen they can't use. Filter it out when disabled.
   const { pettyCashEnabled } = useEntitlements();
+  const pages = useCompanyPages();
   const visibleTabs = TABS.filter((t) => t.id !== "entity" || pettyCashEnabled);
 
   return (
@@ -83,7 +87,7 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
           return (
             <Link
               key={id}
-              href={`/settings?tab=${id}`}
+              href={`${pages.settings}?tab=${id}`}
               scroll={false}
               className={pillClass(isActive)}
               aria-current={isActive ? "page" : undefined}

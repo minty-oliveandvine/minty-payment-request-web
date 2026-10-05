@@ -1,9 +1,12 @@
-# Payment Settings (`/settings`) and the maintenance page
+# Payment Settings (`/entity/<shortid>/<name>/settings/payment-request`) and the maintenance page
 
 Moved out of `payer-portal.md` on 2026-10-01, when the profile and payer-portal pages left this
 app for minty-web.
 
-## `/settings` (`components/settings/`)
+## Payment Settings (`components/settings/`)
+
+At `/entity/<shortid>/<name>/settings/payment-request` since 2026-10-05 (`/settings` moves there -
+[authentication.md](authentication.md#addresses-entityshortidname-2026-10-05)).
 
 The settings pills mirror Minty's tabs (Users, Entity & Integration, Petty Cash
 Settings, Payment Settings, Module — `SettingsPills.tsx`). Only **Payment Settings** lives here:
@@ -40,9 +43,9 @@ Which clicks ask - a left click with no modifier key on an `<a href>`, unless:
 - the link is inside the dialog, or carries `data-sidebar-open` (Flask's openers);
 - it has `download`, or a `target` other than `_self`;
 - its `href` attribute starts with `#` or `javascript:`, or its address is not http(s);
-- it is a fragment of this very page (`/settings#x`).
+- it is a fragment of this very page (`<settings>#x`).
 
-A link to exactly this address (the sidebar's Settings on `/settings`) DOES ask: it reloads.
+A link to exactly this address (the sidebar's Settings on Payment Settings) DOES ask: it reloads.
 
 **The browser's Back** (2026-10-01; it used to leave without asking) is held by a SENTINEL: when
 the page turns dirty it pushes one history entry at its own address (Next's state object kept).

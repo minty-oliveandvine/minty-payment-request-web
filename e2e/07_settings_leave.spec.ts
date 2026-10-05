@@ -8,7 +8,11 @@
 // Flask need not serve them, and Minty's /logout and the backend's logout call are caught, so no run
 // signs anybody out. The browser's own leave prompt must never fire where our dialog asked.
 import { expect, test, type Dialog, type Page, type Route } from '@playwright/test';
-import { PAYMENT_REQUEST_API_URL, PETTY_CASH_URL, handoff, requireCredentials, requireStack, type Credentials } from './helpers';
+import { PAYMENT_REQUEST_API_URL, PETTY_CASH_URL, handoff, pagesOf, requireCredentials, requireStack, type Credentials } from './helpers';
+
+/** The list and Payment Settings, under the company's address (lib/companyPages.ts). */
+const isList = (u: URL) => /^\/entity\/[0-9a-f]{8}\/[^/]+\/payment-request$/.test(u.pathname);
+const isSettings = (u: URL) => /^\/entity\/[0-9a-f]{8}\/[^/]+\/settings\/payment-request$/.test(u.pathname);
 
 const ACCOUNTS = [
   { code: '200', name: 'Sales', active: true },
@@ -84,7 +88,7 @@ async function arrive(page: Page): Promise<Run> {
     if (route.request().method() !== 'OPTIONS') run.logouts.push(route.request().url());
     return route.fulfill({ status: 204, headers: cors(route) });
   });
-  await handoff(page, creds, '/settings');
+  await handoff(page, creds, pagesOf(creds).settings);
   await expect(page.getByRole('heading', { name: /payment account code/i })).toBeVisible();
   await expect(tick(page, '200')).toBeChecked();
   await expect(tick(page, '310')).not.toBeChecked();
@@ -100,24 +104,24 @@ const historyIndex = (page: Page) =>
 /** Arrive, then put the payments list behind the settings page, so Back has somewhere to go. */
 async function arriveFromTheList(page: Page): Promise<Run> {
   const run = await arrive(page);
-  await page.goto('/');
-  await expect(page).toHaveURL((u) => u.pathname === '/');
-  await page.goto('/settings');
+  await page.goto(pagesOf(run.creds).list);
+  await expect(page).toHaveURL(isList);
+  await page.goto(pagesOf(run.creds).settings);
   await expect(tick(page, '200')).toBeChecked();
   return run;
 }
 const backLink = (page: Page) => page.getByRole('banner').getByRole('link', { name: /Payments/ });
 
 /**
- * Arrive on `/settings`, then take the Payment Settings pill (a Next `<Link>` to
- * `/settings?tab=bill`): two entries of ONE document, so a jump between them is a `popstate` the
+ * Arrive on Payment Settings, then take the Payment Settings pill (a Next `<Link>` to
+ * `<settings>?tab=bill`): two entries of ONE document, so a jump between them is a `popstate` the
  * guard must hold (a jump into another document gets `beforeunload` instead).
  */
 async function arriveWithASoftEntry(page: Page): Promise<{ run: Run; first: number }> {
   const run = await arrive(page);
   const first = await historyIndex(page);
   await page.getByRole('link', { name: 'Payment Settings', exact: true }).click();
-  await expect(page).toHaveURL((u) => u.pathname === '/settings' && u.searchParams.get('tab') === 'bill');
+  await expect(page).toHaveURL((u) => isSettings(u) && u.searchParams.get('tab') === 'bill');
   await expect.poll(() => historyIndex(page)).toBe(first + 1);
   return { run, first };
 }
@@ -131,7 +135,7 @@ test.describe('payment settings: leave without saving', () => {
   test('nothing changed: the back link leaves at once', async ({ page }) => {
     const run = await arrive(page);
     await backLink(page).click();
-    await expect(page).toHaveURL((u) => u.pathname === '/');
+    await expect(page).toHaveURL(isList);
     await expect(leaveDialog(page)).toHaveCount(0);
     expect(run.prompts).toEqual([]);
   });
@@ -146,14 +150,14 @@ test.describe('payment settings: leave without saving', () => {
     await expect(dialog).toContainText('You have unsaved changes.');
     await dialog.getByRole('button', { name: 'Go Back', exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    await expect(page).toHaveURL((u) => u.pathname === '/settings');
+    await expect(page).toHaveURL(isSettings);
     await expect(tick(page, '310')).toBeChecked();
 
     await backLink(page).click();
     await expect(dialog).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
-    await expect(page).toHaveURL((u) => u.pathname === '/settings');
+    await expect(page).toHaveURL(isSettings);
     await expect(tick(page, '310')).toBeChecked();
     expect(run.prompts).toEqual([]);
   });
@@ -167,7 +171,8 @@ test.describe('payment settings: leave without saving', () => {
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Discard changes' }).click();
 
-    await expect(page).toHaveURL(`${PETTY_CASH_URL}/entity/settings/users/${run.creds.entityId}`);
+    // the pill links the full id; Flask (stubbed here) then shows `<shortid>/<name>` (2026-10-05)
+    await expect(page).toHaveURL(`${PETTY_CASH_URL}/entity/${run.creds.entityId}/settings/users`);
     expect(run.prompts).toEqual([]);
   });
 
@@ -198,7 +203,7 @@ test.describe('payment settings: leave without saving', () => {
     expect(onTop).toBe(true);
     await discard.click();
 
-    await expect(page).toHaveURL((u) => u.pathname === '/settings');
+    await expect(page).toHaveURL(isSettings);
     await expect(leaveDialog(page)).toHaveCount(0);
     await expect(tick(page, '200')).toBeChecked();
     await expect(tick(page, '429')).toBeChecked();
@@ -218,7 +223,7 @@ test.describe('payment settings: leave without saving', () => {
     await dialog.getByRole('button', { name: 'Go Back', exact: true }).click();
     await expect(dialog).toHaveCount(0);
 
-    await expect(page).toHaveURL((u) => u.pathname === '/settings');
+    await expect(page).toHaveURL(isSettings);
     await expect(tick(page, '310')).toBeChecked();
     const cookies = await page.context().cookies();
     expect(cookies.find((c) => c.name === 'billing_token')?.value ?? '').not.toBe('');
@@ -236,7 +241,7 @@ test.describe('payment settings: leave without saving', () => {
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Go Back', exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    await expect(page).toHaveURL((u) => u.pathname === '/settings');
+    await expect(page).toHaveURL(isSettings);
     await expect(tick(page, '310')).toBeChecked();
     expect(await historyIndex(page)).toBe(before + 1); // pushed again: Back asks again
 
@@ -257,7 +262,7 @@ test.describe('payment settings: leave without saving', () => {
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Discard changes' }).click();
 
-    await expect(page).toHaveURL((u) => u.pathname === '/');
+    await expect(page).toHaveURL(isList);
     await expect(leaveDialog(page)).toHaveCount(0);
     expect(run.prompts).toEqual([]);
   });
@@ -274,7 +279,7 @@ test.describe('payment settings: leave without saving', () => {
     expect(await historyIndex(page)).toBe(first + 2); // the jump undone: back on the sentinel
     await dialog.getByRole('button', { name: 'Discard changes' }).click();
 
-    await expect(page).toHaveURL((u) => u.pathname === '/settings' && !u.searchParams.has('tab'));
+    await expect(page).toHaveURL((u) => isSettings(u) && !u.searchParams.has('tab'));
     await expect.poll(() => historyIndex(page)).toBe(first);
     await expect(leaveDialog(page)).toHaveCount(0);
     expect(run.prompts).toEqual([]);
@@ -303,12 +308,12 @@ test.describe('payment settings: leave without saving', () => {
 
   test('an earlier entry at this same address is a jump, not the sentinel', async ({ page }) => {
     const { run, first } = await arriveWithASoftEntry(page);
-    // a second entry at /settings?tab=bill (Next's own state kept, as the guard's sentinel does)
+    // a second entry at <settings>?tab=bill (Next's own state kept, as the guard's sentinel does)
     await page.evaluate(() => window.history.pushState(window.history.state, '', window.location.href));
     await tick(page, '310').check();
     await expect.poll(() => historyIndex(page)).toBe(first + 3);
 
-    await jump(page, -2); // onto the FIRST /settings?tab=bill - the same address as the sentinel
+    await jump(page, -2); // onto the FIRST <settings>?tab=bill - the same address as the sentinel
     const dialog = leaveDialog(page);
     await expect(dialog).toBeVisible();
     expect(await historyIndex(page)).toBe(first + 3); // not a second sentinel pushed past it
@@ -331,7 +336,7 @@ test.describe('payment settings: leave without saving', () => {
     await expect.poll(() => historyIndex(page)).toBe(before); // the sentinel taken off
 
     await page.goBack();
-    await expect(page).toHaveURL((u) => u.pathname === '/');
+    await expect(page).toHaveURL(isList);
     await expect(leaveDialog(page)).toHaveCount(0);
     expect(run.prompts).toEqual([]);
   });

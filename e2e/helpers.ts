@@ -11,6 +11,8 @@
 import { createHmac } from 'node:crypto';
 import { test, type Page } from '@playwright/test';
 
+import { companyPages, type CompanyPages } from '../lib/companyPages';
+
 const b64url = (input: Buffer | string) =>
   Buffer.from(input).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
@@ -58,6 +60,11 @@ export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || 'http://localhos
 export async function requireStack(): Promise<void> {
   test.skip(!(await reachable((process.env.E2E_BASE_URL || 'http://localhost:3020') + '/module-selection')), 'Next (:3020) is not answering');
   test.skip(!(await reachable(PAYMENT_REQUEST_API_URL + '/api/docs')) && !(await reachable(PAYMENT_REQUEST_API_URL + '/')), 'minty-payment-request-api (:8020) is not answering');
+}
+
+/** The company's pages in this app - `/entity/<shortid>/<name>/...` since 2026-10-05 (lib/companyPages.ts). */
+export function pagesOf(creds: Credentials): CompanyPages {
+  return companyPages(creds.entityId, creds.entityName);
 }
 
 /** Arrive the way Minty sends people: /landing stores the token and forwards to ``next``. */

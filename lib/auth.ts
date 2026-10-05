@@ -48,8 +48,10 @@ export function clearAuth() {
   document.cookie = `${ENTITY_NAME_KEY}=;${expire}`;
 }
 
-/** Cookie name checked by Next.js middleware for auth gating. */
+/** Cookie names read by Next.js middleware: auth gating, and the company the address must name. */
 export const AUTH_COOKIE_NAME = TOKEN_KEY;
+export const ENTITY_ID_COOKIE_NAME = ENTITY_ID_KEY;
+export const ENTITY_NAME_COOKIE_NAME = ENTITY_NAME_KEY;
 
 /**
  * Decodes the JWT payload and returns the `role` claim string, or null if the

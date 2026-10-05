@@ -4,7 +4,7 @@
 // are stubbed (their own suites pin the data), and so are Flask's /logout and the backend's
 // logout call, so no run signs anybody out.
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { PAYMENT_REQUEST_API_URL, PETTY_CASH_URL, handoff, requireCredentials, requireStack, type Credentials } from './helpers';
+import { PAYMENT_REQUEST_API_URL, PETTY_CASH_URL, handoff, pagesOf, requireCredentials, requireStack, type Credentials } from './helpers';
 
 const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || 'http://localhost:8000';
 
@@ -112,8 +112,8 @@ test.describe('the sidebar', () => {
     await expect(nav).toBeVisible();
     const enter = `${PETTY_CASH_URL}/entity/${creds.entityId}/enter?token=`;
 
-    await expect(nav.getByRole('link', { name: 'Settings', exact: true })).toHaveAttribute('href', '/settings');
-    await expect(nav.getByRole('link', { name: 'Bills', exact: true })).toHaveAttribute('href', '/');
+    await expect(nav.getByRole('link', { name: 'Settings', exact: true })).toHaveAttribute('href', pagesOf(creds).settings);
+    await expect(nav.getByRole('link', { name: 'Bills', exact: true })).toHaveAttribute('href', pagesOf(creds).list);
     const select = await nav.getByRole('link', { name: 'Select Entity', exact: true }).getAttribute('href');
     expect(select?.startsWith(enter) && select.endsWith(`&next=${encodeURIComponent('/entity')}`)).toBe(true);
     const reports = await nav.getByRole('link', { name: 'Reports', exact: true }).getAttribute('href');

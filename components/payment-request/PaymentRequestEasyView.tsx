@@ -20,6 +20,7 @@ import { type SortKey } from "@/lib/paymentRequestRowSort";
 import { HEADER_CHECKBOX_CLASS } from "./paymentRequestCheckboxClasses";
 import type { PaymentRequestRow } from "./PaymentRequestTable";
 import type { PaymentRequestStatusFilter } from "./PaymentRequestToolbar";
+import { useCompanyPages } from "@/lib/useCompanyPages";
 
 const EASY_VIEW_STATUS_CELL =
   "box-border inline-flex w-full min-w-0 max-w-full items-center justify-center rounded-lg px-2.5 py-1 text-sm font-semibold sm:px-3 sm:py-0 lg:h-[42px] lg:min-h-[42px] lg:text-sm";
@@ -376,6 +377,7 @@ export function PaymentRequestEasyView({
   easyViewBillMutatePending = false,
   easyViewDraftDeleteOpen = false,
 }: PaymentRequestEasyViewProps) {
+  const pages = useCompanyPages();
   const entityCurrency = useEntityCurrency();
   const listScrollRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLElement>(null);
@@ -780,7 +782,7 @@ export function PaymentRequestEasyView({
                         />
                       </div>
                       <a
-                        href={`/payment-request/${row.id}`}
+                        href={pages.request(row.id)}
                         onClick={(e) => {
                           if (dimRow) {
                             e.preventDefault();

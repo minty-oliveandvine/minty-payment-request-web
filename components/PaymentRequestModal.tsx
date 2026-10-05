@@ -33,6 +33,7 @@ import {
   toAmountEditString,
   toAmountString,
 } from "@/lib/amountFormat";
+import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export type PaymentRequestModalProps = {
   open: boolean;
@@ -176,6 +177,7 @@ export function PaymentRequestModal({
   onConfirm,
 }: PaymentRequestModalProps) {
   const router = useRouter();
+  const pages = useCompanyPages();
   const entityCurrency = useEntityCurrency();
   const titleId = useId();
   const previewSubtitleId = useId();
@@ -526,7 +528,7 @@ export function PaymentRequestModal({
 
       onConfirm?.();
       onClose();
-      router.push(`/payment-request/${encodeURIComponent(bill.id)}`);
+      router.push(pages.request(bill.id));
     } catch (err) {
       console.error("Failed to create bill:", err);
       if (isDuplicateBillReferenceError(err)) {

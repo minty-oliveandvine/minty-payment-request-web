@@ -8,6 +8,7 @@ import { PaymentRequestDetailStatusBadge } from "@/components/payment-request/Pa
 import { getAuth, type AuthInfo } from "@/lib/auth";
 import { fetchXeroStatus } from "@/lib/api";
 import { useUserRole } from "@/lib/useUserRole";
+import { useCompanyPages } from "@/lib/useCompanyPages";
 
 const PaymentRequestDetailBody = dynamic(
   () => import("@/components/payment-request/PaymentRequestDetailBody").then((m) => ({ default: m.PaymentRequestDetailBody })),
@@ -20,6 +21,7 @@ export function PaymentRequestDetailPageClient() {
   const [billStatusRefresh, setBillStatusRefresh] = useState(0);
   const bumpBillStatusInHeader = useCallback(() => setBillStatusRefresh((n) => n + 1), []);
   const { isViewOnly, isReadOnly } = useUserRole();
+  const pages = useCompanyPages();
 
   useEffect(() => {
     const a = getAuth();
@@ -37,7 +39,7 @@ export function PaymentRequestDetailPageClient() {
         title="Payment Request Details"
         showLogo={false}
         brandHref={null}
-        backHref="/"
+        backHref={pages.list}
         backLabel="Payments"
         companyName={auth?.entityName || "Loading…"}
         statusBadge={<PaymentRequestDetailStatusBadge refreshSignal={billStatusRefresh} />}

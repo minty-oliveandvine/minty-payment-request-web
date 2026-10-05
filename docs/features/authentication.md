@@ -12,7 +12,8 @@ is `Minty/docs/features/authentication.md`; minty-payment-request-api's verifica
 Minty links **Payments** to `/landing?token=<jwt>&entity_id=&entity_name=&next=&from=`
 (`app/landing/page.tsx`). The page stores the token, the entity id and name in cookies
 (`lib/auth.ts`: `billing_token`, `billing_entity_id`, `billing_entity_name`, `SameSite=Lax`,
-`Secure` on https, **8 hours**) and forwards to `next` (the bill list by default; a path on this
+`Secure` on https, **8 hours**) and forwards to `next` (Flask sends the company's list or its
+Payment Settings - see Addresses below; `/module-selection` when there is none; a path on this
 origin only - `lib/safeNext.ts`, a COPY of minty-web's: no `//host`, backslash or control
 character, which until 2026-10-05 let `next=/%5Cevil.com` leave the site); `from` is
 ignored since 2026-10-01 (its `billing_from` cookie served only the deleted profile pages' back
@@ -30,6 +31,34 @@ are cleared client-side on logout and by `POST /api/auth/logout` on the backend.
 sidebar's menu and My Profile — [sidebar.md](sidebar.md)) ends the session everywhere since
 2026-09-30: after those two it leaves for Minty's `/logout`, where it used to land on Minty's
 entity list with Minty still signed in.
+
+## Addresses: `/entity/<shortid>/<name>/...` (2026-10-05)
+
+The pages live under the company's address, Flask's scheme (`Minty/docs/features/authentication.md`
+§3.2), built by `lib/companyPages.ts` from `lib/companyRef.ts` (a COPY of minty-web's):
+
+| Page | Address |
+|---|---|
+| The list | `/entity/<shortid>/<name>/payment-request` |
+| One payment request | `/entity/<shortid>/<name>/payment-request/<id>` |
+| Payment Settings | `/entity/<shortid>/<name>/settings/payment-request` |
+
+The company is still the cookie's - every API call sends its id - so `middleware.ts` checks the
+address against the cookie before a page renders:
+
+- **Another company's page** (another tab switched the cookie, a bookmark, an expired cookie):
+  sent to Flask's `/entity/<shortid>/<name>/payment-request` (`?request=<id>` for one request) or
+  `/settings/payment-request`, which signs in, checks membership, mints a token for that company
+  and lands on the same page.
+- **A misspelt name or a capital in the short id** (a renamed company's old link): moved to the
+  cookie's spelling.
+- **The old addresses** `/`, `/payment-request/<id>` and `/settings` move to the cookie
+  company's, query kept.
+
+All three are **307s, never 308s**: the target depends on the cookie, and a browser keeps a 308
+for good, so the next company's `/` would open this one's address. Links on a company page take
+the address from the URL (`useCompanyPages`, so the server's render and the browser's agree);
+the sidebar and module selection take it from the cookie (`cookieCompanyPages`).
 
 ## Using the token
 

@@ -8,6 +8,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { decodeJwtPayload, getAuth, setAuth } from "@/lib/auth";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
 import { API_BASE } from "@/lib/apiBase";
+import { cookieCompanyPages } from "@/lib/useCompanyPages";
 
 const MIN_LOADING_MS = 800;
 
@@ -221,7 +222,7 @@ function ModuleSelectionContent() {
     // cleaned the URL. No need to repeat it here.
     navTimerRef.current = window.setTimeout(() => {
       navTimerRef.current = null;
-      router.push("/");
+      router.push(cookieCompanyPages()?.list ?? "/");
     }, MIN_LOADING_MS);
   };
 
