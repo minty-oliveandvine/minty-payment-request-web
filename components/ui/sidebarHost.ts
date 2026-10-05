@@ -65,7 +65,7 @@ export const links = {
   entities: () => buildMintyEnterUrl("/entity"),
   subscriptions: () => handoff(MINTY_WEB_SUBSCRIPTIONS),
   pettyCashDashboard: () => buildMintyEnterUrl(),
-  pettyCashReports: (id: string) => buildMintyEnterUrl(`/entity/${id}/reports`),
+  pettyCashReports: (id: string) => buildMintyEnterUrl(`/entity/${id}/petty-cash/reports`),
   /** The company's list - `/` (the middleware sends it there) when the cookie names none. */
   bills: () => cookieCompanyPages()?.list ?? "/",
   /**

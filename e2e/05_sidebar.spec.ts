@@ -117,7 +117,7 @@ test.describe('the sidebar', () => {
     const select = await nav.getByRole('link', { name: 'Select Entity', exact: true }).getAttribute('href');
     expect(select?.startsWith(enter) && select.endsWith(`&next=${encodeURIComponent('/entity')}`)).toBe(true);
     const reports = await nav.getByRole('link', { name: 'Reports', exact: true }).getAttribute('href');
-    expect(reports?.startsWith(enter) && reports.endsWith(`&next=${encodeURIComponent(`/entity/${creds.entityId}/reports`)}`)).toBe(true);
+    expect(reports?.startsWith(enter) && reports.endsWith(`&next=${encodeURIComponent(`/entity/${creds.entityId}/petty-cash/reports`)}`)).toBe(true);
     await expect(nav.getByRole('group', { name: 'Petty Cash' })).toBeVisible();
     await expect(nav.getByRole('group', { name: 'Payment Request' })).toBeVisible();
     await expect(nav.getByRole('button', { name: 'Logout', exact: true })).toBeVisible();
