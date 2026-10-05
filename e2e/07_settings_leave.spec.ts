@@ -1,7 +1,8 @@
 // Payment Settings' "Leave without saving?" (lib/leaveGuard.ts, the dialog copied from minty-web):
 // ticks not saved yet hold every way out of the page - the header's back link, the Flask pills,
 // the sidebar's links, its Logout and the browser's Back - until "Discard changes"; "Go Back" and
-// Escape stay. Save itself: off with nothing ticked, and a refusal shown in the server's words.
+// Escape stay. Save itself: off with nothing changed or nothing ticked, and a refusal shown in the
+// server's words.
 //
 // Only the account-code list is stubbed (a fixed list, two of three active, so the saved ticks are
 // known; a PUT answers `run.put`); everything else is the stack. Pages on Flask's origin are answered by a stub page, so
@@ -339,6 +340,16 @@ test.describe('payment settings: leave without saving', () => {
     await expect(page).toHaveURL(isList);
     await expect(leaveDialog(page)).toHaveCount(0);
     expect(run.prompts).toEqual([]);
+  });
+
+  test('nothing changed: Save is off, a tick turns it on, putting it back turns it off', async ({ page }) => {
+    const run = await arrive(page);
+    await expect(saveButton(page)).toBeDisabled();
+    await tick(page, '310').check();
+    await expect(saveButton(page)).toBeEnabled();
+    await tick(page, '310').uncheck();
+    await expect(saveButton(page)).toBeDisabled();
+    expect(run.puts).toEqual([]);
   });
 
   test('nothing ticked: Save is off and says why', async ({ page }) => {

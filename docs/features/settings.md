@@ -69,7 +69,8 @@ jump still leaves without asking; the page warns once in the console.
 
 ### At least one code ticked (2026-10-01)
 
-With codes on the list and none ticked, **Save is off** and "Pick at least one account code."
+With nothing changed (`hasChanges` false - since 2026-10-05), **Save is off**; ticks put back by
+hand turn it off again. With codes on the list and none ticked, **Save is off** and "Pick at least one account code."
 shows under it (plain text, never a `title`). A save sends the rows turning ON first, then the
 rows turning OFF (each batch `Promise.allSettled`), so it never passes through a moment with
 nothing ticked. minty-payment-request-api enforces the same rule: unticking the entity's last ticked code
@@ -110,5 +111,6 @@ held by the back link (Go Back and Escape stay); a Flask pill goes after Discard
 prompt; the sidebar's Settings asks above the drawer, Escape closes only the dialog, and Discard
 reloads the saved ticks; Logout asks, and Go Back logs nobody out; the browser's Back asks (Go
 Back and Escape stay, the sentinel kept), Back then Discard goes to the page before, and after a
-save Back leaves without asking (the sentinel gone); nothing ticked greys Save with the hint; a
+save Back leaves without asking (the sentinel gone); Save is off until a tick changes, and off
+again when it is put back; nothing ticked greys Save with the hint; a
 409 shows the server's sentence, with the ON rows sent before the OFF ones.
