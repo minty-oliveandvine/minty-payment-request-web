@@ -22,7 +22,7 @@ Minty.
 
 The old profile and payer-portal addresses (`/profile/*`) are forwarded by the middleware
 BEFORE that check - an old email link arrives with no cookie - to minty-web through Minty:
-`/profile` to Flask's `/profile?from=bills` (its profile router), the portal pages to Flask's
+`/profile` to Flask's `/profile` (its profile router), the portal pages to Flask's
 `/handoff/minty-web?next=<minty-web page>`, the query string kept ([payer-portal.md](payer-portal.md)).
 
 The cookies are readable by script on purpose (the app itself attaches the token); they

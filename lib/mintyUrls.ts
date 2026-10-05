@@ -21,15 +21,16 @@ export function buildMintyEnterUrl(nextPath?: string): string {
 
 /**
  * "My Profile" - through Minty's `/profile`, which opens minty-web's My Profile (this app has no
- * profile page since 2026-10-01). Opened inside a company it names it (`entity_id`) and says it
- * came from this app (`from=bills`, so the back arrow returns here), entering through
+ * profile page since 2026-10-01). Opened inside a company it names it (`entity_id`); its back
+ * arrow returns to the page the person came from (no `from=bills` since 2026-10-05). It enters
+ * through
  * `/entity/<id>/enter` so a Minty session that lapsed while this app's longer token lived is
  * re-established from that token on the way.
  */
 export function buildMintyProfileUrl(): string {
   const auth = getAuth();
   if (auth?.entityId) {
-    const qs = new URLSearchParams({ entity_id: auth.entityId, from: "bills" });
+    const qs = new URLSearchParams({ entity_id: auth.entityId });
     return buildMintyEnterUrl(`/profile?${qs.toString()}`);
   }
   return `${MINTY_MODULE_URL}/profile`;

@@ -167,7 +167,7 @@ test.describe('payment settings: leave without saving', () => {
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Discard changes' }).click();
 
-    await expect(page).toHaveURL(`${PETTY_CASH_URL}/entity/settings/users/${run.creds.entityId}?from=bills`);
+    await expect(page).toHaveURL(`${PETTY_CASH_URL}/entity/settings/users/${run.creds.entityId}`);
     expect(run.prompts).toEqual([]);
   });
 

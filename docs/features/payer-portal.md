@@ -7,7 +7,7 @@ and with its query string, to minty-web through Minty (Flask):
 
 | Old address | Goes to (307) |
 |---|---|
-| `/profile` (and any `/profile/*` not below) | `{MINTY}/profile?[query&]from=bills` |
+| `/profile` (and any `/profile/*` not below) | `{MINTY}/profile[?query]` (an old `from=bills` is dropped) |
 | `/profile/subscriptions` | `{MINTY}/handoff/minty-web?next=/subscription/subscriptions[?query]` |
 | `/profile/subscriptions/incoming` | `…?next=/subscription/subscriptions/incoming[?query]` (minty-web reads `?transfer=`) |
 | `/profile/subscriptions/subscriber` | `…?next=/subscription/subscriptions/subscriber[?query]` |

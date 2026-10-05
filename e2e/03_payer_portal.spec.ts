@@ -15,8 +15,10 @@ const handoff = (next: string) => `${PETTY_CASH_URL}/handoff/minty-web?${new URL
 
 /** Old address -> where it must go now. */
 const FORWARDS: Array<[string, string]> = [
-  ['/profile', `${PETTY_CASH_URL}/profile?from=bills`],
-  ['/profile?entity_id=abc-123', `${PETTY_CASH_URL}/profile?entity_id=abc-123&from=bills`],
+  ['/profile', `${PETTY_CASH_URL}/profile`],
+  ['/profile?entity_id=abc-123', `${PETTY_CASH_URL}/profile?entity_id=abc-123`],
+  // an old link's from=bills is dropped (2026-10-05)
+  ['/profile?entity_id=abc-123&from=bills', `${PETTY_CASH_URL}/profile?entity_id=abc-123`],
   ['/profile/subscriptions', handoff('/subscription/subscriptions')],
   ['/profile/subscriptions?q=acme&page=2', handoff('/subscription/subscriptions?q=acme&page=2')],
   ['/profile/subscriptions/incoming', handoff('/subscription/subscriptions/incoming')],
@@ -24,7 +26,7 @@ const FORWARDS: Array<[string, string]> = [
   ['/profile/subscriptions/subscriber?entity=e-7', handoff('/subscription/subscriptions/subscriber?entity=e-7')],
   ['/profile/billing', handoff('/subscription/billing')],
   ['/profile/invoices', handoff('/subscription/billing')],
-  ['/profile/no-such-page?entity_id=abc-123', `${PETTY_CASH_URL}/profile?entity_id=abc-123&from=bills`],
+  ['/profile/no-such-page?entity_id=abc-123', `${PETTY_CASH_URL}/profile?entity_id=abc-123`],
 ];
 
 async function locationOf(request: APIRequestContext, path: string, cookie?: string): Promise<{ status: number; location: string }> {

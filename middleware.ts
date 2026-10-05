@@ -29,9 +29,12 @@ function profileForward(pathname: string, search: string): string | null {
   // Next has already 308'd a trailing slash away (`/profile/billing/` -> `/profile/billing`).
   const target = PROFILE_FORWARDS.get(pathname);
   if (!target) {
+    // An old link's `from=bills` is dropped: the profile's Back returns to the page the person
+    // came from (minty-web lib/backLink.ts), so nothing is carried (2026-10-05).
     const qs = new URLSearchParams(query);
-    qs.set("from", "bills");
-    return `${minty}/profile?${qs.toString()}`;
+    qs.delete("from");
+    const rest = qs.toString();
+    return `${minty}/profile${rest ? `?${rest}` : ""}`;
   }
   const next = query ? `${target}?${query}` : target;
   return `${minty}/handoff/minty-web?${new URLSearchParams({ next }).toString()}`;
