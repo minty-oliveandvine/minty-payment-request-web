@@ -11,7 +11,7 @@ export { resolveMintyModuleUrl };
 export function buildMintyEnterUrl(nextPath?: string): string {
   const auth = getAuth();
   if (auth?.entityId && auth?.token) {
-    const base = `${MINTY_MODULE_URL}/entity/${auth.entityId}/enter?token=${encodeURIComponent(auth.token)}`;
+    const base = `${MINTY_MODULE_URL}/entity/${encodeURIComponent(auth.entityId)}/enter?token=${encodeURIComponent(auth.token)}`;
     return nextPath
       ? `${base}&next=${encodeURIComponent(nextPath)}`
       : base;
@@ -36,7 +36,7 @@ export function buildMintyProfileUrl(): string {
 }
 
 function mintyPathFromTemplate(template: string, entityId: string): string {
-  return template.replace(/\{entityId\}/g, entityId);
+  return template.replace(/\{entityId\}/g, encodeURIComponent(entityId));
 }
 
 /** Minty's paths, `{entityId}` filled in from the cookie. Constants - no env override. */

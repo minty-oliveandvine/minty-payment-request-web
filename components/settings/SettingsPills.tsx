@@ -41,13 +41,13 @@ const FLASK_REDIRECT_TABS: Partial<
   Record<SettingsTabId, (module1Url: string, entityId: string) => string>
 > = {
   users: (module1Url, entityId) =>
-    `${module1Url}/entity/settings/users/${entityId}?from=bills`,
+    `${module1Url}/entity/settings/users/${encodeURIComponent(entityId)}?from=bills`,
   xero: (module1Url, entityId) =>
-    `${module1Url}/entity/${entityId}/settings/xero?from=bills`,
+    `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/xero?from=bills`,
   entity: (module1Url, entityId) =>
-    `${module1Url}/entity/settings/entity/${entityId}?from=bills`,
+    `${module1Url}/entity/settings/entity/${encodeURIComponent(entityId)}?from=bills`,
   modules: (module1Url, entityId) =>
-    `${module1Url}/entity/settings/module/${entityId}?from=bills`,
+    `${module1Url}/entity/settings/module/${encodeURIComponent(entityId)}?from=bills`,
 };
 
 type SettingsPillsProps = {

@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { setAuth } from "@/lib/auth";
+import { safeNextPath } from "@/lib/safeNext";
 
 function LandingContent() {
   const router = useRouter();
@@ -12,11 +13,7 @@ function LandingContent() {
     const token = searchParams.get("token") ?? "";
     const entityId = searchParams.get("entity_id") ?? "";
     const entityName = searchParams.get("entity_name") ?? "";
-    const rawNext = searchParams.get("next") ?? "";
-    const next =
-      rawNext.startsWith("/") && !rawNext.startsWith("//")
-        ? rawNext
-        : "/module-selection";
+    const next = safeNextPath(searchParams.get("next"), "/module-selection");
 
     if (!token) {
       router.replace("/module-selection");

@@ -5,27 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useRef, useEffect } from "react";
 import { ModuleButton } from "@/components/ModuleButton";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { getAuth, setAuth } from "@/lib/auth";
+import { decodeJwtPayload, getAuth, setAuth } from "@/lib/auth";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
 import { API_BASE } from "@/lib/apiBase";
 
 const MIN_LOADING_MS = 800;
-
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const pad = base64.length % 4;
-    if (pad) base64 += "=".repeat(4 - pad);
-    const json = atob(base64);
-    const payload = JSON.parse(json) as unknown;
-    if (payload == null || typeof payload !== "object" || Array.isArray(payload)) return null;
-    return payload as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
 
 function ModuleSelectionContent() {
   const router = useRouter();
@@ -71,7 +55,7 @@ function ModuleSelectionContent() {
 
   const module1Href =
     entityIdRef.current && tokenRef.current
-      ? `${MINTY_MODULE_URL}/entity/${entityIdRef.current}/enter?token=${tokenRef.current}`
+      ? `${MINTY_MODULE_URL}/entity/${encodeURIComponent(entityIdRef.current)}/enter?token=${encodeURIComponent(tokenRef.current)}`
       : `${MINTY_MODULE_URL}/entity`;
 
   const acronym = entityNameRef.current

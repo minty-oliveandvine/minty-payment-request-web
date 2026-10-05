@@ -12,7 +12,9 @@ is `Minty/docs/features/authentication.md`; minty-payment-request-api's verifica
 Minty links **Payments** to `/landing?token=<jwt>&entity_id=&entity_name=&next=&from=`
 (`app/landing/page.tsx`). The page stores the token, the entity id and name in cookies
 (`lib/auth.ts`: `billing_token`, `billing_entity_id`, `billing_entity_name`, `SameSite=Lax`,
-`Secure` on https, **8 hours**) and forwards to `next` (the bill list by default); `from` is
+`Secure` on https, **8 hours**) and forwards to `next` (the bill list by default; a path on this
+origin only - `lib/safeNext.ts`, a COPY of minty-web's: no `//host`, backslash or control
+character, which until 2026-10-05 let `next=/%5Cevil.com` leave the site); `from` is
 ignored since 2026-10-01 (its `billing_from` cookie served only the deleted profile pages' back
 links). Without a token the middleware sends every page except `/landing` and
 `/module-selection` to `/module-selection` (`middleware.ts`), which offers the way back into

@@ -33,7 +33,27 @@ function copyPdfjsAssets() {
 
 copyPdfjsAssets();
 
+/**
+ * Sent with every response (the URL security round, 2026-10-05). Same values in minty-web,
+ * minty-payment-request-web and minty-onboarding-web, and in Flask (pettycash/core/http_hardening.py).
+ * - Referrer-Policy same-origin: another site never sees a path or query from here (tokens).
+ * - frame-ancestors / X-Frame-Options: only this app may frame its pages (clickjacking).
+ * - HSTS in production builds only; a browser ignores it over plain http anyway.
+ */
+const securityHeaders = [
+  { key: "Referrer-Policy", value: "same-origin" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  ...(process.env.NODE_ENV === "production"
+    ? [{ key: "Strict-Transport-Security", value: "max-age=31536000" }]
+    : []),
+];
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
   /** Slightly smaller responses; security-through-obscurity only. */
   poweredByHeader: false,
   /**
