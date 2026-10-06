@@ -14,6 +14,7 @@ is minty-web's). Nothing is decided here that a backend does not re-check.
 | The sidebar on every page - the menu and My Profile, copied from minty-web for `@minty/shared` | [sidebar.md](sidebar.md) |
 | Toasts - `components/Toast.tsx`, minty-web's card (white, a bold label, no colour or icon) | `Minty/docs/features/toasts.md` - the system-wide rule and the look, value for value |
 | User-facing error copy | [../ERROR_COPY.md](../ERROR_COPY.md) |
+| Manual QA checklist to run by hand before a release | [qa-checklist.md](qa-checklist.md) |
 
 Email fields take English only (2026-10-01): My Profile's email spreads `useEmailInput` from
 `lib/emailInput.ts`, a copy of minty-web's. The input is `type="text" inputMode="email"`, anything
