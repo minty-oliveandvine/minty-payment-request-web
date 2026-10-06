@@ -26,7 +26,9 @@ this page is what the person sees and where each piece of the screen lives.
 
 The dialog (`role="dialog"`, *Add Payment Request*): amount, description, the **supplier**
 (a searchable input over the entity's synced contacts — `BillContactPicker.tsx`; "create
-new" makes the contact in Xero), the **account code** (a combobox over
+new" makes the contact in Xero; if that fails — e.g. the entity has no Xero connection —
+the menu closes, the field turns red and the API's message shows under it until the name
+is edited), the **account code** (a combobox over
 `entity_bill_account_xero`), bill number (with a suggested reference from
 `GET /api/bills/suggested-reference/`), invoice date and due date (`#pr-invoice-date`,
 `#pr-due-date`, native date inputs behind a formatted overlay — `DateTextField.tsx`), and

@@ -129,13 +129,15 @@ export function BillContactPicker({
       setCreateError(
         e instanceof ApiError ? e.message : "That supplier didn't quite make it over to Xero. Mind trying again?",
       );
+      setOpen(false);
     } finally {
       setCreating(false);
     }
   };
 
-  const borderTone = error
-    ? "border-red-500 focus:border-red-500 focus:ring-red-200/50 "
+  const invalid = error || createError !== null;
+  const borderTone = invalid
+    ?"border-red-500 focus:border-red-500 focus:ring-red-200/50 "
     : "border-gray-300 focus:border-secondary focus:ring-secondary/25 ";
 
   const addRowText = creating
@@ -210,6 +212,7 @@ export function BillContactPicker({
           aria-expanded={open}
           aria-controls={open ? listboxId : undefined}
           aria-autocomplete="list"
+          aria-invalid={invalid || undefined}
           disabled={disabled || creating}
           value={contactName}
           placeholder="Select a supplier"

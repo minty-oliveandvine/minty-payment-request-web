@@ -2,7 +2,7 @@
 // The words asserted here ("Draft", "Payment Requested", the status tabs, the action labels)
 // are what phase C8 must keep while bill_status/publish_state change underneath.
 import { expect, test, type Page } from '@playwright/test';
-import { fixtures, handoff, moneyRegex, requireCredentials, requireStack } from './helpers';
+import { fixtures, handoff, moneyRegex, requireCredentials, requireStack, xeroLive } from './helpers';
 
 const AMOUNT = 120.5;
 const DESCRIPTION = `E2E printer paper ${Date.now()}`;
@@ -47,6 +47,27 @@ test.describe.serial('payment request lifecycle', () => {
     await expect(row).toContainText(moneyRegex(AMOUNT));
     await expect(row).toContainText(/draft/i);
   });
+
+  for (const width of [360, 768, 1440]) {
+    test(`a new supplier refused (no Xero) closes the menu and turns the field red - ${width}px`, async ({ page }) => {
+      test.skip(xeroLive(), 'the shop is on Xero: "+ Add" would create a real contact');
+      await page.setViewportSize({ width, height: 800 });
+      const dlg = await openAddPayment(page);
+      const supplier = dlg.getByRole('textbox', { name: /supplier/i });
+      await supplier.click();
+      await supplier.pressSequentially(`E2E New Supplier ${Date.now()}`);
+      await page.getByRole('option', { name: /as a new supplier/i }).click();
+      await expect(dlg.getByRole('alert').filter({ hasText: /xero/i })).toBeVisible();
+      await expect(page.getByRole('listbox')).toBeHidden();
+      await expect(supplier).toHaveAttribute('aria-invalid', 'true');
+      await expect(supplier).toHaveClass(/border-red-500/);
+      // editing the name clears the refusal
+      await supplier.press('End');
+      await supplier.press('Backspace');
+      await expect(supplier).not.toHaveAttribute('aria-invalid', 'true');
+      await expect(dlg.getByRole('alert').filter({ hasText: /xero/i })).toBeHidden();
+    });
+  }
 
   test('the amount is required', async ({ page }) => {
     const dlg = await openAddPayment(page);
