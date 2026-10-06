@@ -72,7 +72,9 @@ unchanged). A Payment No. the company does not have shows "I couldn't find that 
 - the **Activity history** (`ActivityHistoryAccordion.tsx`) rendering the backend's audit
   rows — "published Payment Request #… to Xero", "uploaded receipt.pdf", "submitted …".
   It starts collapsed; opening it scrolls the section into view, closing it scrolls
-  back to where the page was.
+  back to where the page was. A failed read says so ("I couldn't load the history…") with
+  Try again, never "No activity yet". The header's status badge sits after the title, and
+  on its own line under the header below 640 px.
 
 Return / un-return / void go through the same action bar with the backend's transitions;
 `lib/billStatusRollback.ts` keeps the optimistic status honest when a call fails.

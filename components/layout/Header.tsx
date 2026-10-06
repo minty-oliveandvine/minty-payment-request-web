@@ -61,7 +61,6 @@ export function Header({
         ) : null}
         <span className="min-w-0 cursor-default truncate text-base font-semibold text-black sm:text-lg">{title}</span>
         {titleActions ? <div className="flex shrink-0 items-center">{titleActions}</div> : null}
-        {statusBadge}
       </div>
     </div>
   ) : homeHref ? (
@@ -82,9 +81,12 @@ export function Header({
     <header
       className={`bg-white ${noBorder ? "" : "border-b border-gray-200"} ${suppressTopSafeArea ? "" : "pt-[env(safe-area-inset-top,0px)]"}`}
     >
-      <div className="mx-auto flex w-full max-w-[1920px] flex-row items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6 sm:py-4">
-        <div className="flex min-w-0 min-h-10 flex-1 items-center sm:min-h-0">{leftSection}</div>
-        <div className="flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-3">
+      <div className="mx-auto flex w-full max-w-[1920px] flex-row flex-wrap items-center justify-between gap-2 px-4 py-3 sm:flex-nowrap sm:gap-3 sm:px-6 sm:py-4">
+        <div className={`flex min-w-0 min-h-10 items-center sm:min-h-0 ${statusBadge ? "flex-1 sm:flex-initial" : "flex-1"}`}>{leftSection}</div>
+        {/* Rendered once (it reads the bill): on a phone the row has no room for it beside the
+            way back, so it takes its own line under the row; from sm it sits after the title. */}
+        {statusBadge ? <div className="order-last flex w-full sm:order-none sm:w-auto sm:shrink-0">{statusBadge}</div> : null}
+        <div className={`flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-3 ${statusBadge ? "ml-auto" : ""}`}>
           <span className="relative inline-flex shrink-0">
             <span
               className="material-symbols-outlined text-[22px] leading-none text-primary sm:text-[26px]"

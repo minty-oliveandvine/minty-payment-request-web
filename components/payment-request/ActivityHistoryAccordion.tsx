@@ -323,32 +323,31 @@ function ActivityHistoryTimelineSkeleton() {
 
 export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }: ActivityHistoryAccordionProps) {
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<ActivityHistoryItem[]>([]);
-  const [loading, setLoading] = useState(() => Boolean(billId));
+  const [retryCount, setRetryCount] = useState(0);
+  /** The last read, keyed by what was asked for: a newer key means that read is still loading. */
+  const [loaded, setLoaded] = useState<{ key: string; items: ActivityHistoryItem[]; failed: boolean } | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
   const ref = billRef || `#${billId.slice(0, 8)}`;
+  const key = `${billId}|${ref}|${refreshSignal}|${retryCount}`;
+  const current = loaded?.key === key ? loaded : null;
+  const loading = Boolean(billId) && !current;
+  const items = current?.items ?? [];
+  const failed = current?.failed ?? false;
 
   useEffect(() => {
-    if (!billId) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
+    if (!billId) return;
     let cancelled = false;
-    setLoading(true);
     fetchAuditHistory(billId)
       .then((audits) => {
-        if (!cancelled) setItems(audits.map((a) => auditToItem(a, ref)));
+        if (!cancelled) setLoaded({ key, items: audits.map((a) => auditToItem(a, ref)), failed: false });
       })
-      .catch(() => {
-        if (!cancelled) setItems([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+      .catch((err: unknown) => {
+        console.error("[payment request] the history did not load", err);
+        if (!cancelled) setLoaded({ key, items: [], failed: true });
       });
     return () => { cancelled = true; };
-  }, [billId, ref, refreshSignal]);
+  }, [billId, ref, key]);
 
   /** Where the page was scrolled before History opened, so closing it can go back there. */
   const returnScrollRef = useRef<ScrollPosition[] | null>(null);
@@ -387,6 +386,17 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
           {loading ? (
             <div role="status" aria-busy="true" aria-label="Loading history">
               <ActivityHistoryTimelineSkeleton />
+            </div>
+          ) : failed ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center" role="alert">
+              <p className="text-sm text-[#4b5563]">I couldn&apos;t load the history. Mind trying again?</p>
+              <button
+                type="button"
+                onClick={() => setRetryCount((n) => n + 1)}
+                className="min-h-11 cursor-pointer rounded-xl bg-[#54d3da] px-5 text-sm font-medium text-white hover:bg-[#54d3da]/80"
+              >
+                Try again
+              </button>
             </div>
           ) : items.length === 0 ? (
             <div className="flex items-center justify-center py-6 text-sm text-gray-400">No activity yet</div>
