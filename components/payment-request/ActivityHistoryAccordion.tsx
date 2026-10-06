@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchAuditHistory, type AuditItem } from "@/lib/api";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
 import { formatLocalDateForDisplay } from "@/lib/dateDisplayFormat";
@@ -275,6 +275,22 @@ function auditToItem(audit: AuditItem, billRef: string): ActivityHistoryItem {
   };
 }
 
+type ScrollPosition = { el: Element; top: number };
+
+/**
+ * Every element that may scroll the page around `el`, with its offset: the app shell scrolls an
+ * inner container on phones and the document on desktop, so all of them are saved and restored.
+ */
+function scrollPositionsAround(el: HTMLElement): ScrollPosition[] {
+  const out: ScrollPosition[] = [];
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    if (p.scrollHeight > p.clientHeight) out.push({ el: p, top: p.scrollTop });
+  }
+  const doc = document.scrollingElement ?? document.documentElement;
+  if (!out.some((s) => s.el === doc)) out.push({ el: doc, top: doc.scrollTop });
+  return out;
+}
+
 function ActivityHistoryTimelineSkeleton() {
   return (
     <div className="min-h-0 max-h-[min(14rem,38dvh)] overflow-hidden pr-1 sm:max-h-[min(17.5rem,45vh)]">
@@ -306,9 +322,10 @@ function ActivityHistoryTimelineSkeleton() {
 }
 
 export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }: ActivityHistoryAccordionProps) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [items, setItems] = useState<ActivityHistoryItem[]>([]);
   const [loading, setLoading] = useState(() => Boolean(billId));
+  const sectionRef = useRef<HTMLElement>(null);
 
   const ref = billRef || `#${billId.slice(0, 8)}`;
 
@@ -333,27 +350,33 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
     return () => { cancelled = true; };
   }, [billId, ref, refreshSignal]);
 
-  /** Same outer shell as `PaymentRequestDetailedInfo` / `PaymentRequestDetailCardSkeleton` for a uniform detail page. */
-  if (loading) {
-    return (
-      <section
-        className="rounded-xl border border-gray-200/90 bg-white p-4 sm:p-5 md:p-6"
-        role="status"
-        aria-busy="true"
-        aria-label="Loading history"
-      >
-        <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
-          <div className="h-6 w-48 max-w-[75%] animate-pulse rounded-md bg-gray-200" aria-hidden />
-          <div className="h-9 w-9 shrink-0 animate-pulse rounded-md bg-gray-100" aria-hidden />
-        </div>
-        <ActivityHistoryTimelineSkeleton />
-      </section>
-    );
-  }
+  /** Where the page was scrolled before History opened, so closing it can go back there. */
+  const returnScrollRef = useRef<ScrollPosition[] | null>(null);
+
+  /** Starts closed, so this only runs after the user toggles it: opening brings the section into view, closing returns to where the user was. */
+  useEffect(() => {
+    if (open) {
+      window.requestAnimationFrame(() => {
+        sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return;
+    }
+    const back = returnScrollRef.current;
+    if (!back) return;
+    returnScrollRef.current = null;
+    window.requestAnimationFrame(() => {
+      for (const { el, top } of back) el.scrollTo({ top, behavior: "smooth" });
+    });
+  }, [open]);
+
+  const toggle = () => {
+    if (!open && sectionRef.current) returnScrollRef.current = scrollPositionsAround(sectionRef.current);
+    setOpen((v) => !v);
+  };
 
   return (
-    <section className="rounded-xl border border-gray-200/90 bg-white">
-      <button type="button" className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-3 text-left sm:px-5 sm:py-4" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+    <section ref={sectionRef} className="scroll-mt-4 rounded-xl border border-gray-200/90 bg-white">
+      <button type="button" className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-3 text-left sm:px-5 sm:py-4" onClick={toggle} aria-expanded={open}>
         <h2 className="text-base font-semibold text-[#5c5c5c] sm:text-lg">History</h2>
         <span className="material-symbols-outlined text-[#5c5c5c]/70" aria-hidden>
           {open ? "expand_less" : "expand_more"}
@@ -361,7 +384,11 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
       </button>
       {open ? (
         <div className="px-4 pb-5 pt-3 sm:px-5">
-          {items.length === 0 ? (
+          {loading ? (
+            <div role="status" aria-busy="true" aria-label="Loading history">
+              <ActivityHistoryTimelineSkeleton />
+            </div>
+          ) : items.length === 0 ? (
             <div className="flex items-center justify-center py-6 text-sm text-gray-400">No activity yet</div>
           ) : (
             <div
