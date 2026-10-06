@@ -1,11 +1,12 @@
 /**
- * Subscription notice — the one thing this app fetches from Minty directly.
+ * Subscription notice — fetched from minty-subscription-api, the subscription engine.
  *
- * Everything else here goes through the billing backend (`API_BASE`), but
- * subscription state lives only in Minty: the trials, the dunning clock and the
- * billing anchor are all its tables. So this calls Minty's origin, authenticating
- * with the same billing JWT the app already holds — Minty signs it, so Minty can
- * verify it.
+ * Everything else here goes through the payment request API (`API_BASE`), but
+ * subscription state lives only in the subscription engine: the trials, the dunning
+ * clock and the billing anchor are all its. So this calls `SUBSCRIPTION_API_URL`,
+ * authenticating with the same JWT the app already holds — Petty Cash signs it with the
+ * shared key, so the subscription API can verify it. A token that names no company is
+ * held to the caller's membership of the company in the path.
  *
  * Deliberately quiet. A notice is an interruption, not a feature: if the request
  * fails, times out, or the user's token has aged out, the landing page shows
@@ -17,7 +18,7 @@ import {
   isTokenExpiringSoon,
   refreshToken,
 } from "./auth";
-import { resolveMintyModuleUrl } from "./mintyEnv";
+import { env } from "./env";
 
 export type NoticeSeverity = "critical" | "warning" | "info";
 
@@ -91,11 +92,10 @@ export async function fetchSubscriptionNotice(): Promise<SubscriptionNotice | nu
     return null;
   }
 
-  const base = resolveMintyModuleUrl().replace(/\/$/, "");
-  const url = `${base}/api/entity/${encodeURIComponent(auth.entityId)}/subscription-notice`;
+  const url = `${env.SUBSCRIPTION_API_URL}/api/entities/${encodeURIComponent(auth.entityId)}/subscription-notice`;
 
   // The billing JWT lives 30 minutes but its cookie lives 8 hours, so a tab left
-  // open holds a token Minty will reject long before the cookie disappears. Refresh
+  // open holds a token the API will reject long before the cookie disappears. Refresh
   // up front rather than burning the first attempt on a guaranteed 401.
   let token = auth.token;
   if (isTokenExpiringSoon()) {
@@ -110,7 +110,7 @@ export async function fetchSubscriptionNotice(): Promise<SubscriptionNotice | nu
   if (!res) return null;
 
   // One retry behind a refresh: the token may have aged out between the check above
-  // and the request, and Minty is the only judge of that.
+  // and the request, and the API is the only judge of that.
   if (res.status === 401 && (await refreshToken())) {
     const fresh = getAuth()?.token;
     if (fresh) res = (await requestNotice(url, fresh)) ?? res;

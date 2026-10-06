@@ -2,8 +2,8 @@
 
 Nobody signs in here. Minty (Flask) authenticates the person, mints a short-lived JWT and
 sends the browser to this app; everything after that is carrying that token to
-minty-payment-request-api, and — for the subscription notice and the sidebar — straight to Minty and
-minty-subscription-api. The system-wide picture
+minty-payment-request-api, and — for the subscription notice and the sidebar — straight to
+minty-subscription-api and Minty. The system-wide picture
 is `Minty/docs/features/authentication.md`; minty-payment-request-api's verification is
 `minty-payment-request-api/docs/features/authentication.md`.
 
@@ -83,14 +83,16 @@ edit; accountant / admin / super_admin (the *elevated* roles) also record paymen
 return, void and publish. The backend refuses the rest regardless
 (`minty-payment-request-api/core/permissions.py`).
 
-## The subscription notice talks to Minty directly
+## The subscription notice talks to minty-subscription-api directly
 
 The landing page's subscription notice (`lib/subscriptionNotice.ts`,
-`components/SubscriptionNoticeModal.tsx`) fetches Flask's
-`GET /api/entity/<id>/subscription-notice` with the same billing JWT (the origin from
-`PETTY_CASH_URL`, `lib/mintyEnv.ts`): Minty signed it, so Minty verifies it. Two kinds come back, `past_due` and
-`pending_cancel` (no trial kind since 2026-10-01). Its button opens `settings_path` - a Flask path
-with its own query, e.g. `/handoff/minty-web?next=%2Fsubscription%2Fentities%2F<id>%2Fmodules&entity_id=<id>`
+`components/SubscriptionNoticeModal.tsx`) fetches the subscription engine's
+`GET /api/entities/<id>/subscription-notice` (`SUBSCRIPTION_API_URL`, `lib/env.ts`) with the same
+JWT: Minty signed it with the shared key, so the API verifies it, and a token that names no
+company is held to the caller's membership of the company in the path. (Until 2026-10-06 it
+read Flask's `/api/entity/<id>/subscription-notice`, which is deleted.) Two kinds come back,
+`past_due` and `pending_cancel` (no trial kind since 2026-10-01). Its button opens
+`settings_path` - a Flask path with its own query (`/handoff/minty-web?next=<the module page>&entity_id=<id>`)
 - through `/entity/<id>/enter` (`buildMintyEnterUrl`, which URL-encodes it whole as `next`). A
 failed notice shows nothing.
 
