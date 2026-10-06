@@ -959,17 +959,13 @@ export async function logoutSession(): Promise<void> {
 // ── Xero status ──────────────────────────────────────────────────────
 
 /**
- * Returns whether the current user has an active Xero connection.
- * Used to show/hide the Xero connection indicator in the UI.
- * Returns false (not null) on any network or auth failure.
+ * Whether the current company has a live Xero connection (a linked org, not revoked, and a
+ * refresh token on the connector). Payment Request Settings hides its account codes when it
+ * is not. A failed read rejects - it is not "not connected".
  */
 export async function fetchXeroStatus(): Promise<boolean> {
-  try {
-    const data = await apiFetch<{ connected: boolean }>("/auth/xero-status");
-    return data.connected;
-  } catch {
-    return false;
-  }
+  const data = await apiFetch<{ connected: boolean }>("/auth/xero-status");
+  return data.connected;
 }
 
 export function fetchCurrencies(): Promise<CurrencyInfo[]> {

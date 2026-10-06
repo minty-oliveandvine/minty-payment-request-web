@@ -90,6 +90,19 @@ A failed read of the codes says so ("I couldn't load your account codes. Mind re
 page?", logged on the console) instead of "No account codes yet" (fixed 2026-10-01; it was
 swallowed).
 
+### Without a live Xero connection (2026-10-06)
+
+The codes are the company's Xero chart, so the card first asks `GET /api/auth/xero-status`
+(`fetchXeroStatus`, read by `AccountCodeSettings` itself - the page no longer fetches it for the
+header, which never used it). The answer is the **company's** connection, read from the database:
+a Xero org linked, the entity not marked `disconnected`, and a refresh token on the connector (or
+the viewer). It is not live → the card keeps its heading and shows only "Xero isn't connected.
+Connect it in Entity & Integration to set these up." (the link is the pills'
+`integrationTabUrl`). The search, the codes and Save are not shown, and the codes are not read
+(so the read's chart re-sync trigger to Minty doesn't fire either). A failed status read is a
+failed read ("I couldn't load your account codes…"), never "not connected". Minty's Petty Cash
+Settings hides its two Xero cards the same way.
+
 **The header on a phone** (`components/layout/Header.tsx`, fixed 2026-10-01): the company name's
 cap is a plain `max-w-[6.5rem]`, not `max-w-[min(100%,6.5rem)]` - a percentage cap counts as no
 cap while the `shrink-0` block around it is sized, so at 375px a long name made that block 336px

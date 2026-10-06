@@ -50,7 +50,9 @@ export default function Home() {
     const a = getAuth();
     setAuthState(a);
     if (a?.token) {
-      fetchXeroStatus().then(setXeroConnected);
+      fetchXeroStatus()
+        .then(setXeroConnected)
+        .catch((err: unknown) => console.error("[payment requests] the Xero status did not load", err));
     }
   }, []);
 

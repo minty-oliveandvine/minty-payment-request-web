@@ -5,20 +5,15 @@ import { Header } from "@/components/layout";
 import { ModuleGate } from "@/components/ModuleGate";
 import { SettingsContent } from "@/components/settings/SettingsContent";
 import { getAuth, type AuthInfo } from "@/lib/auth";
-import { fetchXeroStatus } from "@/lib/api";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export default function SettingsPage() {
   const [auth, setAuthState] = useState<AuthInfo | null>(null);
-  const [xeroConnected, setXeroConnected] = useState<boolean>(false);
   const pages = useCompanyPages();
 
+  // The Xero status is read by the account-code card, the one part that depends on it.
   useEffect(() => {
-    const a = getAuth();
-    setAuthState(a);
-    if (a?.token) {
-      fetchXeroStatus().then(setXeroConnected);
-    }
+    setAuthState(getAuth());
   }, []);
 
   return (
@@ -30,7 +25,6 @@ export default function SettingsPage() {
         backHref={pages.list}
         backLabel="Payments"
         companyName={auth?.entityName || "Loading…"}
-        xeroConnected={xeroConnected}
         noBorder
       />
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">

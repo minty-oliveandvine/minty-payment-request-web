@@ -27,7 +27,9 @@ export function PaymentRequestDetailPageClient() {
     const a = getAuth();
     setAuth(a);
     if (a?.token) {
-      fetchXeroStatus().then(setXeroConnected);
+      fetchXeroStatus()
+        .then(setXeroConnected)
+        .catch((err: unknown) => console.error("[payment request] the Xero status did not load", err));
     }
   }, []);
 

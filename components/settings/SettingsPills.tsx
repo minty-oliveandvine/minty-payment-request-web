@@ -34,6 +34,10 @@ const pillClass = (isActive: boolean) =>
     isActive ? "bg-secondary font-semibold text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
   }`;
 
+/** Entity & Integration (where Xero is connected) - also the way there from a Xero-less card. */
+export const integrationTabUrl = (module1Url: string, entityId: string) =>
+  `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/integration`;
+
 /**
  * Tabs that redirect to Flask Module 1 rather than staying in this Next.js app.
  * The URL builder receives the entityId stored in the billing auth cookie.
@@ -45,8 +49,7 @@ const FLASK_REDIRECT_TABS: Partial<
   // /entity/<shortid>/<name>/settings/... - this app knows only the id (2026-10-05).
   users: (module1Url, entityId) =>
     `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/users`,
-  xero: (module1Url, entityId) =>
-    `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/integration`,
+  xero: integrationTabUrl,
   entity: (module1Url, entityId) =>
     `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/petty-cash`,
   modules: (module1Url, entityId) =>

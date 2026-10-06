@@ -4,12 +4,12 @@
 // Escape stay. Save itself: off with nothing changed or nothing ticked, and a refusal shown in the
 // server's words.
 //
-// Only the account-code list is stubbed (a fixed list, two of three active, so the saved ticks are
+// Only the Xero status (connected) and the account-code list are stubbed (a fixed list, two of three active, so the saved ticks are
 // known; a PUT answers `run.put`); everything else is the stack. Pages on Flask's origin are answered by a stub page, so
 // Flask need not serve them, and Minty's /logout and the backend's logout call are caught, so no run
 // signs anybody out. The browser's own leave prompt must never fire where our dialog asked.
 import { expect, test, type Dialog, type Page, type Route } from '@playwright/test';
-import { PAYMENT_REQUEST_API_URL, PETTY_CASH_URL, handoff, pagesOf, requireCredentials, requireStack, type Credentials } from './helpers';
+import { PAYMENT_REQUEST_API_URL, PETTY_CASH_URL, cors, handoff, pagesOf, requireCredentials, requireStack, stubXeroStatus, type Credentials } from './helpers';
 
 /** The list and Payment Settings, under the company's address (lib/companyPages.ts). */
 const isList = (u: URL) => /^\/entity\/[0-9a-f]{8}\/[^/]+\/payment-request$/.test(u.pathname);
@@ -25,16 +25,6 @@ const tick = (page: Page, code: string) => {
   const a = ACCOUNTS.find((x) => x.code === code)!;
   return page.getByRole('checkbox', { name: `Include ${a.code} - ${a.name} in payment account dropdown` });
 };
-
-/** The preflight's answer: whatever origin and headers the browser asks for. */
-function cors(route: Route): Record<string, string> {
-  const headers = route.request().headers();
-  return {
-    'access-control-allow-origin': headers['origin'] ?? '*',
-    'access-control-allow-headers': headers['access-control-request-headers'] ?? 'authorization, content-type',
-    'access-control-allow-methods': 'GET, PUT, POST, OPTIONS',
-  };
-}
 
 type Run = {
   creds: Credentials;
@@ -52,6 +42,7 @@ async function arrive(page: Page): Promise<Run> {
     run.prompts.push(d.type());
     void d.dismiss();
   });
+  await stubXeroStatus(page, true);
   await page.route('**/entity-bill-accounts/**', (route: Route) => {
     if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors(route) });
     if (route.request().method() === 'PUT') {

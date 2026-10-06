@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getAuth } from "@/lib/auth";
 import { AccountCodeSettings } from "./AccountCodeSettings";
-import { getSettingsTabFromSearchParams, SETTINGS_TAB_LABELS, SettingsPills } from "./SettingsPills";
+import { getSettingsTabFromSearchParams, integrationTabUrl, SETTINGS_TAB_LABELS, SettingsPills } from "./SettingsPills";
 import { SettingsPlaceholder } from "./SettingsPlaceholder";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
 
@@ -24,7 +24,7 @@ export function SettingsContent() {
         <SettingsPills activeTab={tab} entityId={entityId} module1Url={MINTY_MODULE_URL} />
       </div>
       {tab === "bill" ? (
-        <AccountCodeSettings />
+        <AccountCodeSettings integrationHref={integrationTabUrl(MINTY_MODULE_URL, entityId)} />
       ) : (
         <SettingsPlaceholder title={SETTINGS_TAB_LABELS[tab]} />
       )}
