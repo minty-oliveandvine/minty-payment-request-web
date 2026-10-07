@@ -21,5 +21,6 @@ Email fields take English only (2026-10-01): My Profile's email spreads `useEmai
 outside printable ASCII is dropped once an IME composition ends, and the field says why. Flask
 refuses such an address again on save. See minty-web's `docs/features/README.md`.
 
-Running it and the environment variables: the repo `README.md`. Tests: `npm run test:e2e`
+Running it and the environment variables: the repo `README.md`. Tests: `npm test` (Vitest - unit
+and component, no stack) and `npm run test:e2e`
 (Playwright against a running stack — `e2e/README.md`; the Xero publish needs `E2E_XERO=1`). The cleanse log is in `../code_cleanse/`.

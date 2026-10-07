@@ -12,6 +12,10 @@ import { createHmac } from 'node:crypto';
 import { test, type Page, type Route } from '@playwright/test';
 
 import { companyPages, type CompanyPages } from '../lib/companyPages';
+import { entityBillAccounts } from '../lib/__fixtures__/accounts';
+import { ALL_STATUSES } from '../lib/__fixtures__/bills';
+import type { BillListItem } from '../lib/api';
+import { SUPPLIERS } from '../lib/__fixtures__/contacts';
 
 const b64url = (input: Buffer | string) =>
   Buffer.from(input).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -124,4 +128,160 @@ export function fixtures() {
     /** an expense account code the entity's bill account list carries (429 General Expenses in both) */
     accountCode: env('E2E_BILL_ACCOUNT_CODE', '429'),
   };
+}
+
+// --- stubbed mode -------------------------------------------------------------------------------
+//
+// Four of the specs (08, 11, 12, 13) answer every API call themselves, so they need no Flask, no
+// Django and no Postgres - only `npm run dev`. They still arrive through /landing with a real
+// token shape, because the app reads its claims; nothing verifies the signature on that path, so
+// a stub secret is enough. `STUB_CREDS=1` picks these up when the live E2E_* variables are unset.
+
+const STUB_CREDS: Credentials = {
+  secret: 'stub-nothing-verifies-this',
+  userId: '070b40af-d5fc-4430-8e25-f11b3294d5f5',
+  entityId: '360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f',
+  entityName: 'E2E Petty Cash Shop',
+};
+
+/** The live identity when it is configured, else the stub one. Never skips. */
+export function stubCredentials(): Credentials {
+  return credentials() ?? STUB_CREDS;
+}
+
+/** For a spec that stubs the API: only Next has to be up. */
+export async function requireNextOnly(): Promise<void> {
+  test.skip(
+    !(await reachable((process.env.E2E_BASE_URL || 'http://localhost:3020') + '/landing')),
+    'Next (:3020) is not answering',
+  );
+}
+
+export const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || 'http://localhost:8000';
+
+type Json = unknown;
+
+/** What `stubApi` answers with; every field has a default, so a spec states only what it cares about. */
+export type ApiStub = {
+  bills?: BillListItem[] | ((page: number) => BillListItem[]);
+  xeroConnected?: boolean;
+  entitlements?: { petty_cash_enabled?: boolean; billing_enabled?: boolean };
+  memberEntityIds?: string[];
+  currencyCode?: string;
+  payments?: Json;
+  /** Extra exact-path answers, keyed by a substring of the pathname. Checked before the defaults. */
+  extra?: Record<string, { status?: number; body?: Json }>;
+};
+
+/**
+ * Answer every `/api/v1/**` call from the fixtures rather than from a running backend.
+ *
+ * The bodies come from `lib/__fixtures__/*`, the same modules the Vitest tests use, so a shape
+ * change breaks both layers together. This is the ONLY place the two layers meet: a fixture
+ * never knows about `page.route`, and `cors()` stays here.
+ */
+export async function stubApi(page: Page, stub: ApiStub = {}): Promise<void> {
+  const bills = stub.bills ?? ALL_STATUSES;
+  const answer = (route: Route, body: Json, status = 200) =>
+    route.fulfill({ status, headers: cors(route), contentType: 'application/json', body: JSON.stringify(body) });
+
+  await page.route(`${PAYMENT_REQUEST_API_URL}/api/v1/**`, async (route: Route) => {
+    if (route.request().method() === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: cors(route) });
+    }
+    const url = new URL(route.request().url());
+    const path = url.pathname;
+
+    for (const [fragment, reply] of Object.entries(stub.extra ?? {})) {
+      if (path.includes(fragment)) return answer(route, reply.body ?? {}, reply.status ?? 200);
+    }
+
+    if (path.endsWith('/auth/xero-status')) return answer(route, { connected: stub.xeroConnected ?? true });
+    if (path.endsWith('/auth/entity-currency')) return answer(route, { currency_code: stub.currencyCode ?? 'HKD' });
+    if (path.endsWith('/auth/entitlements')) {
+      return answer(route, { petty_cash_enabled: true, billing_enabled: true, ...stub.entitlements });
+    }
+    if (path.endsWith('/profile/me')) return answer(route, { member_entity_ids: stub.memberEntityIds ?? [] });
+    if (path.endsWith('/entity-bill-contacts/')) return answer(route, SUPPLIERS);
+    if (path.includes('/entity-bill-accounts/')) return answer(route, entityBillAccounts());
+    if (path.endsWith('/audit')) return answer(route, []);
+    if (path.endsWith('/payments')) return answer(route, stub.payments ?? { paid_total: '0.00', payments: [] });
+    if (path.includes('/attachments')) return answer(route, []);
+    if (path.endsWith('/bills/')) {
+      const pageNum = Number(url.searchParams.get('page') ?? '1');
+      const all = typeof bills === 'function' ? bills(pageNum) : pageNum === 1 ? bills : [];
+      // The server's own filters, because the app delegates these three to it rather than
+      // narrowing in the browser: a stub that ignored them would make the filter panel look
+      // like it did nothing.
+      const status = url.searchParams.get('status');
+      const min = url.searchParams.get('amount_min');
+      const max = url.searchParams.get('amount_max');
+      const rows = all.filter((b) => {
+        if (status && b.status !== status) return false;
+        const amount = Number.parseFloat(b.amount || '0');
+        if (min !== null && amount < Number.parseFloat(min)) return false;
+        if (max !== null && amount > Number.parseFloat(max)) return false;
+        return true;
+      });
+      return answer(route, rows);
+    }
+    if (path.includes('/bills/')) {
+      const rows = typeof bills === 'function' ? bills(1) : bills;
+      // `/bills/by-reference/<Payment No.>` is its own lookup: the details address names the
+      // Payment No. and lib/useRequestId.ts resolves it once (2026-10-05).
+      const tail = path.includes('/bills/by-reference/')
+        ? decodeURIComponent(path.split('/bills/by-reference/')[1] ?? '')
+        : decodeURIComponent(path.split('/bills/')[1]?.replace(/\/$/, '') ?? '');
+      const row = rows.find((b) => b.id === tail || b.reference === tail);
+      if (!row) return answer(route, { detail: 'no such bill' }, 404);
+      return answer(route, {
+        ...row,
+        xero_contact_id: '',
+        updated_at: row.created_at,
+        attachments: [],
+        line_items: [],
+      });
+    }
+    return answer(route, {});
+  });
+}
+
+/** Flask's hub surface, which the sidebar reads on every page. */
+export async function stubFlaskHub(page: Page, overrides: Record<string, unknown> = {}): Promise<void> {
+  await page.route(`${PETTY_CASH_URL}/api/me/**`, (route: Route) =>
+    route.request().method() === 'OPTIONS'
+      ? route.fulfill({ status: 204, headers: cors(route) })
+      : route.fulfill({
+          status: 200,
+          headers: cors(route),
+          contentType: 'application/json',
+          body: JSON.stringify({
+            user: { id: 'u1', first_name: 'Olive', last_name: 'Vine', name: 'Olive Vine', initials: 'OV', email: 'olive@minty.test' },
+            entity: null,
+            ...overrides,
+          }),
+        }),
+  );
+}
+
+/** The subscription notice the landing page asks for; `null` means there is nothing to say. */
+export async function stubSubscriptionNotice(page: Page, notice: Json | null): Promise<void> {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/subscription-notice`, (route: Route) =>
+    route.request().method() === 'OPTIONS'
+      ? route.fulfill({ status: 204, headers: cors(route) })
+      : route.fulfill({
+          status: notice === null ? 204 : 200,
+          headers: cors(route),
+          contentType: 'application/json',
+          body: JSON.stringify(notice ?? {}),
+        }),
+  );
+}
+
+/** Nothing spills sideways: the page is never wider than the screen. */
+export async function expectNoSideScroll(page: Page, width: number): Promise<void> {
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  if (scrollWidth > width) {
+    throw new Error(`the page is ${scrollWidth}px wide at a ${width}px viewport`);
+  }
 }

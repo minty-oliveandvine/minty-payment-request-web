@@ -2,12 +2,26 @@
 
 ```bash
 npm install
-npm run test:e2e        # against a stack that is already running
+npm run test:e2e        # everything, against a stack that is already running
+
+# the stubbed half - Next alone, no Flask, no Django, no Postgres:
+npm run dev             # in another terminal
+npx playwright test e2e/08 e2e/11 e2e/12 e2e/13
 ```
 
 Real browser, stack already up (Next :3020 `npm run dev`, minty-payment-request-api :8020, Minty :8010,
 Postgres). Nothing is started here. Specs skip with a reason when a service or the credentials
 are missing.
+
+**Two kinds of spec.** `01`-`07`, `09` and `10` drive the LIVE stack and need the seeded shop.
+`08`, `11`, `12` and `13` answer every `/api/v1/**` call themselves from `lib/__fixtures__/*`
+(`stubApi` in `helpers.ts`) and need only `npm run dev` - those are the ones worth running often,
+and they work on a bare checkout. The fixture modules are the same ones the Vitest tests read, so
+an API-shape change breaks both layers together.
+
+There is also a unit suite: `npm test` (Vitest, no browser, no stack). It covers the pure logic,
+`middleware.ts`, the API client and every component; `npm run test:e2e` is what covers the
+journeys. Report the run time (mm:ss) of every suite with its result.
 
 Why this exists: this app had no tests of any kind, and phase C8 of `docs/modernisation/modernisation_plan.md`
 (in the Minty repo) changes what it renders — `bill_status` (`voided → void`, dead members gone),
@@ -26,6 +40,7 @@ themselves with the shared `SECRET_KEY` (see `e2e/helpers.ts` for why nothing is
 | `E2E_MINTY_ENTITY_NAME` | optional, default `E2E Petty Cash Shop` |
 | `E2E_BASE_URL` / `E2E_PAYMENT_REQUEST_API_URL` / `E2E_PETTY_CASH_URL` | the three hosts; default the local ports (`http://localhost:3020` / `:8020` / `:8010`), set them to the deployed hosts for a run against a deployment. `E2E_PETTY_CASH_URL` must be the Minty origin the Next server itself resolves (`PETTY_CASH_URL`, `lib/env.ts`) - `03` and `05` compare links and redirects against it |
 | `E2E_SUBSCRIPTION_API_URL` | minty-subscription-api, whose `/api/me/subscriptions` `05_sidebar` stubs (default `http://localhost:8000`) |
+| `STUB_CREDS` | `1` makes the stubbed specs (`08`, `11`, `12`, `13`) use a fixed identity when the live `E2E_*` variables are unset. They do it by default anyway - `stubCredentials()` falls back on its own - so this is only for being explicit |
 | `E2E_XERO` | `1` when the e2e entity is connected to a Xero organisation (a Demo Company, linked by hand): `04_xero_publish` runs and the supplier is `ABC Furniture` instead of the seed's placeholder; `E2E_SUPPLIER_QUERY` / `E2E_SUPPLIER` / `E2E_BILL_ACCOUNT_CODE` override the names |
 
 Run the seed in the Minty repo before every run. Never commit any of these values.
@@ -41,6 +56,12 @@ Run the seed in the Minty repo before every run. Never commit any of these value
 | `05_sidebar.spec.ts` | the sidebar copied from minty-web, over a stubbed Flask profile and billing API: initials → My Profile (440 px, plan, role, the overview), ‹ and Escape; the menu's links from here (Settings and Bills = the company's own addresses); a save sends only what changed and the header follows; a refusal in the card; a failed subscriptions read (a 404 too) shows the card's error and Try again re-reads; Logout clears the cookies and leaves for Minty's `/logout` |
 | `06_settings.spec.ts` | Payment Settings: the account-code picker offers the entity's seeded codes |
 | `07_settings_leave.spec.ts` | Payment Settings' "Leave without saving?" (only `**/entity-bill-accounts/**` stubbed; Flask's pages, its `/logout` and the backend's logout call caught): nothing changed leaves at once; a tick held by the back link - Go Back and Escape stay, the tick kept; a Flask pill (a real link) goes after Discard changes with no browser prompt; the sidebar's Settings asks ABOVE the drawer and Discard reloads the saved ticks; Logout asks first and Go Back logs nobody out; the browser's Back asks (Go Back stays, Discard goes to the page before, after a save it leaves without asking); a jump of several entries asks too (Discard goes where it was going, Go Back keeps the sentinel, an earlier entry at the same address counts as a jump); nothing ticked greys Save with "Pick at least one account code."; a 409 PUT shows the server's sentence, ON rows sent before OFF |
+| `08_list_filters.spec.ts` | **stubbed.** The list's own behaviour in table view and easy view: the status tabs, search (contains while typing, exact on submit), the advanced filter by amount and its Reset, a draft abandoned in the filter panel, column sorting both ways, the pager over 24 requests, the Easy view choice remembered across a reload, bulk actions needing at least two rows, and the void confirmation. Plus 360/768/1440 |
+| `09_detail_payments.spec.ts` | **live stack, serial.** A request created through the dialog, opened by its Payment No., part-paid, refused for more than what is left, Full Pay withdrawn once a part payment exists, the payment deleted and the balance rolled back, then voided so the shop is left as it was found |
+| `10_detail_attachments.spec.ts` | **live stack, serial.** A staged attachment surviving a reload (the IndexedDB draft store), the pdf.js preview actually drawing onto a canvas, a second attachment added, a delete asking first, the last attachment refused, a bank slip put on a payment - then the rows it created removed. Plus 360/768/1440 on the request's page |
+| `11_landing_safety.spec.ts` | **Next only.** `/landing` with `next` spelled eight off-site ways (`//evil.com`, `/\evil.com`, a tab, a newline, a CR, an absolute URL, `javascript:`, a bare host) never leaves the app; a same-origin path is honoured; the three cookies read back with `path=/`, eight hours, `SameSite=Lax` and no `Secure` over http; no token at all, and a page with no cookie, leave for Minty |
+| `12_read_only.spec.ts` | **stubbed.** A system superuser on a company they are not a member of: the banner, the list readable, Add Payment dead with its reason, no row offering a payment, the request's Edit dead, Payment Settings' ticks and Save dead. Plus 360/768/1440 |
+| `13_subscription_notice.spec.ts` | **stubbed.** The notice once on the way in, the payer's way to fix it through `/enter`, dismissed and never in the way of the list, NOT shown again on a reload in the same sign-in, shown again under a new `sid`, a failed read showing nothing and blocking nothing, nothing to report not interrupting, and a non-payer told who to ask |
 
 ## Findings the suite records
 

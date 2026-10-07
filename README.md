@@ -41,18 +41,36 @@ unset URL silently means `localhost`. One variable per service, no environment-n
 | `npm run start`     | serve the production build                                                       |
 | `npm run lint`      | eslint                                                                           |
 | `npm run typecheck` | `tsc --noEmit`                                                                   |
+| `npm test`          | Vitest: unit and component tests, no browser and no stack                        |
+| `npm run test:watch`| the same, watching                                                               |
 | `npm run test:e2e`  | Playwright, against a stack that is already running — see [e2e/README.md](e2e/README.md) |
 
 There is no CI in this repo (the two workflows that used to be here targeted branches that no
-longer exist), so a gate is a command somebody runs: `lint`, `typecheck` and `build` before a
-commit, `test:e2e` before a merge.
+longer exist), so a gate is a command somebody runs: `lint`, `typecheck`, `test` and `build`
+before a commit, `test:e2e` before a merge.
 
 ## Testing
 
-The only tests are the Playwright specs in `e2e/`. They need Next, minty-payment-request-api, Minty and
-Postgres all up, mint their own JWT from the shared `SECRET_KEY`, and sign in as the entity
-`Minty/scripts/e2e_seed.py` creates — [e2e/README.md](e2e/README.md) has the variables and
-the reason nothing is bypassed. Specs skip with a reason when a service is missing.
+Two layers.
+
+**`npm test`** — Vitest + jsdom + @testing-library, the same setup `minty-web` and
+`minty-onboarding-web` use. No browser, no stack, a few seconds: the pure modules in `lib/`,
+`middleware.ts` (every redirect rule, including that each one is a 307 and never a 308), the API
+client's error copy against [docs/ERROR_COPY.md](docs/ERROR_COPY.md), and every component up to
+the big screens. Tests live in co-located `__tests__/` folders as `*.test.ts(x)`; `test/` holds
+only the setup. Shared fixtures are typed modules in `lib/__fixtures__/`, read by BOTH layers,
+so an API-shape change breaks them together.
+
+**`npm run test:e2e`** — the Playwright specs in `e2e/`. Half of them (`08`, `11`, `12`, `13`)
+answer every API call themselves and need only `npm run dev`; the rest need Next,
+minty-payment-request-api, Minty and Postgres all up, mint their own JWT from the shared
+`SECRET_KEY`, and sign in as the entity `Minty/scripts/e2e_seed.py` creates —
+[e2e/README.md](e2e/README.md) has the variables and the reason nothing is bypassed. Specs skip
+with a reason when a service is missing.
+
+`*.test.ts(x)` is Vitest and `*.spec.ts` is Playwright. That naming split is the only thing
+keeping the two runners apart, so a new e2e file named `*.test.ts` is collected by Vitest and
+fails about the wrong runner rather than about the code.
 
 ## Before changing anything
 

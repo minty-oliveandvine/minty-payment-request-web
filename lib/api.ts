@@ -83,8 +83,11 @@ const STATUS_FALLBACK_MESSAGES: Record<number, string> = {
 /**
  * True when `detail` is a bare HTTP reason phrase rather than real copy — i.e.
  * `res.statusText` fell through as the fallback and should not reach a user.
+ *
+ * Exported for `lib/__tests__/apiErrors.test.ts`, which checks the four helpers below
+ * against `docs/ERROR_COPY.md` clause by clause. Nothing else imports them.
  */
-function isRawStatusText(message: string, statusText: string): boolean {
+export function isRawStatusText(message: string, statusText: string): boolean {
   return message === statusText || message === "";
 }
 
@@ -93,7 +96,7 @@ function isRawStatusText(message: string, statusText: string): boolean {
  * body, markup, a stack, or a bare identifier like `invalid_state`. Any of
  * these reaching a toast reads as a leak however short they are.
  */
-function readsAsProse(message: string): boolean {
+export function readsAsProse(message: string): boolean {
   const text = message.trim();
   if (!text || text.length > 300) return false;
   if (/[{}[\]<>]/.test(text)) return false;
@@ -112,7 +115,7 @@ function readsAsProse(message: string): boolean {
  * payers, so pydantic entries are reduced to their `msg` and anything still
  * object-shaped is dropped rather than rendered as `[object Object]`.
  */
-function normalizeApiErrorDetail(detail: unknown, fallback: string): string {
+export function normalizeApiErrorDetail(detail: unknown, fallback: string): string {
   if (detail == null || detail === "") return fallback;
   if (typeof detail === "string") return detail;
 
@@ -149,7 +152,7 @@ function normalizeApiErrorDetail(detail: unknown, fallback: string): string {
  * `detail`/`message` when it says something useful, otherwise friendly copy
  * for the status. Falls back to a generic line so no HTTP reason phrase leaks.
  */
-function resolveApiErrorMessage(
+export function resolveApiErrorMessage(
   status: number,
   detail: unknown,
   statusText: string,
