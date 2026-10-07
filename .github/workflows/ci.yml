@@ -1,0 +1,19 @@
+# Types, lint, the unit tests and a production build. The workflow body is shared:
+# minty-oliveandvine/.github -> .github/workflows/next-web.yml
+#
+# Browser tests (npm run test:e2e) need the whole stack and run from Minty's e2e.yml.
+name: ci
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+
+jobs:
+  check:
+    uses: minty-oliveandvine/.github/.github/workflows/next-web.yml@v1
+    with:
+      build-env: |
+        PETTY_CASH_URL=http://localhost:8010
+        PAYMENT_REQUEST_API_URL=http://localhost:8020
+        SUBSCRIPTION_API_URL=http://localhost:8000
