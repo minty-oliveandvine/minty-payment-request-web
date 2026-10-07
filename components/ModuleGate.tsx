@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
-import { getAuth, getRoleFromToken } from "@/lib/auth";
+import { getEntityIdSnapshot, getRoleFromToken } from "@/lib/auth";
 import { useEntitlements } from "@/lib/moduleClaims";
 import { buildMintyEnterUrl, MINTY_MODULE_URL } from "@/lib/mintyUrls";
+import { useClientValue } from "@/lib/useClientValue";
 import { useUserRole } from "@/lib/useUserRole";
 
 /**
@@ -97,10 +98,9 @@ export function ModuleNotActive({
   const inactive = variant === "module";
   const title = inactive ? "Module not active" : "Access Denied";
 
-  // Cookies are client-only; read after mount like every other page here, so the server
-  // and first client render agree.
-  const [entityId, setEntityId] = useState<string>("");
-  useEffect(() => setEntityId(getAuth()?.entityId ?? ""), []);
+  // Cookies are client-only; read through useClientValue like every other page here, so the
+  // server and first client render agree.
+  const entityId = useClientValue(getEntityIdSnapshot, "");
 
   // Minty offers the subscription link only when the reader could actually open it —
   // `MODULE_VIEW` starts at CASHIER, so any member qualifies, and an unqualified link
@@ -216,21 +216,16 @@ export function ModuleGate({ children }: { children: ReactNode }) {
   // subscription page would refuse them too and sending them there is a dead end.
   //
   // The role claim answers it: Minty stamps "" for a user with no `user_entity` row (see
-  // `_resolve_user_entity_role`). Read after mount rather than during render — it comes
-  // from a cookie, and reading cookies while rendering makes the server and client
+  // `_resolve_user_entity_role`). Read through useClientValue rather than during render — it
+  // comes from a cookie, and reading cookies while rendering makes the server and client
   // disagree.
   //
-  // `resolved` exists because "not read yet" and "no role" are otherwise the same value,
-  // and guessing between them for one frame shows the wrong refusal to the wrong person.
-  const [access, setAccess] = useState<{ resolved: boolean; member: boolean }>({
-    resolved: false,
-    member: false,
-  });
-  useEffect(() => {
-    setAccess({ resolved: true, member: Boolean((getRoleFromToken() ?? "").trim()) });
-  }, []);
+  // `undefined` is the server snapshot and means "not read yet", which is NOT the same as the
+  // `null` / "" the token carries for no role: guessing between them for one frame shows the
+  // wrong refusal to the wrong person.
+  const role = useClientValue<string | null | undefined>(getRoleFromToken, undefined);
 
   if (billingEnabled) return <>{children}</>;
-  if (!access.resolved) return null;
-  return <ModuleNotActive variant={access.member ? "module" : "permission"} />;
+  if (role === undefined) return null;
+  return <ModuleNotActive variant={(role ?? "").trim() ? "module" : "permission"} />;
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { decodeJwtPayload, getAuth } from "./auth";
+import { decodeJwtPayload, getAuthSnapshot, getEntityIdSnapshot } from "./auth";
+import { useClientValue } from "./useClientValue";
 import { API_BASE } from "./apiBase";
 
 const ALL_BILL_ROLES = new Set(["cashier", "shop_manager", "accountant", "admin", "super_admin"]);
@@ -22,15 +23,17 @@ type JwtClaims = {
  * computes it correctly per-entity (system superuser AND no UserEntity row),
  * so the frontend should trust it rather than re-deriving from system_role.
  */
+const EMPTY_CLAIMS: JwtClaims = {
+  role: "",
+  systemRole: "",
+  isViewOnly: null,
+  isSystemSuperuser: false,
+};
+
 function getPermissionClaims(): JwtClaims {
-  const empty: JwtClaims = {
-    role: "",
-    systemRole: "",
-    isViewOnly: null,
-    isSystemSuperuser: false,
-  };
+  const empty = EMPTY_CLAIMS;
   try {
-    const auth = getAuth();
+    const auth = getAuthSnapshot();
     if (!auth?.token) return empty;
     const payload = decodeJwtPayload(auth.token);
     if (!payload) return empty;
@@ -47,6 +50,23 @@ function getPermissionClaims(): JwtClaims {
   } catch {
     return empty;
   }
+}
+
+/**
+ * `getPermissionClaims()` built for `useClientValue`: cached on the token, so repeated reads
+ * return the same object and React's snapshot comparison has something stable to compare.
+ * The claims derive from nothing but the token, so the token is the whole cache key.
+ */
+let claimsForToken: string | null = null;
+let parsedClaims: JwtClaims = EMPTY_CLAIMS;
+
+function getPermissionClaimsSnapshot(): JwtClaims {
+  const token = getAuthSnapshot()?.token ?? "";
+  if (token !== claimsForToken) {
+    claimsForToken = token;
+    parsedClaims = getPermissionClaims();
+  }
+  return parsedClaims;
 }
 
 export type UserRoleInfo = {
@@ -91,44 +111,42 @@ export type UserRoleInfo = {
  * `false`, `false`, `false`) until the JWT is available.
  */
 export function useUserRole(): UserRoleInfo {
-  const [role, setRole] = useState<string | null>(null);
-  const [systemRole, setSystemRole] = useState<string>("");
-  const [tokenIsViewOnly, setTokenIsViewOnly] = useState<boolean | null>(null);
-  const [currentEntityId, setCurrentEntityId] = useState<string>("");
+  // The token and the cookie are client-only, so both are read through useClientValue: neutral
+  // on the server and at hydration, the real claims once mounted.
+  const claims = useClientValue(getPermissionClaimsSnapshot, EMPTY_CLAIMS);
+  const role = claims.role || null;
+  const systemRole = claims.systemRole;
+  const tokenIsViewOnly = claims.isViewOnly;
+  const currentEntityId = useClientValue(getEntityIdSnapshot, "");
+
   const [memberEntityIds, setMemberEntityIds] = useState<string[]>([]);
 
+  // Fetch member_entity_ids only for system superusers — this determines
+  // whether they are in read-only mode for entities other than the current
+  // one (e.g. the bill detail page that loads after navigating in).
+  //
+  // Keyed on the claims rather than on mount: at hydration `systemRole` is still "" and there is
+  // nothing to ask for, so the fetch fires on the render that first carries the real token.
   useEffect(() => {
-    const claims = getPermissionClaims();
-    setRole(claims.role || null);
-    setSystemRole(claims.systemRole);
-    setTokenIsViewOnly(claims.isViewOnly);
-
-    const auth = getAuth();
-    setCurrentEntityId(auth?.entityId ?? "");
-
-    // Fetch member_entity_ids only for system superusers — this determines
-    // whether they are in read-only mode for entities other than the current
-    // one (e.g. the bill detail page that loads after navigating in).
-    if (claims.systemRole.trim().toLowerCase() === "superuser") {
-      if (auth?.token) {
-        fetch(`${API_BASE}/api/v1/profile/me`, {
-          headers: {
-            Authorization: `Bearer ${auth.token}`,
-            "X-Entity-Id": auth.entityId,
-          },
-        })
-          .then((res) => (res.ok ? res.json() : null))
-          .then((data: { member_entity_ids?: string[] } | null) => {
-            if (data?.member_entity_ids) {
-              setMemberEntityIds(data.member_entity_ids);
-            }
-          })
-          .catch(() => {
-            // Non-fatal: fall back to empty list (most-restrictive behaviour).
-          });
-      }
-    }
-  }, []);
+    if (systemRole.trim().toLowerCase() !== "superuser") return;
+    const auth = getAuthSnapshot();
+    if (!auth?.token) return;
+    fetch(`${API_BASE}/api/v1/profile/me`, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+        "X-Entity-Id": auth.entityId,
+      },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { member_entity_ids?: string[] } | null) => {
+        if (data?.member_entity_ids) {
+          setMemberEntityIds(data.member_entity_ids);
+        }
+      })
+      .catch(() => {
+        // Non-fatal: fall back to empty list (most-restrictive behaviour).
+      });
+  }, [systemRole, currentEntityId]);
 
   const normalized = (role ?? "").trim().toLowerCase().replace(/ /g, "_").replace(/-/g, "_");
   const normalizedSystemRole = systemRole.trim().toLowerCase();

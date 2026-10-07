@@ -184,14 +184,25 @@ export function InvoiceAttachmentPreview({
     [selectedIndices, onSelectedIndicesChange],
   );
 
+  // Leaving edit mode ends the selection.
+  //
+  // For the selection this component owns, that adjustment happens DURING RENDER with the
+  // previous value remembered - React's documented alternative to an effect that corrects state
+  // after the fact. It costs no extra commit and leaves no frame in which the selection is stale.
+  const [selectionEditMode, setSelectionEditMode] = useState(editMode);
+  if (editMode !== selectionEditMode) {
+    setSelectionEditMode(editMode);
+    if (!editMode && internalSelected.size > 0) setInternalSelected(new Set());
+  }
+
+  // When the selection is the PARENT's (the only way this is used in the app), it can only be
+  // asked to clear, which is a side effect on somebody else and so belongs in an effect.
   useEffect(() => {
     if (editMode) return;
-    if (selectedIndices && onSelectedIndicesChange) {
-      if (selectedIndices.length > 0) onSelectedIndicesChange([]);
-      return;
+    if (selectedIndices && onSelectedIndicesChange && selectedIndices.length > 0) {
+      onSelectedIndicesChange([]);
     }
-    setInternalSelected((prev) => (prev.size > 0 ? new Set() : prev));
-  }, [editMode, selectedIndices?.length, onSelectedIndicesChange]);
+  }, [editMode, selectedIndices, onSelectedIndicesChange]);
 
   const getDistance = (a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) =>
     Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);

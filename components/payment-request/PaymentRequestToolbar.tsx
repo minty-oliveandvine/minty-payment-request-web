@@ -136,16 +136,22 @@ export function PaymentRequestToolbar({
   /** The date range applies to whichever field Date Type names. */
   const dateRangeNoun = dateType === "Submitted Date" ? "Submitted" : "Invoice";
 
-  /** When the filter panel opens, show the last saved filters (discard any unsaved draft from a previous close). */
-  useEffect(() => {
-    if (!filterOpen) return;
+  /**
+   * When the filter panel opens, show the last saved filters (discard any unsaved draft from a
+   * previous close).
+   *
+   * Called from the handler that opens the panel rather than from an effect watching `filterOpen`:
+   * seeding the draft is a consequence of that click, not of the render that follows it. ("Reset"
+   * keeps the panel open and sets the draft itself, so it does not go through here.)
+   */
+  const seedFilterDraftFromApplied = () => {
     setMinAmount(appliedMinAmount ?? "");
     setMaxAmount(appliedMaxAmount ?? "");
     setDateType(appliedDateType || DEFAULT_FILTER_DATE_TYPE);
     setStartDate(appliedStartDate ?? "");
     setEndDate(appliedEndDate ?? "");
     setXeroStatus(appliedXeroStatus ?? "");
-  }, [filterOpen, appliedMinAmount, appliedMaxAmount, appliedDateType, appliedStartDate, appliedEndDate, appliedXeroStatus]);
+  };
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -190,8 +196,15 @@ export function PaymentRequestToolbar({
     };
   }, [filterOpen]);
 
+  // Whether the bulk menu is actually open: derived, not stored. Losing the selection disables
+  // bulk actions, and the menu must not be open then - which used to be an effect that closed it
+  // after the fact. Deriving it means there is no moment where the two disagree, and the stale
+  // `bulkOpen` behind it is harmless because nothing reads it directly (toggleBulkMenu already
+  // refuses while disabled).
+  const bulkMenuOpen = bulkOpen && bulkActionsEnabled;
+
   useEffect(() => {
-    if (!bulkOpen) return;
+    if (!bulkMenuOpen) return;
     const handlePointerDown = (event: MouseEvent) => {
       const t = event.target;
       if (bulkWrapRef.current?.contains(t as Node)) return;
@@ -219,7 +232,7 @@ export function PaymentRequestToolbar({
       window.removeEventListener("resize", onResizeOrScroll);
       window.removeEventListener("scroll", onResizeOrScroll, true);
     };
-  }, [bulkOpen]);
+  }, [bulkMenuOpen]);
 
   useEffect(() => {
     if (!statusOpen) return;
@@ -252,12 +265,6 @@ export function PaymentRequestToolbar({
     };
   }, [statusOpen]);
 
-  useEffect(() => {
-    if (!bulkActionsEnabled && bulkOpen) {
-      setBulkOpen(false);
-      setBulkMenu(null);
-    }
-  }, [bulkActionsEnabled, bulkOpen]);
 
   const toggleBulkMenu = (trigger: HTMLButtonElement) => {
     if (!bulkActionsEnabled) return;
@@ -303,6 +310,7 @@ export function PaymentRequestToolbar({
   };
 
   const toggleFilterMenu = (trigger: HTMLButtonElement) => {
+    if (!filterOpen) seedFilterDraftFromApplied();
     setFilterOpen((open) => {
       if (open) {
         setFilterMenu(null);
@@ -531,8 +539,8 @@ export function PaymentRequestToolbar({
               : null}
           </div>
           <div ref={bulkWrapRef} className="relative hidden sm:block">
-            <button ref={bulkButtonRef} type="button" aria-label={bulkSelectedCount > 0 ? `Bulk actions, ${bulkSelectedCount} selected` : "Bulk actions"} aria-expanded={bulkOpen ? "true" : "false"} aria-haspopup="menu" disabled={!bulkActionsEnabled} onClick={() => { if (!bulkButtonRef.current) return; toggleBulkMenu(bulkButtonRef.current); }} className={`box-border inline-flex h-11 min-h-[44px] items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:h-[42px] sm:min-h-[42px] sm:px-4 ${bulkActionsEnabled ? "cursor-pointer border-primary/25 text-primary hover:bg-primary/10" : "cursor-not-allowed border-primary/20 bg-[#F5F5F5] text-primary/45"}`}>{bulkSelectedCount > 0 ? `Bulk Actions (${bulkSelectedCount})` : "Bulk Actions"}</button>
-            {bulkOpen && bulkMenu && bulkActionsEnabled && typeof document !== "undefined"
+            <button ref={bulkButtonRef} type="button" aria-label={bulkSelectedCount > 0 ? `Bulk actions, ${bulkSelectedCount} selected` : "Bulk actions"} aria-expanded={bulkMenuOpen ? "true" : "false"} aria-haspopup="menu" disabled={!bulkActionsEnabled} onClick={() => { if (!bulkButtonRef.current) return; toggleBulkMenu(bulkButtonRef.current); }} className={`box-border inline-flex h-11 min-h-[44px] items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:h-[42px] sm:min-h-[42px] sm:px-4 ${bulkActionsEnabled ? "cursor-pointer border-primary/25 text-primary hover:bg-primary/10" : "cursor-not-allowed border-primary/20 bg-[#F5F5F5] text-primary/45"}`}>{bulkSelectedCount > 0 ? `Bulk Actions (${bulkSelectedCount})` : "Bulk Actions"}</button>
+            {bulkMenuOpen && bulkMenu && typeof document !== "undefined"
               ? createPortal(
                   <div data-bulk-menu-panel role="menu" aria-label="Bulk actions" className="fixed z-[400] rounded-lg border border-gray-200 bg-white py-1 shadow-lg" style={{ top: bulkMenu.top, left: bulkMenu.left, minWidth: bulkMenu.minWidth }}>
                     {!isViewOnly && canPublish ? (

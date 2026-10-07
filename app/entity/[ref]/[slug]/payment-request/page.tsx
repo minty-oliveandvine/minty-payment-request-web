@@ -1,11 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { EasyViewToggle, Header } from "@/components/layout";
 import { PaymentRequestView } from "@/components/payment-request";
 import { ModuleGate } from "@/components/ModuleGate";
 import { SubscriptionNoticeModal } from "@/components/SubscriptionNoticeModal";
-import { getAuth, type AuthInfo } from "@/lib/auth";
+import { getAuthSnapshot } from "@/lib/auth";
+import {
+  getEasyViewServerSnapshot,
+  getEasyViewSnapshot,
+  setEasyView,
+  subscribeEasyView,
+} from "@/lib/easyViewStore";
+import { useClientValue } from "@/lib/useClientValue";
 import { fetchXeroStatus } from "@/lib/api";
 import {
   claimSubscriptionNotice,
@@ -13,48 +20,26 @@ import {
   type SubscriptionNotice,
 } from "@/lib/subscriptionNotice";
 
-const EASY_VIEW_STORAGE_KEY = "payment-request-easy-view";
-
-function readStoredEasyView(): boolean | null {
-  try {
-    const raw = localStorage.getItem(EASY_VIEW_STORAGE_KEY);
-    if (raw === "0" || raw === "false") return false;
-    if (raw === "1" || raw === "true") return true;
-  } catch {
-    /* private mode / unavailable */
-  }
-  return null;
-}
-
 export default function Home() {
-  const [auth, setAuthState] = useState<AuthInfo | null>(null);
+  // Both come from the browser, so both are read as snapshots rather than seeded by an effect:
+  // the cookie never changes under us, the Easy View preference does (the toggle writes it), so
+  // only that one has a store with a subscribe.
+  const auth = useClientValue(getAuthSnapshot, null);
+  const easyView = useSyncExternalStore(
+    subscribeEasyView,
+    getEasyViewSnapshot,
+    getEasyViewServerSnapshot,
+  );
+
   const [xeroConnected, setXeroConnected] = useState<boolean>(false);
-  const [easyView, setEasyViewState] = useState(true);
   const [notice, setNotice] = useState<SubscriptionNotice | null>(null);
 
   useEffect(() => {
-    const stored = readStoredEasyView();
-    if (stored !== null) setEasyViewState(stored);
-  }, []);
-
-  const setEasyView = useCallback((next: boolean) => {
-    setEasyViewState(next);
-    try {
-      localStorage.setItem(EASY_VIEW_STORAGE_KEY, next ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    const a = getAuth();
-    setAuthState(a);
-    if (a?.token) {
-      fetchXeroStatus()
-        .then(setXeroConnected)
-        .catch((err: unknown) => console.error("[payment requests] the Xero status did not load", err));
-    }
-  }, []);
+    if (!auth?.token) return;
+    fetchXeroStatus()
+      .then(setXeroConnected)
+      .catch((err: unknown) => console.error("[payment requests] the Xero status did not load", err));
+  }, [auth?.token]);
 
   // Subscription notice — once per entity per session, so the claim is checked
   // before the request is made rather than after. Never blocks or breaks the page:
@@ -67,16 +52,17 @@ export default function Home() {
   // away the only result and the modal never appeared. Guarding on a ref instead
   // means the work happens exactly once and its result always lands; the ref
   // survives the simulated remount, so this cannot double-fetch either.
+  // It also covers the hydration step now that `auth` is a snapshot rather than effect state:
+  // this runs once with no token (nothing to do) and again on the render that carries it.
   const noticeStarted = useRef(false);
   useEffect(() => {
     if (noticeStarted.current) return;
-    const a = getAuth();
-    if (!a?.token || !a.entityId) return;
-    if (!claimSubscriptionNotice(a.entityId)) return;
+    if (!auth?.token || !auth.entityId) return;
+    if (!claimSubscriptionNotice(auth.entityId)) return;
 
     noticeStarted.current = true;
     fetchSubscriptionNotice().then((n) => setNotice(n));
-  }, []);
+  }, [auth?.token, auth?.entityId]);
 
   return (
     <ModuleGate>

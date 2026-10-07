@@ -5,8 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Header } from "@/components/layout";
 import { PaymentRequestDetailSkeleton } from "@/components/payment-request/PaymentRequestDetailSkeleton";
 import { PaymentRequestDetailStatusBadge } from "@/components/payment-request/PaymentRequestDetailStatusBadge";
-import { getAuth, type AuthInfo } from "@/lib/auth";
+import { getAuthSnapshot } from "@/lib/auth";
 import { fetchXeroStatus } from "@/lib/api";
+import { useClientValue } from "@/lib/useClientValue";
 import { useUserRole } from "@/lib/useUserRole";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
@@ -16,7 +17,8 @@ const PaymentRequestDetailBody = dynamic(
 );
 
 export function PaymentRequestDetailPageClient() {
-  const [auth, setAuth] = useState<AuthInfo | null>(null);
+  // The cookie is client-only: "" on the server and at hydration, the real company once mounted.
+  const auth = useClientValue(getAuthSnapshot, null);
   const [xeroConnected, setXeroConnected] = useState<boolean>(false);
   const [billStatusRefresh, setBillStatusRefresh] = useState(0);
   const bumpBillStatusInHeader = useCallback(() => setBillStatusRefresh((n) => n + 1), []);
@@ -24,14 +26,11 @@ export function PaymentRequestDetailPageClient() {
   const pages = useCompanyPages();
 
   useEffect(() => {
-    const a = getAuth();
-    setAuth(a);
-    if (a?.token) {
-      fetchXeroStatus()
-        .then(setXeroConnected)
-        .catch((err: unknown) => console.error("[payment request] the Xero status did not load", err));
-    }
-  }, []);
+    if (!auth?.token) return;
+    fetchXeroStatus()
+      .then(setXeroConnected)
+      .catch((err: unknown) => console.error("[payment request] the Xero status did not load", err));
+  }, [auth?.token]);
 
   const showReadOnlyBanner = isViewOnly && isReadOnly(auth?.entityId ?? "");
 

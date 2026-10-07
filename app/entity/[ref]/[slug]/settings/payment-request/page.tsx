@@ -1,20 +1,17 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import { Header } from "@/components/layout";
 import { ModuleGate } from "@/components/ModuleGate";
 import { SettingsContent } from "@/components/settings/SettingsContent";
-import { getAuth, type AuthInfo } from "@/lib/auth";
+import { getAuthSnapshot } from "@/lib/auth";
+import { useClientValue } from "@/lib/useClientValue";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export default function SettingsPage() {
-  const [auth, setAuthState] = useState<AuthInfo | null>(null);
-  const pages = useCompanyPages();
-
   // The Xero status is read by the account-code card, the one part that depends on it.
-  useEffect(() => {
-    setAuthState(getAuth());
-  }, []);
+  const auth = useClientValue(getAuthSnapshot, null);
+  const pages = useCompanyPages();
 
   return (
     <ModuleGate>

@@ -41,6 +41,33 @@ export function getAuth(): AuthInfo | null {
   };
 }
 
+/**
+ * The same read as `getAuth()`, but referentially stable while the cookies are unchanged.
+ *
+ * `getAuth()` parses the jar on every call and returns a FRESH object. That is fine for a one-off
+ * read, and unusable as a `useSyncExternalStore` snapshot: React compares snapshots by identity,
+ * so a new object every call loops forever. Caching on the raw cookie string keeps the identity
+ * stable and still notices `setAuth()` / `clearAuth()` / a cookie expiring.
+ *
+ * See `useClientValue` for why components read auth this way rather than in an effect.
+ */
+let cookieJarAtParse: string | null = null;
+let parsedAuth: AuthInfo | null = null;
+
+export function getAuthSnapshot(): AuthInfo | null {
+  if (typeof document === "undefined") return null;
+  if (document.cookie !== cookieJarAtParse) {
+    cookieJarAtParse = document.cookie;
+    parsedAuth = getAuth();
+  }
+  return parsedAuth;
+}
+
+/** `getAuthSnapshot()?.entityId ?? ""`, as a standalone snapshot for the components that only want it. */
+export function getEntityIdSnapshot(): string {
+  return getAuthSnapshot()?.entityId ?? "";
+}
+
 export function clearAuth() {
   const expire = "path=/;max-age=0";
   document.cookie = `${TOKEN_KEY}=;${expire}`;

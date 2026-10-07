@@ -132,6 +132,30 @@ function isHtmlName(name: string): boolean {
   return ext === "html" || ext === "htm";
 }
 
+/**
+ * What makes a previewed file a DIFFERENT file.
+ *
+ * Both preview components hold state about the file in front of them - a load/ready/error state
+ * and a resolved size - and both used to clear it in an effect when the props changed. React's
+ * answer for "reset all state when the identity changes" is a `key`: remounting starts the state
+ * at its initial value, with no setState inside an effect and no frame showing the previous
+ * file's size next to this file's name.
+ */
+function previewIdentity(
+  fileName: string,
+  previewUrl?: string,
+  fetchSource?: BankSlipFileFetchSource,
+): string {
+  return [
+    fileName,
+    previewUrl ?? "",
+    fetchSource?.billId ?? "",
+    fetchSource?.paymentId ?? "",
+    fetchSource?.attachmentId ?? "",
+    fetchSource?.fileAttachmentId ?? "",
+  ].join("|");
+}
+
 function PreviewContent({
   fileName,
   previewUrl,
@@ -149,6 +173,7 @@ function PreviewContent({
   if (fetchSource) {
     return (
       <FetchedPreviewContent
+        key={previewIdentity(fileName, previewUrl, fetchSource)}
         fileName={fileName}
         source={fetchSource}
         onResolvedFileSize={onResolvedFileSize}
@@ -218,10 +243,11 @@ function FetchedPreviewContent({
     | { status: "error" }
   >({ status: "loading" });
 
+  // No reset here: the parent keys this component on the file's identity (see previewIdentity),
+  // so a different file is a fresh mount whose state already starts at "loading".
   useEffect(() => {
     let cancelled = false;
     const blobObjectUrlRef: { current: string | null } = { current: null };
-    setState({ status: "loading" });
     (async () => {
       try {
         const preview = await fetchPaymentAttachmentPreview(
@@ -383,17 +409,9 @@ function ViewBankSlipInlinePreview({
   previewSubtitleId: string;
   fileSizeBytes?: number;
 }) {
+  // Keyed on the file's identity by the caller (see previewIdentity), so this starts empty for
+  // every new file rather than being cleared in an effect.
   const [fetchedSize, setFetchedSize] = useState<number | undefined>(undefined);
-  useEffect(() => {
-    setFetchedSize(undefined);
-  }, [
-    fileName,
-    previewUrl,
-    fetchSource?.billId,
-    fetchSource?.paymentId,
-    fetchSource?.attachmentId,
-    fetchSource?.fileAttachmentId,
-  ]);
 
   const displayBytes =
     fileSizeBytes != null && Number.isFinite(fileSizeBytes) && fileSizeBytes >= 0
@@ -800,6 +818,11 @@ export function BankSlipDetailsModal({
                 </div>
               ) : selectedEntry ? (
                 <ViewBankSlipInlinePreview
+                  key={previewIdentity(
+                    selectedEntry.name,
+                    selectedEntry.previewUrl,
+                    selectedEntry.fetchSource,
+                  )}
                   fileName={selectedEntry.name}
                   previewUrl={selectedEntry.previewUrl}
                   fetchSource={selectedEntry.fetchSource}

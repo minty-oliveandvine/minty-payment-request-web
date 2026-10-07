@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getAuth } from "@/lib/auth";
+import { getEntityIdSnapshot } from "@/lib/auth";
+import { useClientValue } from "@/lib/useClientValue";
 import { AccountCodeSettings } from "./AccountCodeSettings";
 import { getSettingsTabFromSearchParams, integrationTabUrl, SETTINGS_TAB_LABELS, SettingsPills } from "./SettingsPills";
 import { SettingsPlaceholder } from "./SettingsPlaceholder";
@@ -11,12 +11,9 @@ import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
 export function SettingsContent() {
   const searchParams = useSearchParams();
   const tab = getSettingsTabFromSearchParams(searchParams.get("tab"));
-  const [entityId, setEntityId] = useState("");
-
-  useEffect(() => {
-    const auth = getAuth();
-    if (auth?.entityId) setEntityId(auth.entityId);
-  }, []);
+  // Cookies are client-only, so this is read through useClientValue: "" on the server and at
+  // hydration, the real company once mounted.
+  const entityId = useClientValue(getEntityIdSnapshot, "");
 
   return (
     <div className="mx-auto w-full max-w-[1024px] px-4 sm:px-6">
