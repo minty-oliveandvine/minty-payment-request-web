@@ -31,6 +31,8 @@ type ThemedSelectProps = {
   /** Centers the selected value in the trigger (short values like a page size). */
   centerValue?: boolean;
   error?: boolean;
+  /** Mandatory: announced here, since the label's red asterisk is aria-hidden. */
+  required?: boolean;
   disabled?: boolean;
   /** Typable combobox: filter options as you type (e.g. long account code lists). */
   searchable?: boolean;
@@ -50,6 +52,7 @@ export function ThemedSelect({
   plainChevron = false,
   centerValue = false,
   error = false,
+  required = false,
   disabled = false,
   searchable = false,
 }: ThemedSelectProps) {
@@ -280,6 +283,7 @@ export function ThemedSelect({
               aria-autocomplete="list"
               aria-label={ariaLabel}
               aria-invalid={error}
+          aria-required={required || undefined}
               autoComplete="off"
               disabled={disabled}
               placeholder={placeholder}
@@ -310,6 +314,7 @@ export function ThemedSelect({
                 aria-autocomplete="list"
                 aria-label={ariaLabel}
                 aria-invalid={error}
+          aria-required={required || undefined}
                 autoComplete="off"
                 disabled={disabled}
                 placeholder={placeholder}
@@ -343,6 +348,7 @@ export function ThemedSelect({
           aria-controls={isOpen ? listboxId : undefined}
           aria-label={ariaLabel}
           aria-invalid={error}
+          aria-required={required || undefined}
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((o) => !o)}
           className={`${uniformBase} ${triggerClassName}`}
@@ -359,6 +365,7 @@ export function ThemedSelect({
           aria-controls={isOpen ? listboxId : undefined}
           aria-label={ariaLabel}
           aria-invalid={error}
+          aria-required={required || undefined}
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((o) => !o)}
           className={`${splitBase} ${triggerClassName}`}

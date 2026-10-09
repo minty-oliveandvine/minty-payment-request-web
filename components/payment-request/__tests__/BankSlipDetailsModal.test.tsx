@@ -6,7 +6,7 @@
 // needs the dialog mounted, but it proves the same two rules (newest pending, else newest
 // settled) through the thing that actually matters, which payment the file lands on.
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -100,6 +100,9 @@ const show = (props: Partial<Props> = {}) =>
 const dialog = () => screen.getAllByRole("dialog")[0];
 const uploadButton = () => within(dialog()).getByRole("button", { name: /^Upload/ });
 const filePicker = () => within(dialog()).getByLabelText("Choose bank slips to attach");
+/** The dashed box behind the (invisible, overlaid) file input. */
+const dropZone = () => filePicker().parentElement!.querySelector(".border-dashed") as HTMLElement;
+
 const slip = (name = "slip.pdf") => new File(["%PDF-1.4"], name, { type: "application/pdf" });
 const attachmentPosts = (calls: Call[]) =>
   calls.filter((c) => c.method === "POST" && c.path.includes("/attachments"));
@@ -215,6 +218,60 @@ describe("staging a slip to upload", () => {
     await userEvent.click(within(dialog()).getByRole("button", { name: "Remove slip.pdf" }));
 
     expect(uploadButton()).toBeDisabled();
+  });
+});
+
+// The upload is mandatory when this dialog is taking one - but NOT when it is only listing
+// slips a payment already has, which is why the marker is conditional.
+describe("saying a slip is needed", () => {
+  it("marks the upload mandatory and says so to a reader", () => {
+    show({ inlineUploadBillContext: { billId: BILL_ID } });
+
+    expect(within(dialog()).getByText(/Uploaded files/)).toHaveTextContent("*");
+    expect(filePicker()).toHaveAttribute("aria-required", "true");
+  });
+
+  it("does not claim anything is mandatory when it is only showing saved slips", () => {
+    show({ details: { ...DETAILS, files: [{ id: "f1", name: "paid.png" }] } });
+
+    expect(within(dialog()).getByText(/Uploaded files/)).not.toHaveTextContent("*");
+  });
+
+  it("red-lines the drop zone when the file it was handed is refused", async () => {
+    // Pressing Upload with nothing staged is not reachable - the button is disabled until a
+    // file is staged (see "has nothing to upload until a file is chosen"), so the "I need at
+    // least one bank slip" guard in handleCommitInlineUpload is belt-and-braces. A REFUSED
+    // file is the path that actually leaves this dialog with an error and nothing staged.
+    show({ inlineUploadBillContext: { billId: BILL_ID } });
+    expect(dropZone()).toHaveClass("border-gray-300");
+
+    const input = filePicker() as HTMLInputElement;
+    Object.defineProperty(input, "files", {
+      value: [new File(["x"], "books.xlsx", { type: "application/vnd.ms-excel" })],
+      configurable: true,
+    });
+    fireEvent.change(input);
+
+    await waitFor(() => expect(dropZone()).toHaveClass("border-red-500"));
+    expect(filePicker()).toHaveAttribute("aria-invalid", "true");
+    expect(uploadButton()).toBeDisabled();
+  });
+
+  it("blames the server, not the drop zone, when the upload itself fails", async () => {
+    // The files ARE staged, so this is not a "you forgot something" state and the box
+    // must stay neutral - otherwise a failed POST looks like the user's mistake.
+    serve({
+      payments: [payment({ id: "p-done", bill_id: BILL_ID, payment_status: "completed" })],
+      upload: () => answer(413, { detail: "Files need to be under 10MB." }),
+    });
+    show({ inlineUploadBillContext: { billId: BILL_ID } });
+    await userEvent.upload(filePicker(), slip());
+
+    await userEvent.click(uploadButton());
+
+    expect(await within(dialog()).findByText("Files need to be under 10MB.")).toBeInTheDocument();
+    expect(dropZone()).toHaveClass("border-gray-300");
+    expect(filePicker()).not.toHaveAttribute("aria-invalid");
   });
 });
 

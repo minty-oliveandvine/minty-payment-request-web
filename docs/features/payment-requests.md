@@ -43,6 +43,34 @@ re-publish of bills that already hold one — so narrowing it is a separate deci
 A staged file previews in place, and its top-right **View full** control opens the
 full-screen viewer over the dialog.
 
+### Required fields
+
+**A mandatory field says so before anything is attempted**: a red `*` on its label from the
+moment the dialog opens, and the control turns red only once Confirm has actually been refused.
+An untouched form is never shown as an error.
+
+- The mark is `components/RequiredMark.tsx`. It is **`aria-hidden`**, because an asterisk read
+  aloud is "star"; requiredness is announced on the CONTROL instead, via `aria-required`
+  (`DateTextField`, `ThemedSelect` and `BillContactPicker` each take a `required` prop for
+  this) or the native attribute. Both halves are needed - the mark for the eye, the attribute
+  for everyone else.
+- `FieldLabel`'s `required` prop renders it, so Amount, Supplier, Account Code, Invoice Date
+  and Due Date get it for free. Payment No. and Description are optional and stay unmarked.
+- **The attachments group was the gap (fixed 2026-10-09):** it is a `<p>`, not a `FieldLabel`,
+  so it had no `required` prop to set, and its drop zone was hard-coded `border-gray-300` and
+  never reddened - unlike every other control here. It now carries the mark, and the drop zone
+  red-lines off `fieldErrors.attachments`, which `clearFieldError` already resets when a file
+  arrives, so no new state was needed.
+- The same treatment is on `UploadInvoiceAttachmentModal` and `BankSlipDetailsModal`. Two
+  cautions there: the bank slip only shows the mark when `showInlineUpload` is set, because
+  that dialog also just *lists* saved slips; and both red-line off
+  `uploadError && <staged> === 0`, never `uploadError` alone, since that also carries **API
+  failures** - a failed POST leaves its files staged, a refused file does not, so blaming the
+  drop zone for a server fault is avoided.
+- In the bank-slip dialog, pressing Upload with nothing staged is **not reachable** - the
+  button is disabled until a file is staged - so the red there comes from a *refused* file
+  (wrong type or too big), which is the path a test covers.
+
 Two buttons: **Save as draft** (`POST /api/bills/draft/`, nothing validated) and
 **Confirm** (`POST /api/bills/submit/`): the form validates the amount, supplier, account,
 both dates and *at least one attachment* before sending, shows each field's error inline

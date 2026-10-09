@@ -17,6 +17,7 @@ import {
   type PaymentItem,
 } from "@/lib/api";
 import { formatFileSize, isAllowedAttachment, ATTACHMENT_ACCEPT } from "@/lib/fileAttachmentPreview";
+import { RequiredMark } from "@/components/RequiredMark";
 import {
   AttachmentFullScreenViewer,
   fileToPreviewItem,
@@ -438,6 +439,7 @@ export function BankSlipDetailsModal({
   const titleId = useId();
   const descriptionId = useId();
   const previewSubtitleId = useId();
+  const uploadErrorId = useId();
   const [files, setFiles] = useState<BankSlipFileEntry[]>(() => details.files);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(() => details.files[0]?.id ?? null);
   const [selectedStagedId, setSelectedStagedId] = useState<string | null>(null);
@@ -658,6 +660,8 @@ export function BankSlipDetailsModal({
   const showInlineUpload = inlineBillId != null;
   const previewingStaged = Boolean(selectedStagedId && stagedPreviewFile && stagedObjectUrl);
   const totalListedFiles = files.length + stagedUploads.length;
+  /** A file problem, not a server one: a failed upload leaves its files staged, a refused one does not. */
+  const slipsMissing = Boolean(uploadError) && stagedUploads.length === 0;
   const billTitle = details.toName.trim();
 
   if (!open) return null;
@@ -703,7 +707,7 @@ export function BankSlipDetailsModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-6">
           {uploadError ? (
-            <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">
+            <div id={uploadErrorId} className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">
               {uploadError}
             </div>
           ) : null}
@@ -753,6 +757,7 @@ export function BankSlipDetailsModal({
             <div className="mb-2 flex items-baseline justify-between gap-3">
               <p className="min-w-0 text-[11px] font-semibold uppercase tracking-wide text-primary/80">
                 Uploaded files ({totalListedFiles})
+                {showInlineUpload ? <RequiredMark /> : null}
               </p>
               {totalListedFiles > 0 ? (
                 <span className="shrink-0 text-[10px] font-medium text-primary/55 sm:text-[11px]">Click the file to preview</span>
@@ -864,9 +869,12 @@ export function BankSlipDetailsModal({
                   onChange={handleStagedFilesSelected}
                   disabled={uploading}
                   aria-label="Choose bank slips to attach"
+                  aria-required="true"
+                  aria-invalid={slipsMissing ? true : undefined}
+                  aria-describedby={uploadError ? uploadErrorId : undefined}
                 />
                 <div className="pointer-events-none">
-                  <div className="flex min-h-[156px] flex-col items-center justify-center gap-3 overflow-visible rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-5 sm:min-h-[176px] sm:gap-4 sm:py-6">
+                  <div className={`flex min-h-[156px] flex-col items-center justify-center gap-3 overflow-visible rounded-lg border-2 border-dashed px-4 py-5 sm:min-h-[176px] sm:gap-4 sm:py-6 ${slipsMissing ? "border-red-500 bg-red-50/40" : "border-gray-300 bg-gray-50"}`}>
                     <span className="material-symbols-outlined inline-block origin-center text-[48px] leading-none text-gray-400 [font-variation-settings:'FILL'_0,'wght'_400,'GRAD'_0,'opsz'_48] scale-[1.78] sm:text-[48px] sm:scale-[2.02]" aria-hidden>cloud_upload</span>
                     <div className="flex flex-col items-center">
                       <p className="px-2 text-center text-[14px] font-medium leading-tight text-gray-700">Click to upload or drag and drop</p>

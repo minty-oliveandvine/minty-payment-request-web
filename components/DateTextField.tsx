@@ -10,6 +10,8 @@ export type DateTextFieldProps = {
   onChange: (iso: string) => void;
   disabled?: boolean;
   invalid?: boolean;
+  /** Mandatory: announced here, since the label's red asterisk is aria-hidden. */
+  required?: boolean;
   calendarAriaLabel: string;
   textInputClassName: string;
   calendarButtonClassName: string;
@@ -21,6 +23,7 @@ export function DateTextField({
   onChange,
   disabled = false,
   invalid = false,
+  required = false,
   calendarAriaLabel,
   textInputClassName,
   // Note: calendarButtonClassName remains in DateTextFieldProps for call-site
@@ -70,6 +73,7 @@ export function DateTextField({
         type="date"
         aria-label={calendarAriaLabel}
         aria-invalid={invalid || undefined}
+        aria-required={required || undefined}
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}

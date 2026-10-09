@@ -25,6 +25,8 @@ export type BillContactPickerProps = {
   refetchContacts: (ensureMerged?: EntityBillContact) => Promise<void>;
   disabled?: boolean;
   error?: boolean;
+  /** Mandatory: announced here, since the label's red asterisk is aria-hidden. */
+  required?: boolean;
   /** Corner radius on the text field (default matches bill modal). */
   controlRoundedClassName?: string;
 };
@@ -38,6 +40,7 @@ export function BillContactPicker({
   refetchContacts,
   disabled = false,
   error = false,
+  required = false,
   controlRoundedClassName = "rounded-2xl",
 }: BillContactPickerProps) {
   const { showToast } = useToast();
@@ -213,6 +216,7 @@ export function BillContactPicker({
           aria-controls={open ? listboxId : undefined}
           aria-autocomplete="list"
           aria-invalid={invalid || undefined}
+        aria-required={required || undefined}
           disabled={disabled || creating}
           value={contactName}
           placeholder="Select a supplier"

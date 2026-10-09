@@ -113,6 +113,13 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       the modal underneath open (a second Escape closes the modal).
 - [ ] After closing the viewer, focus is back on the **View full** button that opened it.
 - [ ] Removing the file being viewed closes the viewer rather than leaving a broken image.
+- [ ] **Mandatory fields say so up front.** Open Add Payment Request: Amount, Supplier,
+      Account Code, Invoice Date, Due Date **and Uploaded files** each show a red `*`, and
+      **nothing is red yet**. Press Confirm on an empty form: each refused field turns red
+      with its own message, including the attachments drop zone. Attach a file - the red and
+      the message clear together.
+- [ ] A screen reader says "Amount, required", not "Amount star" (the asterisk is
+      `aria-hidden`; the control carries `aria-required`).
 - [ ] Add Payment Request does **not** offer spreadsheets: the picker filters `.xlsx` out,
       and a dropped one is refused with a message that does not mention Excel.
 - [ ] Activity history starts collapsed; opening it scrolls it into view, closing it scrolls

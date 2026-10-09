@@ -200,3 +200,32 @@ test('the modal keeps the staged list usable behind the viewer', async ({ page }
   await expect(stagedRow(page, 'receipt.jpg')).toBeVisible();
   await expect(stagedRow(page, 'invoice.pdf')).toBeVisible();
 });
+
+// The upload is mandatory. It used to say nothing until Confirm; now it says so up front with
+// a red asterisk, and red-lines the drop zone once Confirm has actually been refused.
+test('the upload says it is mandatory, and red-lines only after a failed Confirm', async ({ page }) => {
+  const dialog = await openAddDialog(page);
+
+  await expect(dialog.getByText(/Uploaded files/)).toContainText('*');
+  const input = dialog.locator('input[type="file"]').first();
+  await expect(input).toHaveAttribute('aria-required', 'true');
+
+  // Not `.first()`: the empty-preview placeholder above is also a grey dashed box.
+  const zone = dialog
+    .locator('.border-dashed')
+    .filter({ hasText: 'Click or drag files here to upload' });
+  const before = await zone.evaluate((el) => getComputedStyle(el).borderColor);
+
+  await dialog.getByRole('button', { name: /^Confirm/ }).click();
+
+  await expect(dialog.getByText("We'll need at least one attachment.")).toBeVisible();
+  await expect(input).toHaveAttribute('aria-invalid', 'true');
+  const after = await zone.evaluate((el) => getComputedStyle(el).borderColor);
+  expect(after).not.toBe(before);
+
+  // and it clears itself the moment a file arrives
+  await input.setInputFiles(JPG);
+  await expect(dialog.getByText("We'll need at least one attachment.")).toHaveCount(0);
+  await expect(input).not.toHaveAttribute('aria-invalid', 'true');
+  expect(await zone.evaluate((el) => getComputedStyle(el).borderColor)).toBe(before);
+});

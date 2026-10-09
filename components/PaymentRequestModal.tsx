@@ -14,6 +14,7 @@ import {
 } from "@/components/payment-request/AttachmentFullScreenViewer";
 import { saveAttachmentBlobs } from "@/lib/paymentRequestAttachmentStore";
 import { ThemedSelect, type ThemedSelectOption } from "@/components/ThemedSelect";
+import { RequiredMark } from "@/components/RequiredMark";
 
 import { BillContactPicker } from "@/components/BillContactPicker";
 import {
@@ -156,7 +157,7 @@ function FieldLabel({
       className="mb-1.5 block text-[11px] font-semibold tracking-wide text-gray-700 sm:text-xs"
     >
       {children}
-      {required ? <span className="text-red-500"> *</span> : null}
+      {required ? <RequiredMark /> : null}
     </label>
   );
 }
@@ -173,6 +174,7 @@ export function PaymentRequestModal({
   const entityCurrency = useEntityCurrency();
   const titleId = useId();
   const previewSubtitleId = useId();
+  const attachmentsErrorId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedEntry[]>([]);
@@ -572,6 +574,7 @@ export function PaymentRequestModal({
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <p className="min-w-0 text-[11px] font-semibold uppercase tracking-wide text-primary/80">
               Uploaded files ({uploadedFiles.length})
+              <RequiredMark />
             </p>
             {uploadedFiles.length > 0 ? (
               <span className="shrink-0 text-[10px] font-medium text-primary/55 sm:text-[11px]">Click the file to preview</span>
@@ -596,9 +599,9 @@ export function PaymentRequestModal({
           </ul>
 
           <div className="relative">
-            <input ref={fileInputRef} type="file" className="absolute inset-0 z-20 h-full min-h-[156px] w-full cursor-pointer opacity-0 sm:min-h-[176px]" multiple accept={ATTACHMENT_ACCEPT} onChange={handleFilesSelected} aria-label="Choose files to attach" />
+            <input ref={fileInputRef} type="file" className="absolute inset-0 z-20 h-full min-h-[156px] w-full cursor-pointer opacity-0 sm:min-h-[176px]" multiple accept={ATTACHMENT_ACCEPT} onChange={handleFilesSelected} aria-label="Choose files to attach" aria-required="true" aria-invalid={fieldErrors.attachments ? true : undefined} aria-describedby={fieldErrors.attachments ? attachmentsErrorId : undefined} />
             <div className="pointer-events-none">
-              <div className="flex min-h-[156px] flex-col items-center justify-center gap-3 overflow-visible rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-5 sm:min-h-[176px] sm:gap-4 sm:py-6">
+              <div className={`flex min-h-[156px] flex-col items-center justify-center gap-3 overflow-visible rounded-lg border-2 border-dashed px-4 py-5 sm:min-h-[176px] sm:gap-4 sm:py-6 ${fieldErrors.attachments ? "border-red-500 bg-red-50/40" : "border-gray-300 bg-gray-50"}`}>
                 <span className="material-symbols-outlined inline-block origin-center text-[48px] leading-none text-gray-400 [font-variation-settings:'FILL'_0,'wght'_400,'GRAD'_0,'opsz'_48] scale-[1.78] sm:text-[48px] sm:scale-[2.02]" aria-hidden>cloud_upload</span>
                 <div className="flex flex-col items-center">
                   <p className="px-2 text-center text-[14px] font-medium leading-tight text-gray-700">Click or drag files here to upload</p>
@@ -609,7 +612,7 @@ export function PaymentRequestModal({
           </div>
 
           {fieldErrors.attachments ? (
-            <p className="mt-2 text-xs text-red-600" role="alert">
+            <p id={attachmentsErrorId} className="mt-2 text-xs text-red-600" role="alert">
               {fieldErrors.attachments}
             </p>
           ) : null}
@@ -662,6 +665,7 @@ export function PaymentRequestModal({
                 </FieldLabel>
                 <DateTextField
                   id="pr-invoice-date"
+                  required
                   value={invoiceDate ?? ""}
                   onChange={(iso) => {
                     setInvoiceDate(iso);
@@ -689,6 +693,7 @@ export function PaymentRequestModal({
                 </FieldLabel>
                 <DateTextField
                   id="pr-due-date"
+                  required
                   value={dueDate ?? ""}
                   onChange={(iso) => {
                     setDueDate(iso);
@@ -728,6 +733,7 @@ export function PaymentRequestModal({
                 </div>
                 <input
                   id="pr-amount"
+                  required
                   type="text"
                   inputMode="decimal"
                   value={amount ?? ""}
@@ -793,6 +799,7 @@ export function PaymentRequestModal({
               </FieldLabel>
               <BillContactPicker
                 id="pr-contact"
+                required
                 contacts={contactsList}
                 xeroContactId={contact}
                 contactName={contactInput}
@@ -817,6 +824,7 @@ export function PaymentRequestModal({
               </FieldLabel>
               <ThemedSelect
                 id="pr-account"
+                required
                 value={accountCode ?? ""}
                 onChange={(v) => {
                   setAccountCode(v);

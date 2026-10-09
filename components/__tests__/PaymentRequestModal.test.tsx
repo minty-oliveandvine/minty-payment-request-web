@@ -80,6 +80,11 @@ const drop = (input: HTMLInputElement, f: File) => {
   fireEvent.change(input);
 };
 
+const filePicker = () => within(dialog()).getByLabelText("Choose files to attach");
+
+/** The dashed box behind the (invisible, overlaid) file input. */
+const dropZone = () => filePicker().parentElement!.querySelector(".border-dashed") as HTMLElement;
+
 const attach = (f: File) =>
   userEvent.upload(within(dialog()).getByLabelText("Choose files to attach"), f);
 
@@ -311,6 +316,49 @@ describe("the attachments", () => {
 
     expect(within(dialog()).getByText("Click or drag files here to upload")).toBeInTheDocument();
     expect(within(dialog()).getByLabelText("Choose files to attach")).toBeInTheDocument();
+  });
+
+  // The upload is mandatory, and it used to say so only after Confirm. The marker goes up
+  // front; the red border waits for a failed Confirm, like every other field here.
+  it("says it is mandatory before anything is attempted", () => {
+    show();
+
+    expect(within(dialog()).getByText(/Uploaded files/)).toHaveTextContent("*");
+    expect(filePicker()).toHaveAttribute("aria-required", "true");
+  });
+
+  it("is not red until Confirm has been tried", async () => {
+    show();
+
+    expect(dropZone()).toHaveClass("border-gray-300");
+    expect(filePicker()).not.toHaveAttribute("aria-invalid");
+
+    await userEvent.click(confirm());
+
+    await waitFor(() => expect(dropZone()).toHaveClass("border-red-500"));
+    expect(dropZone()).not.toHaveClass("border-gray-300");
+    expect(filePicker()).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("ties the refusal to the control it is about", async () => {
+    show();
+
+    await userEvent.click(confirm());
+
+    const message = await screen.findByText("We'll need at least one attachment.");
+    expect(filePicker()).toHaveAttribute("aria-describedby", message.id);
+    expect(message.id).toBeTruthy();
+  });
+
+  it("clears the red as soon as a file arrives", async () => {
+    show();
+    await userEvent.click(confirm());
+    await waitFor(() => expect(dropZone()).toHaveClass("border-red-500"));
+
+    await attach(file("receipt.png", "image/png"));
+
+    await waitFor(() => expect(dropZone()).toHaveClass("border-gray-300"));
+    expect(filePicker()).not.toHaveAttribute("aria-invalid");
   });
 
   it("does not offer a spreadsheet in the picker at all", async () => {
