@@ -25,6 +25,11 @@ every way out of the page asks first (`lib/leaveGuard.ts`, `useLeaveGuard`): min
 `LeaveDialog` (Figma A-11), portaled to `<body>` at z-250 so it sits above the sidebar's drawer
 (z-200).
 
+Since 2026-10-09 **`lib/leaveGuard.ts` here has a third copy**: minty-web took this file as it
+stands for its Entity & Integration, billing-details and edit-card screens, and its own
+`lib/__tests__/leaveGuard.test.tsx` with it. The dialog there is `components/ui/LeaveDialog.tsx`.
+Change all three (here, minty-web, Flask's `MintyLeaveGuard`).
+
 - **Discard changes** puts the ticks back to the saved set and goes where the person was going:
   the same link is clicked again, so each keeps its own way (a soft move, a full load, the drawer
   closing).
