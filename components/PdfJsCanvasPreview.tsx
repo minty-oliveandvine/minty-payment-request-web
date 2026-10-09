@@ -380,10 +380,9 @@ function PdfJsCanvasRenderer({
         <form
           onSubmit={handlePasswordSubmit}
           onClick={(e) => {
-            // The preview may be wrapped in an "open full file" link. Cancel that
-            // link's navigation for any click inside this prompt (preventDefault
-            // does not affect input focus or our own handlers), and stop the
-            // click from bubbling to it.
+            // The preview pane carries a "view full" control. Keep clicks inside this
+            // prompt from reaching it (preventDefault does not affect input focus or our
+            // own handlers), so typing a password never enlarges the file.
             e.preventDefault();
             e.stopPropagation();
           }}
@@ -429,9 +428,6 @@ function PdfJsCanvasRenderer({
             description
           </span>
           <p>{errorMessage}</p>
-          <a href={src} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-secondary underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary">
-            Open PDF in new tab
-          </a>
         </div>
       ) : null}
       <div ref={hostRef} className={status === "ready" ? "flex w-full flex-col items-stretch gap-3" : "hidden"} />

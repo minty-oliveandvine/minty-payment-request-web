@@ -97,7 +97,7 @@ const show = (props: Partial<Props> = {}) =>
     />,
   );
 
-const dialog = () => screen.getByRole("dialog");
+const dialog = () => screen.getAllByRole("dialog")[0];
 const uploadButton = () => within(dialog()).getByRole("button", { name: /^Upload/ });
 const filePicker = () => within(dialog()).getByLabelText("Choose bank slips to attach");
 const slip = (name = "slip.pdf") => new File(["%PDF-1.4"], name, { type: "application/pdf" });
@@ -215,6 +215,38 @@ describe("staging a slip to upload", () => {
     await userEvent.click(within(dialog()).getByRole("button", { name: "Remove slip.pdf" }));
 
     expect(uploadButton()).toBeDisabled();
+  });
+});
+
+// A slip is previewed in place and enlarged over the dialog. It never opens in a new tab -
+// every one of these panes used to be wrapped in a target="_blank" link.
+describe("previewing a slip", () => {
+  it("enlarges a staged slip in-app, with no link out", async () => {
+    show({ inlineUploadBillContext: { billId: BILL_ID } });
+    await userEvent.upload(filePicker(), slip());
+    await userEvent.click(within(dialog()).getByRole("button", { name: "Preview slip.pdf" }));
+
+    const enlarge = await screen.findByRole("button", { name: "View full — slip.pdf" });
+    expect(within(dialog()).queryAllByRole("link")).toHaveLength(0);
+
+    await userEvent.click(enlarge);
+
+    const viewer = (await screen.findByRole("button", { name: "Close preview" })).closest(
+      '[role="dialog"]',
+    ) as HTMLElement;
+    expect(viewer).toHaveAttribute("aria-modal", "true");
+    expect(within(viewer).queryAllByRole("link")).toHaveLength(0);
+  });
+
+  it("offers a saved slip the same enlarge control, not a new tab", async () => {
+    show({
+      details: { ...DETAILS, files: [{ id: "f1", name: "paid.png", previewUrl: "blob:paid" }] },
+    });
+
+    await userEvent.click(within(dialog()).getByRole("button", { name: "Preview paid.png" }));
+
+    expect(await screen.findByRole("button", { name: "View full — paid.png" })).toBeInTheDocument();
+    expect(within(dialog()).queryAllByRole("link")).toHaveLength(0);
   });
 });
 

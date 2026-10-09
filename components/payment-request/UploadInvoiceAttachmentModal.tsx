@@ -4,8 +4,13 @@ import { createPortal } from "react-dom";
 import { useEffect, useId, useRef, useState } from "react";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import { ApiError } from "@/lib/api";
-import { PdfJsCanvasPreview } from "@/components/PdfJsCanvasPreview";
-import { formatFileSize, isImageFile, isPdfFile, isHtmlFile, isAllowedAttachment, ATTACHMENT_ACCEPT } from "@/lib/fileAttachmentPreview";
+import { formatFileSize, isAllowedAttachment, ATTACHMENT_ACCEPT } from "@/lib/fileAttachmentPreview";
+import {
+  AttachmentFullScreenViewer,
+  fileToPreviewItem,
+  PreviewBlock,
+  ViewFullButton,
+} from "./AttachmentFullScreenViewer";
 
 export type UploadInvoiceAttachmentModalProps = {
   open: boolean;
@@ -32,6 +37,7 @@ export function UploadInvoiceAttachmentModal({ open, onClose, onUpload }: Upload
   const [uploading, setUploading] = useState(false);
   const [previewFileId, setPreviewFileId] = useState<string | null>(null);
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const previewFile = previewFileId ? uploadedFiles.find((x) => x.id === previewFileId)?.file ?? null : null;
 
@@ -55,6 +61,7 @@ export function UploadInvoiceAttachmentModal({ open, onClose, onUpload }: Upload
       setUploadError(null);
       setUploading(false);
       setPreviewFileId(null);
+      setViewerOpen(false);
     }
   }, [open]);
 
@@ -63,6 +70,8 @@ export function UploadInvoiceAttachmentModal({ open, onClose, onUpload }: Upload
     return pushAppScrollLock();
   }, [open]);
 
+  // Two levels, not three: the full-screen viewer swallows Escape in the capture phase
+  // (AttachmentFullScreenViewer), so this handler never sees the keystroke that closes it.
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -172,29 +181,9 @@ export function UploadInvoiceAttachmentModal({ open, onClose, onUpload }: Upload
                       </p>
                     </div>
                   </div>
-                  <div className="mt-3 min-h-[min(42dvh,280px)] overflow-auto rounded-lg bg-black/5 p-2 sm:min-h-[min(45dvh,320px)] sm:p-3">
-                    {isImageFile(previewFile) ? (
-                      <img
-                        src={previewObjectUrl}
-                        alt={`Preview: ${previewFile.name}`}
-                        className="mx-auto max-h-[min(50dvh,420px)] w-auto max-w-full object-contain"
-                      />
-                    ) : null}
-                    {isPdfFile(previewFile) && !isImageFile(previewFile) ? (
-                      <PdfJsCanvasPreview src={previewObjectUrl} title={previewFile.name} className="w-full" maxPageWidthCssPx={480} />
-                    ) : null}
-                    {isHtmlFile(previewFile) && !isImageFile(previewFile) && !isPdfFile(previewFile) ? (
-                      <iframe
-                        src={previewObjectUrl}
-                        title={`Preview: ${previewFile.name}`}
-                        sandbox=""
-                        referrerPolicy="no-referrer"
-                        className="h-[min(45dvh,320px)] w-full rounded-lg border border-gray-200 bg-white"
-                      />
-                    ) : null}
-                    {!isImageFile(previewFile) && !isPdfFile(previewFile) && !isHtmlFile(previewFile) ? (
-                      <p className="py-8 text-center text-sm text-primary/70">Preview is not available for this file type.</p>
-                    ) : null}
+                  <div className="relative mt-3 min-h-[min(42dvh,280px)] overflow-auto rounded-lg bg-black/5 p-2 sm:min-h-[min(45dvh,320px)] sm:p-3">
+                    <ViewFullButton name={previewFile.name} onClick={() => setViewerOpen(true)} />
+                    <PreviewBlock {...fileToPreviewItem(previewFile, previewObjectUrl)} />
                   </div>
                 </div>
               ) : (
@@ -265,6 +254,12 @@ export function UploadInvoiceAttachmentModal({ open, onClose, onUpload }: Upload
           </button>
         </div>
       </div>
+      {viewerOpen && previewFile && previewObjectUrl ? (
+        <AttachmentFullScreenViewer
+          item={fileToPreviewItem(previewFile, previewObjectUrl)}
+          onClose={() => setViewerOpen(false)}
+        />
+      ) : null}
     </div>,
     document.body,
   );

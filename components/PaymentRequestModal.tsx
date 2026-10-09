@@ -5,8 +5,13 @@ import { createPortal } from "react-dom";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import { useEntityCurrency } from "@/lib/entityCurrency";
-import { PdfJsCanvasPreview } from "@/components/PdfJsCanvasPreview";
-import { formatFileSize, FullFilePreviewLink, isImageFile, isPdfFile, isHtmlFile, isAllowedFileType, ATTACHMENT_EXTENSIONS, ATTACHMENT_MIME_TYPES } from "@/lib/fileAttachmentPreview";
+import { formatFileSize, isAllowedAttachment, ATTACHMENT_ACCEPT } from "@/lib/fileAttachmentPreview";
+import {
+  AttachmentFullScreenViewer,
+  fileToPreviewItem,
+  PreviewBlock,
+  ViewFullButton,
+} from "@/components/payment-request/AttachmentFullScreenViewer";
 import { saveAttachmentBlobs } from "@/lib/paymentRequestAttachmentStore";
 import { ThemedSelect, type ThemedSelectOption } from "@/components/ThemedSelect";
 
@@ -45,16 +50,6 @@ export type PaymentRequestModalProps = {
 
 type UploadedEntry = { id: string; file: File };
 
-/** Bill attachments allow PDF/JPEG/PNG (Minty rule) plus spreadsheets. */
-const BILL_ATTACHMENT_EXTENSIONS = [...ATTACHMENT_EXTENSIONS, "xls", "xlsx", "xlsm"];
-const BILL_ATTACHMENT_MIME_TYPES = [
-  ...ATTACHMENT_MIME_TYPES,
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-];
-const BILL_ATTACHMENT_ACCEPT =
-  ".pdf,.jpg,.jpeg,.png,.html,.htm,.xls,.xlsx,.xlsm,application/pdf,image/jpeg,image/png,text/html,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-
 /** Material Symbols icon + color for uploaded file row (Google Material Icons naming). */
 function getUploadedFileIconInfo(filename: string): { icon: string; iconClass: string } {
   const ext = filename.trim().split(".").pop()?.toLowerCase() ?? "";
@@ -63,9 +58,6 @@ function getUploadedFileIconInfo(filename: string): { icon: string; iconClass: s
   }
   if (ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "heic" || ext === "heif" || ext === "webp" || ext === "gif") {
     return { icon: "image", iconClass: "text-sky-600" };
-  }
-  if (ext === "xls" || ext === "xlsx" || ext === "xlsm") {
-    return { icon: "table_chart", iconClass: "text-emerald-700" };
   }
   if (ext === "html" || ext === "htm") {
     return { icon: "html", iconClass: "text-orange-600" };
@@ -186,6 +178,7 @@ export function PaymentRequestModal({
   const [uploadedFiles, setUploadedFiles] = useState<UploadedEntry[]>([]);
   const [previewFileId, setPreviewFileId] = useState<string | null>(null);
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const previewFile = previewFileId ? uploadedFiles.find((x) => x.id === previewFileId)?.file ?? null : null;
   const [billNo, setBillNo] = useState("");
   const [amount, setAmount] = useState("");
@@ -276,9 +269,15 @@ export function PaymentRequestModal({
   }, [uploadedFiles, previewFileId]);
 
   useEffect(() => {
-    if (!open) setPreviewFileId(null);
+    if (!open) {
+      setPreviewFileId(null);
+      setViewerOpen(false);
+    }
   }, [open]);
 
+  // Two levels, not three: when the full-screen viewer is up it swallows Escape itself in the
+  // capture phase (AttachmentFullScreenViewer), so this handler never sees the keystroke that
+  // closes it. Do not add a `viewerOpen` branch here.
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -340,13 +339,11 @@ export function PaymentRequestModal({
       e.target.value = "";
       return;
     }
-    const disallowed = Array.from(list).filter(
-      (file) => !isAllowedFileType(file, BILL_ATTACHMENT_EXTENSIONS, BILL_ATTACHMENT_MIME_TYPES),
-    );
+    const disallowed = Array.from(list).filter((file) => !isAllowedAttachment(file));
     if (disallowed.length > 0) {
       setFieldErrors((prev) => ({
         ...prev,
-        attachments: `I can't open ${disallowed.length > 1 ? "these" : "this one"} - try PDF, JPEG, PNG, HTML, or Excel: ${disallowed.map((f) => f.name).join(", ")}`,
+        attachments: `I can't open ${disallowed.length > 1 ? "these" : "this one"} - try PDF, JPEG, PNG, or HTML: ${disallowed.map((f) => f.name).join(", ")}`,
       }));
       e.target.value = "";
       return;
@@ -564,7 +561,7 @@ export function PaymentRequestModal({
           <div className="flex flex-col gap-6">
             <div className="min-w-0">
               {previewFile && previewObjectUrl ? (
-                <PaymentRequestInlinePreview file={previewFile} objectUrl={previewObjectUrl} previewSubtitleId={previewSubtitleId} getUploadedFileIconInfo={getUploadedFileIconInfo} />
+                <PaymentRequestInlinePreview file={previewFile} objectUrl={previewObjectUrl} previewSubtitleId={previewSubtitleId} getUploadedFileIconInfo={getUploadedFileIconInfo} onViewFull={() => setViewerOpen(true)} />
               ) : previewFile && !previewObjectUrl ? (
                 <div className="flex min-h-[156px] items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-primary/60 sm:min-h-[176px]">Loading preview…</div>
               ) : (
@@ -599,7 +596,7 @@ export function PaymentRequestModal({
           </ul>
 
           <div className="relative">
-            <input ref={fileInputRef} type="file" className="absolute inset-0 z-20 h-full min-h-[156px] w-full cursor-pointer opacity-0 sm:min-h-[176px]" multiple accept={BILL_ATTACHMENT_ACCEPT} onChange={handleFilesSelected} aria-label="Choose files to attach" />
+            <input ref={fileInputRef} type="file" className="absolute inset-0 z-20 h-full min-h-[156px] w-full cursor-pointer opacity-0 sm:min-h-[176px]" multiple accept={ATTACHMENT_ACCEPT} onChange={handleFilesSelected} aria-label="Choose files to attach" />
             <div className="pointer-events-none">
               <div className="flex min-h-[156px] flex-col items-center justify-center gap-3 overflow-visible rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-5 sm:min-h-[176px] sm:gap-4 sm:py-6">
                 <span className="material-symbols-outlined inline-block origin-center text-[48px] leading-none text-gray-400 [font-variation-settings:'FILL'_0,'wght'_400,'GRAD'_0,'opsz'_48] scale-[1.78] sm:text-[48px] sm:scale-[2.02]" aria-hidden>cloud_upload</span>
@@ -856,6 +853,14 @@ export function PaymentRequestModal({
           </button>
         </div>
       </div>
+      {/* Guarded on the live object URL: removing the file being viewed revokes it, and this
+          unmounts the viewer in the same commit rather than drawing a dead blob. */}
+      {viewerOpen && previewFile && previewObjectUrl ? (
+        <AttachmentFullScreenViewer
+          item={fileToPreviewItem(previewFile, previewObjectUrl)}
+          onClose={() => setViewerOpen(false)}
+        />
+      ) : null}
     </div>,
     document.body,
   );
@@ -866,11 +871,13 @@ function PaymentRequestInlinePreview({
   objectUrl,
   previewSubtitleId,
   getUploadedFileIconInfo,
+  onViewFull,
 }: {
   file: File;
   objectUrl: string;
   previewSubtitleId: string;
   getUploadedFileIconInfo: (filename: string) => { icon: string; iconClass: string };
+  onViewFull: () => void;
 }) {
   const { icon, iconClass } = getUploadedFileIconInfo(file.name);
   return (
@@ -885,38 +892,10 @@ function PaymentRequestInlinePreview({
           </p>
         </div>
       </div>
-      {isHtmlFile(file) && !isImageFile(file) && !isPdfFile(file) ? (
-        <div className="mt-3 min-h-[min(60dvh,420px)] rounded-lg bg-black/5 p-2 sm:p-3">
-          <iframe
-            src={objectUrl}
-            title={`Preview: ${file.name}`}
-            sandbox=""
-            referrerPolicy="no-referrer"
-            className="h-[min(60dvh,420px)] w-full rounded-lg border border-gray-200 bg-white"
-          />
-          <FullFilePreviewLink href={objectUrl} className="mt-3 block text-center">
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-secondary underline">
-              <span className="material-symbols-outlined text-[24px] leading-none" aria-hidden>open_in_new</span>
-              Open full file in new tab
-            </span>
-          </FullFilePreviewLink>
-        </div>
-      ) : (
-        <FullFilePreviewLink
-          href={objectUrl}
-          className="mt-3 min-h-[min(60dvh,420px)] overflow-auto rounded-lg bg-black/5 p-2 sm:p-3"
-        >
-          {isImageFile(file) ? (
-            <img src={objectUrl} alt={`Preview: ${file.name}`} className="mx-auto max-h-[min(65dvh,620px)] w-auto max-w-full object-contain" />
-          ) : null}
-          {isPdfFile(file) && !isImageFile(file) ? (
-            <PdfJsCanvasPreview src={objectUrl} title={file.name} className="w-full" maxPageWidthCssPx={640} />
-          ) : null}
-          {!isImageFile(file) && !isPdfFile(file) ? (
-            <p className="py-8 text-center text-sm text-primary/70">Preview is not available for this file type.</p>
-          ) : null}
-        </FullFilePreviewLink>
-      )}
+      <div className="relative mt-3 min-h-[min(60dvh,420px)] overflow-auto rounded-lg bg-black/5 p-2 sm:p-3">
+        <ViewFullButton name={file.name} onClick={onViewFull} />
+        <PreviewBlock {...fileToPreviewItem(file, objectUrl)} />
+      </div>
     </div>
   );
 }

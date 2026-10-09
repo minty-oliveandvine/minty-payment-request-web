@@ -33,7 +33,15 @@ is edited), the **account code** (a combobox over
 `GET /api/bills/suggested-reference/`), invoice date and due date (`#pr-invoice-date`,
 `#pr-due-date`, native date inputs behind a formatted overlay — `DateTextField.tsx`), and
 the attachments drop zone (`input[aria-label="Choose files to attach"]`; pdf, jpg, png,
-html, xls(x); images compressed client-side — `lib/compressImage.ts`).
+html — **no spreadsheets since 2026-10-09**, so every accepted type is one the browser can
+draw; images compressed client-side — `lib/compressImage.ts`). The allowlist is the shared
+`ATTACHMENT_ACCEPT` / `isAllowedAttachment` from `lib/fileAttachmentPreview.ts`, so this
+modal, the upload-invoice modal and the bank-slip modal agree by construction. The server
+(`attachment_service.py`) still accepts Excel — it is shared with bank slips and with Xero
+re-publish of bills that already hold one — so narrowing it is a separate decision.
+
+A staged file previews in place, and its top-right **View full** control opens the
+full-screen viewer over the dialog.
 
 Two buttons: **Save as draft** (`POST /api/bills/draft/`, nothing validated) and
 **Confirm** (`POST /api/bills/submit/`): the form validates the amount, supplier, account,
@@ -81,7 +89,47 @@ unchanged). A Payment No. the company does not have shows "I couldn't find that 
 Return / un-return / void go through the same action bar with the backend's transitions;
 `lib/billStatusRollback.ts` keeps the optimistic status honest when a call fails.
 
+## Previewing a file: full screen, never a new tab
+
+**The rule (the user's, 2026-10-09): a file always opens a full-screen preview in-app. It
+never opens a new tab and it never downloads.** Every preview surface used to be wrapped in
+an `<a target="_blank">` (`FullFilePreviewLink`), so clicking a staged receipt left the app;
+that component is gone, along with the unused `FileAttachmentPreviewLayer` and the
+"Open PDF in new tab" link in `PdfJsCanvasPreview`'s error state.
+
+- **One component:** `components/payment-request/AttachmentFullScreenViewer.tsx`. It owns
+  `PreviewBlock` (image / pdf.js canvas / sandboxed iframe / "Preview is not available for
+  this file type."), `usePinchZoom`, the `ViewFullButton` every inline pane puts in its
+  top-right corner, and the overlay itself — a portal at `z-[340]`, above the modals'
+  `z-[300]`, `role="dialog" aria-modal`, with Reset zoom and a 44px Close.
+- **Escape unwinds one layer at a time.** The viewer listens on `window` in the **capture
+  phase** and calls `stopImmediatePropagation()`. The three modals it opens over each keep a
+  bubble-phase `window` listener registered earlier, and a window capture listener runs
+  before every window bubble listener whatever the order — so one Escape closes the viewer
+  and leaves the modal open. Those modals deliberately have **no** `viewerOpen` branch.
+- **Focus** starts on Close, is trapped, and returns to the opener on unmount (with a
+  fallback: the opener may have been removed, e.g. the file was deleted).
+- **The scroll lock is reference counted** (`lib/appScrollRoot.ts`). Save-and-restore was
+  only safe if cleanups ran strictly LIFO, which React does not guarantee when a parent and
+  child unmount in one commit; the out-of-order case left `overflow: hidden` on for good.
+- **The viewer creates no object URL.** The caller owns the URL's lifetime and renders the
+  viewer only while `previewFile && previewObjectUrl` hold, so removing a file mid-view
+  unmounts it in the same commit as the revoke.
+- **A reported mime is not trusted** (`resolvePreviewMime` / `nameToPreviewMime`): drag-drop
+  can leave `File.type` empty and B2 calls a PDF `application/octet-stream`. Either would
+  send a perfectly drawable file to the "cannot preview" card, so the extension decides.
+- Surfaces: the Add Payment Request modal, `UploadInvoiceAttachmentModal` (which had no
+  enlarge control at all), `BankSlipDetailsModal` (staged, saved and auth-proxy-fetched), and
+  `InvoiceAttachmentPreview` on the detail page and easy view.
+
 ## Tests
+
+`__tests__/no_new_tab_file_links.test.ts` is the regression lock: it reads `components/`,
+`lib/`, `features/` and `app/` and fails on any `target="_blank"`, `window.open` or
+`download=` outside a short, self-checking list of genuine external links. Plus
+`AttachmentFullScreenViewer.test.tsx` (the dialog contract, the capture-phase Escape, focus
+return, mime resolution) and the preview cases in `PaymentRequestModal.test.tsx`,
+`BankSlipDetailsModal.test.tsx` and `InvoiceAttachmentPreview.test.tsx`.
 
 `e2e/02_bill_lifecycle.spec.ts` (draft → listed under Draft; the amount is required;
 Confirm without attachment/due date shows both alerts; the draft's detail page) and

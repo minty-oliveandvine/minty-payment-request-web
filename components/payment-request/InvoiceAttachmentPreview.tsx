@@ -1,27 +1,20 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { PdfJsCanvasPreview } from "@/components/PdfJsCanvasPreview";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import {
+  AttachmentFullScreenViewer,
+  PreviewBlock,
+  ViewFullButton,
+  usePinchZoom,
+  type AttachmentPreviewItem,
+} from "./AttachmentFullScreenViewer";
 
-const MIN_SCALE = 0.6;
-const MAX_SCALE = 3;
 const ATTACHMENT_CHECKBOX_CLASS = "checkbox-secondary-white-tick h-4 w-4 rounded border border-primary/40";
 
-export type InvoiceAttachmentPreviewItem = {
-  url: string;
-  name: string;
-  mime: string;
+export type InvoiceAttachmentPreviewItem = AttachmentPreviewItem & {
   billAttachmentId?: string;
   pendingUploadKey?: string;
   pendingFile?: File;
-  /**
-   * Optional Django proxy path for PDF rendering. When set, PdfJsCanvasPreview
-   * will fetch bytes with auth headers instead of loading the raw storage URL,
-   * which avoids cross-origin iframe blocks in Edge and other browsers.
-   *
-   * Example: "/api/v1/bills/{billId}/attachments/{attachmentId}/preview/"
-   */
-  previewApiPath?: string;
 };
 
 type InvoiceAttachmentPreviewProps = {
@@ -30,16 +23,14 @@ type InvoiceAttachmentPreviewProps = {
   /** Legacy: plain image URLs only */
   imageSrcs?: string[];
   className?: string;
-  fullscreen?: boolean;
-  onExitFullscreen?: () => void;
   /**
    * When true (e.g. easy view aside), the gray preview panel fills the flex parent and
    * scrolls internally for multiple files / tall PDFs — same behavior as details, without viewport max-heights fighting the column.
    */
   fillColumn?: boolean;
   /**
-   * When true, each attachment shows a top-right “view full” control that opens the fullscreen preview (same tab).
-   * Off by default so the details page layout stays unchanged unless opted in.
+   * When true, each attachment shows a top-right “view full” control that opens the full-screen
+   * preview (same tab — nothing ever opens a new tab or downloads).
    */
   showViewFullButton?: boolean;
   /** While blobs are loading from IndexedDB */
@@ -49,65 +40,6 @@ type InvoiceAttachmentPreviewProps = {
   selectedIndices?: number[];
   onSelectedIndicesChange?: (next: number[]) => void;
 };
-
-function PreviewBlock({
-  url,
-  name,
-  mime,
-  previewApiPath,
-  layout = "embedded",
-}: InvoiceAttachmentPreviewItem & { layout?: "embedded" | "fullscreen" }) {
-  const mimeLower = mime.toLowerCase();
-  const imgClass =
-    layout === "fullscreen"
-      ? "mx-auto block h-auto max-h-[calc(100dvh-7rem)] w-full object-contain"
-      : "mx-auto block h-auto max-h-[min(75vh,56rem)] w-full object-contain";
-  if (mimeLower.startsWith("image/")) {
-    return (
-      <img
-        src={url}
-        alt={name || "Attachment"}
-        className={imgClass}
-        draggable={false}
-      />
-    );
-  }
-  if (mimeLower === "application/pdf") {
-    return (
-      <PdfJsCanvasPreview
-        src={url}
-        previewApiPath={previewApiPath}
-        title={name || "PDF preview"}
-        className="w-full"
-        maxPageWidthCssPx={layout === "fullscreen" ? 1200 : 900}
-      />
-    );
-  }
-  if (mimeLower === "text/html" || /\.html?$/.test((name || "").trim().toLowerCase())) {
-    return (
-      <iframe
-        src={url}
-        title={name || "HTML preview"}
-        sandbox=""
-        referrerPolicy="no-referrer"
-        className={
-          layout === "fullscreen"
-            ? "block h-[calc(100dvh-7rem)] w-full bg-white"
-            : "block h-[min(75vh,56rem)] w-full bg-white"
-        }
-      />
-    );
-  }
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 bg-gray-50 px-4 py-8 text-center">
-      <span className="material-symbols-outlined text-[40px] text-primary/35" aria-hidden>
-        draft
-      </span>
-      <p className="text-sm font-medium text-primary">{name || "File"}</p>
-      <p className="text-xs text-primary/50">Preview is not available for this file type.</p>
-    </div>
-  );
-}
 
 /** Easy-view aside: document-style skeleton while invoice blobs / URLs load. */
 function FillColumnInvoiceLoadingSkeleton() {
@@ -147,8 +79,6 @@ export function InvoiceAttachmentPreview({
   attachments,
   imageSrcs = [],
   className = "",
-  fullscreen = false,
-  onExitFullscreen,
   fillColumn = false,
   showViewFullButton = false,
   isLoadingAttachments = false,
@@ -156,20 +86,10 @@ export function InvoiceAttachmentPreview({
   selectedIndices,
   onSelectedIndicesChange,
 }: InvoiceAttachmentPreviewProps) {
-  const [scale, setScale] = useState(1);
-  /** When set, “view full” overlay shows only this attachment index (internal control). */
+  const { scale, scrollRef, touchHandlers } = usePinchZoom();
+  /** When set, the full-screen viewer shows this attachment. */
   const [viewFullIndex, setViewFullIndex] = useState<number | null>(null);
-  const pinchRef = useRef<{ initialDistance: number; initialScale: number } | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [internalSelected, setInternalSelected] = useState<Set<number>>(new Set());
-
-  const isFullscreen = fullscreen || viewFullIndex !== null;
-
-  const handleExitFullscreen = useCallback(() => {
-    setViewFullIndex(null);
-    setScale(1);
-    onExitFullscreen?.();
-  }, [onExitFullscreen]);
 
   const effectiveSelected = selectedIndices ? new Set(selectedIndices) : internalSelected;
   const setEffectiveSelected = useCallback(
@@ -204,43 +124,6 @@ export function InvoiceAttachmentPreview({
     }
   }, [editMode, selectedIndices, onSelectedIndicesChange]);
 
-  const getDistance = (a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) =>
-    Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-
-  const onTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (e.touches.length === 2) {
-        pinchRef.current = {
-          initialDistance: getDistance(e.touches[0], e.touches[1]),
-          initialScale: scale,
-        };
-      }
-    },
-    [scale],
-  );
-
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length !== 2 || !pinchRef.current) return;
-    const d = getDistance(e.touches[0], e.touches[1]);
-    const { initialDistance, initialScale } = pinchRef.current;
-    const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, (d / initialDistance) * initialScale));
-    setScale(next);
-  }, []);
-
-  const onTouchEnd = useCallback(() => {
-    if (pinchRef.current) pinchRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const preventOverscroll = (ev: TouchEvent) => {
-      if (ev.touches.length === 2) ev.preventDefault();
-    };
-    el.addEventListener("touchmove", preventOverscroll, { passive: false });
-    return () => el.removeEventListener("touchmove", preventOverscroll);
-  }, []);
-
   const items: (InvoiceAttachmentPreviewItem | null)[] =
     attachments && attachments.length > 0
       ? attachments
@@ -252,16 +135,15 @@ export function InvoiceAttachmentPreview({
   /** Bound height so multiple files (or tall PDFs) scroll inside the gray panel instead of stretching the page. */
   const constrainScrollHeight = isLoadingAttachments || attachmentCount >= 1;
 
-  const scrollAreaMinMaxClass =
-    fillColumn && !isFullscreen
-      ? constrainScrollHeight
-        ? "min-h-0 h-full max-h-full flex-1"
-        : "min-h-0 flex-1"
-      : constrainScrollHeight
-        ? isFullscreen
-          ? "min-h-0"
-          : "min-h-[min(60vh,32rem)] max-h-[min(85dvh,52rem)] sm:max-h-[min(88dvh,56rem)] lg:max-h-[min(90vh,60rem)]"
-        : "min-h-[min(60vh,32rem)]";
+  const scrollAreaMinMaxClass = fillColumn
+    ? constrainScrollHeight
+      ? "min-h-0 h-full max-h-full flex-1"
+      : "min-h-0 flex-1"
+    : constrainScrollHeight
+      ? "min-h-[min(60vh,32rem)] max-h-[min(85dvh,52rem)] sm:max-h-[min(88dvh,56rem)] lg:max-h-[min(90vh,60rem)]"
+      : "min-h-[min(60vh,32rem)]";
+
+  const focused = viewFullIndex != null ? items[viewFullIndex] : null;
 
   const inner = (
     <div
@@ -317,21 +199,11 @@ export function InvoiceAttachmentPreview({
                       />
                     </label>
                   ) : null}
-                  {showViewFullButton && !editMode && !isFullscreen ? (
-                    <button
-                      type="button"
-                      className="absolute right-2 top-2 z-10 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-gray-200/90 bg-white/95 text-primary shadow-sm backdrop-blur-[1px] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                      aria-label={`View full — ${item.name || `attachment ${i + 1}`}`}
-                      title="View full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setViewFullIndex(i);
-                      }}
-                    >
-                      <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>
-                        open_in_full
-                      </span>
-                    </button>
+                  {showViewFullButton && !editMode ? (
+                    <ViewFullButton
+                      name={item.name || `attachment ${i + 1}`}
+                      onClick={() => setViewFullIndex(i)}
+                    />
                   ) : null}
                   <PreviewBlock {...item} />
                 </>
@@ -351,88 +223,26 @@ export function InvoiceAttachmentPreview({
     </div>
   );
 
-  const scrollArea = (
-    <div
-      ref={scrollRef}
-      className={`visible-scrollbar relative flex min-h-0 min-w-0 flex-1 flex-col overflow-auto rounded-lg border border-gray-200 bg-gray-100 touch-pan-x touch-pan-y ${scrollAreaMinMaxClass}`}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onTouchCancel={onTouchEnd}
-    >
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/55 px-2 py-1 text-xs text-white sm:hidden">
-        <span className="material-symbols-outlined align-middle text-[16px]" aria-hidden>
-          pinch
-        </span>{" "}
-        Pinch to zoom
-      </div>
-      {inner}
-    </div>
-  );
-
-  if (isFullscreen) {
-    const focused = viewFullIndex != null ? items[viewFullIndex] : null;
-    const showSingleFileOverlay = focused != null;
-
-    return (
-      <div className={`fixed inset-0 z-[300] flex flex-col bg-black/90 ${className}`}>
-        <div className="flex min-w-0 shrink-0 items-center justify-between gap-2 px-3 py-2">
-          {showSingleFileOverlay && focused ? (
-            <p className="min-w-0 truncate text-sm font-medium text-white/95" title={focused.name || undefined}>
-              {focused.name || `Attachment ${(viewFullIndex ?? 0) + 1}`}
-            </p>
-          ) : (
-            <span className="min-w-0 flex-1" aria-hidden />
-          )}
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setScale(1)}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10"
-            >
-              Reset zoom
-            </button>
-            <button
-              type="button"
-              onClick={handleExitFullscreen}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white hover:bg-white/10"
-              aria-label="Close fullscreen"
-            >
-              <span className="material-symbols-outlined text-[28px]">close</span>
-            </button>
-          </div>
-        </div>
-        <div className="min-h-0 flex-1 overflow-hidden px-2 pb-4">
-          {showSingleFileOverlay && focused ? (
-            <div
-              className="visible-scrollbar mx-auto h-full max-h-full min-h-0 w-full max-w-5xl overflow-auto touch-pan-x touch-pan-y"
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
-              onTouchCancel={onTouchEnd}
-            >
-              <div
-                className="flex w-full flex-col p-2"
-                style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
-              >
-                <figure className="relative mx-auto w-full min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white shadow-lg">
-                  <PreviewBlock {...focused} layout="fullscreen" />
-                </figure>
-              </div>
-            </div>
-          ) : (
-            scrollArea
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div
-      className={`flex min-h-0 w-full flex-1 flex-col ${fillColumn && !isFullscreen ? "h-full min-h-0" : ""} ${className}`}
-    >
-      {scrollArea}
-    </div>
+    <>
+      <div className={`flex min-h-0 w-full flex-1 flex-col ${fillColumn ? "h-full min-h-0" : ""} ${className}`}>
+        <div
+          ref={scrollRef}
+          className={`visible-scrollbar relative flex min-h-0 min-w-0 flex-1 flex-col overflow-auto rounded-lg border border-gray-200 bg-gray-100 touch-pan-x touch-pan-y ${scrollAreaMinMaxClass}`}
+          {...touchHandlers}
+        >
+          <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/55 px-2 py-1 text-xs text-white sm:hidden">
+            <span className="material-symbols-outlined align-middle text-[16px]" aria-hidden>
+              pinch
+            </span>{" "}
+            Pinch to zoom
+          </div>
+          {inner}
+        </div>
+      </div>
+      {focused ? (
+        <AttachmentFullScreenViewer item={focused} onClose={() => setViewFullIndex(null)} />
+      ) : null}
+    </>
   );
 }

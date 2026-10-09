@@ -16,8 +16,14 @@ import {
   uploadPaymentAttachment,
   type PaymentItem,
 } from "@/lib/api";
-import { PdfJsCanvasPreview } from "@/components/PdfJsCanvasPreview";
-import { formatFileSize, FullFilePreviewLink, isImageFile, isPdfFile, isHtmlFile, isAllowedAttachment, ATTACHMENT_ACCEPT } from "@/lib/fileAttachmentPreview";
+import { formatFileSize, isAllowedAttachment, ATTACHMENT_ACCEPT } from "@/lib/fileAttachmentPreview";
+import {
+  AttachmentFullScreenViewer,
+  fileToPreviewItem,
+  nameToPreviewMime,
+  PreviewBlock,
+  ViewFullButton,
+} from "./AttachmentFullScreenViewer";
 import { AttachmentDeleteConfirmModal } from "./AttachmentDeleteConfirmModal";
 
 export type BankSlipFileRef = { id: string; name: string };
@@ -77,7 +83,6 @@ const overlayClass =
 const shellClass =
   "relative z-[1] flex max-h-[min(100dvh-1rem,760px)] w-full min-w-0 max-w-[520px] flex-col rounded-xl bg-white shadow-xl ring-1 ring-black/5 sm:max-h-[min(92dvh,760px)] sm:rounded-2xl";
 
-const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
 
 const bankSlipModalFooterCancelClass =
   "box-border h-12 min-h-[48px] w-full min-w-0 cursor-pointer rounded-lg border-2 border-secondary bg-white px-3 text-sm font-semibold text-secondary transition-colors hover:bg-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:min-h-[44px] sm:flex-1 sm:px-4";
@@ -186,45 +191,14 @@ function PreviewContent({
 }
 
 function BlobOrUrlPreviewContent({ fileName, url }: { fileName: string; url: string }) {
-  if (isImageName(fileName)) {
-    return (
-      <FullFilePreviewLink href={url} className="rounded-lg">
-        <img
-          src={url}
-          alt={`Preview: ${fileName}`}
-          className="mx-auto max-h-[min(55dvh,480px)] w-auto max-w-full object-contain"
-        />
-      </FullFilePreviewLink>
-    );
-  }
-  if (isPdfName(fileName)) {
-    return (
-      <FullFilePreviewLink href={url} className="w-full rounded-lg">
-        <PdfJsCanvasPreview src={url} title={fileName} className="w-full" maxPageWidthCssPx={560} />
-      </FullFilePreviewLink>
-    );
-  }
-  if (isHtmlName(fileName)) {
-    return (
-      <div className="w-full">
-        <iframe
-          src={url}
-          title={`Preview: ${fileName}`}
-          sandbox=""
-          referrerPolicy="no-referrer"
-          className="h-[min(55dvh,480px)] w-full rounded-lg border border-gray-200 bg-white"
-        />
-        <FullFilePreviewLink href={url} className={`mt-3 block rounded-lg text-center ${focusRing}`}>
-          <span className="text-sm font-semibold text-secondary underline">Open full file in new tab</span>
-        </FullFilePreviewLink>
-      </div>
-    );
-  }
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const item = { url, name: fileName, mime: nameToPreviewMime(fileName) };
   return (
-    <FullFilePreviewLink href={url} className={`rounded-lg py-8 text-center ${focusRing}`}>
-      <p className="text-sm text-primary/70">Preview is not available for this file type.</p>
-      <p className="mt-2 text-sm font-semibold text-secondary underline">Open full file in new tab</p>
-    </FullFilePreviewLink>
+    <div className="relative w-full">
+      <ViewFullButton name={fileName} onClick={() => setViewerOpen(true)} />
+      <PreviewBlock {...item} />
+      {viewerOpen ? <AttachmentFullScreenViewer item={item} onClose={() => setViewerOpen(false)} /> : null}
+    </div>
   );
 }
 
@@ -237,6 +211,7 @@ function FetchedPreviewContent({
   source: BankSlipFileFetchSource;
   onResolvedFileSize?: (bytes: number) => void;
 }) {
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [state, setState] = useState<
     | { status: "loading" }
     | { status: "ready"; url: string; mime: string; previewApiPath?: string }
@@ -336,63 +311,22 @@ function FetchedPreviewContent({
   const previewApiPath = "previewApiPath" in state ? state.previewApiPath : undefined;
   const showImage = mime.startsWith("image/") || isImageName(fileName);
   const showHtml = (mime === "text/html" || isHtmlName(fileName)) && !showImage;
+  // B2 serves PDFs as octet-stream; call it a PDF so PreviewBlock draws it instead of
+  // falling through to its "cannot preview" card.
   const showPdf = !showHtml && (mime === "application/pdf" || mime === "application/octet-stream" || isPdfName(fileName));
+  const item = {
+    url,
+    name: fileName,
+    mime: showImage ? (mime.startsWith("image/") ? mime : "image/*") : showPdf ? "application/pdf" : showHtml ? "text/html" : mime,
+    previewApiPath,
+  };
 
-  if (showImage) {
-    return (
-      <FullFilePreviewLink href={url} className="rounded-lg">
-        <img
-          src={url}
-          alt={`Preview: ${fileName}`}
-          className="mx-auto max-h-[min(55dvh,480px)] w-auto max-w-full object-contain"
-        />
-      </FullFilePreviewLink>
-    );
-  }
-  if (showPdf) {
-    return (
-      <FullFilePreviewLink href={url} className="w-full rounded-lg">
-        <PdfJsCanvasPreview
-          src={url}
-          previewApiPath={previewApiPath}
-          title={fileName}
-          className="w-full"
-          maxPageWidthCssPx={560}
-        />
-      </FullFilePreviewLink>
-    );
-  }
-  if (showHtml) {
-    return (
-      <div className="w-full">
-        <iframe
-          src={url}
-          title={`Preview: ${fileName}`}
-          sandbox=""
-          referrerPolicy="no-referrer"
-          className="h-[min(55dvh,480px)] w-full rounded-lg border border-gray-200 bg-white"
-        />
-        <FullFilePreviewLink href={url} className={`mt-3 block rounded-lg text-center ${focusRing}`}>
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-secondary underline">
-            <span className="material-symbols-outlined text-[24px] leading-none" aria-hidden>
-              open_in_new
-            </span>
-            Open full file in new tab
-          </span>
-        </FullFilePreviewLink>
-      </div>
-    );
-  }
   return (
-    <FullFilePreviewLink href={url} className={`rounded-lg py-8 text-center ${focusRing}`}>
-      <p className="text-sm text-primary/70">Preview is not available for this file type.</p>
-      <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-secondary underline">
-        <span className="material-symbols-outlined text-[28px] leading-none sm:text-[32px]" aria-hidden>
-          open_in_new
-        </span>
-        Open full file in new tab
-      </p>
-    </FullFilePreviewLink>
+    <div className="relative w-full">
+      <ViewFullButton name={fileName} onClick={() => setViewerOpen(true)} />
+      <PreviewBlock {...item} />
+      {viewerOpen ? <AttachmentFullScreenViewer item={item} onClose={() => setViewerOpen(false)} /> : null}
+    </div>
   );
 }
 
@@ -463,6 +397,8 @@ function StagedBankSlipInlinePreview({
   previewSubtitleId: string;
 }) {
   const { icon, iconClass } = fileIconForName(file.name);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const item = fileToPreviewItem(file, objectUrl);
   return (
     <div className="flex h-full flex-col">
       <div className="flex gap-3 pb-2">
@@ -480,39 +416,11 @@ function StagedBankSlipInlinePreview({
           </p>
         </div>
       </div>
-      {isHtmlFile(file) && !isImageFile(file) && !isPdfFile(file) ? (
-        <div className="mt-3 min-h-[min(50dvh,320px)] rounded-lg bg-black/5 p-2 sm:min-h-[240px] sm:p-3">
-          <iframe
-            src={objectUrl}
-            title={`Preview: ${file.name}`}
-            sandbox=""
-            referrerPolicy="no-referrer"
-            className="h-[min(50dvh,320px)] w-full rounded-lg border border-gray-200 bg-white sm:min-h-[240px]"
-          />
-          <FullFilePreviewLink href={objectUrl} className="mt-3 block text-center">
-            <span className="text-sm font-semibold text-secondary underline">Open full file in new tab</span>
-          </FullFilePreviewLink>
-        </div>
-      ) : (
-        <FullFilePreviewLink
-          href={objectUrl}
-          className="mt-3 min-h-[min(50dvh,320px)] overflow-auto rounded-lg bg-black/5 p-2 sm:min-h-[240px] sm:p-3"
-        >
-          {isImageFile(file) ? (
-            <img
-              src={objectUrl}
-              alt={`Preview: ${file.name}`}
-              className="mx-auto max-h-[min(55dvh,480px)] w-auto max-w-full object-contain"
-            />
-          ) : null}
-          {isPdfFile(file) && !isImageFile(file) ? (
-            <PdfJsCanvasPreview src={objectUrl} title={file.name} className="w-full" maxPageWidthCssPx={560} />
-          ) : null}
-          {!isImageFile(file) && !isPdfFile(file) ? (
-            <p className="py-8 text-center text-sm text-primary/70">Preview is not available for this file type.</p>
-          ) : null}
-        </FullFilePreviewLink>
-      )}
+      <div className="relative mt-3 min-h-[min(50dvh,320px)] overflow-auto rounded-lg bg-black/5 p-2 sm:min-h-[240px] sm:p-3">
+        <ViewFullButton name={file.name} onClick={() => setViewerOpen(true)} />
+        <PreviewBlock {...item} />
+      </div>
+      {viewerOpen ? <AttachmentFullScreenViewer item={item} onClose={() => setViewerOpen(false)} /> : null}
     </div>
   );
 }

@@ -104,6 +104,17 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       modal.
 - [ ] The attachment preview renders PDFs (pdf.js) and images inline, and upload/delete on an
       attachment works from the same card.
+- [ ] **No file ever leaves the app.** On every preview surface — Add Payment Request, the
+      upload-invoice modal, a bank slip (staged and saved), the detail page and easy view —
+      **View full** opens a full-screen preview *in the same tab*: no new tab opens and
+      nothing downloads. Check at 360, 768 and 1440 px. Try a PNG, a PDF and an HTML file.
+- [ ] In the full-screen viewer: pinch-zoom and **Reset zoom** work, **Close** is at least
+      44x44, Tab never escapes the overlay, and **one Escape** closes the viewer and leaves
+      the modal underneath open (a second Escape closes the modal).
+- [ ] After closing the viewer, focus is back on the **View full** button that opened it.
+- [ ] Removing the file being viewed closes the viewer rather than leaving a broken image.
+- [ ] Add Payment Request does **not** offer spreadsheets: the picker filters `.xlsx` out,
+      and a dropped one is refused with a message that does not mention Excel.
 - [ ] Activity history starts collapsed; opening it scrolls it into view, closing it scrolls
       back to where the page was.
 - [ ] A failed activity-history read shows "I couldn't load the history…" with a working Try

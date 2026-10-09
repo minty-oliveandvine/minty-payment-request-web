@@ -5,7 +5,7 @@
 // what happens on the way OUT of edit mode - one of the thirteen set-state-in-effect sites -
 // and that it does not report an empty selection as a change.
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -159,6 +159,19 @@ describe("what it draws", () => {
     for (const item of ATTACHMENTS) {
       expect(screen.getByRole("button", { name: `View full — ${item.name}` })).toBeInTheDocument();
     }
+  });
+
+  it("enlarges into the full-screen viewer, in-app, rather than a new tab", async () => {
+    show({ showViewFullButton: true });
+
+    await userEvent.click(screen.getByRole("button", { name: `View full — ${ATTACHMENTS[1].name}` }));
+
+    const viewer = (await screen.findByRole("button", { name: "Close preview" })).closest(
+      '[role="dialog"]',
+    ) as HTMLElement;
+    expect(viewer).toHaveAttribute("aria-modal", "true");
+    expect(viewer).toHaveAccessibleName(ATTACHMENTS[1].name);
+    expect(within(viewer).queryAllByRole("link")).toHaveLength(0);
   });
 
   it("hands a PDF to the pdf.js renderer rather than an image tag", () => {

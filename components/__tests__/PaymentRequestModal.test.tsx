@@ -4,7 +4,7 @@
 // the refusals - every required field, one at a time - and the two ways out, Save as Draft and
 // Confirm, which post to different endpoints and must not be confused.
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -70,7 +70,29 @@ const show = () =>
     </ToastProvider>,
   );
 
-const dialog = () => screen.getByRole("dialog");
+const dialog = () => screen.getAllByRole("dialog")[0];
+
+const file = (name: string, type: string) => new File(["x"], name, { type });
+
+/** Hand the input a file past its `accept` filter, the way a drag-drop does. */
+const drop = (input: HTMLInputElement, f: File) => {
+  Object.defineProperty(input, "files", { value: [f], configurable: true });
+  fireEvent.change(input);
+};
+
+const attach = (f: File) =>
+  userEvent.upload(within(dialog()).getByLabelText("Choose files to attach"), f);
+
+/** The inline preview pane: found by the enlarge control it carries. */
+const findPane = async () => {
+  const button = await screen.findByRole("button", { name: `View full — ${"receipt.png"}` });
+  return button.parentElement as HTMLElement;
+};
+
+const findViewer = async () => {
+  const close = await screen.findByRole("button", { name: "Close preview" });
+  return close.closest('[role="dialog"]') as HTMLElement;
+};
 const confirm = () => screen.getByRole("button", { name: /^Confirm/ });
 const saveDraft = () => screen.getByRole("button", { name: /Save as Draft/ });
 
@@ -289,5 +311,83 @@ describe("the attachments", () => {
 
     expect(within(dialog()).getByText("Click or drag files here to upload")).toBeInTheDocument();
     expect(within(dialog()).getByLabelText("Choose files to attach")).toBeInTheDocument();
+  });
+
+  it("does not offer a spreadsheet in the picker at all", async () => {
+    show();
+    const input = within(dialog()).getByLabelText("Choose files to attach");
+
+    expect(input.getAttribute("accept")).not.toContain("xls");
+    expect(input.getAttribute("accept")).not.toContain("excel");
+    expect(input.getAttribute("accept")).not.toContain("spreadsheet");
+
+    // The picker filters it out, so it never even reaches the handler.
+    await attach(file("books.xlsx", "application/vnd.ms-excel"));
+
+    expect(screen.queryByText("books.xlsx")).toBeNull();
+  });
+
+  it("refuses a spreadsheet dropped past the picker, without naming Excel", async () => {
+    show();
+    const input = within(dialog()).getByLabelText("Choose files to attach") as HTMLInputElement;
+
+    // Drag-drop bypasses `accept`, so this is the path the error copy is actually for.
+    drop(input, file("books.xlsx", "application/vnd.ms-excel"));
+
+    const refusal = await screen.findByText(/I can't open this one/);
+    expect(refusal).toHaveTextContent("try PDF, JPEG, PNG, or HTML");
+    expect(refusal).not.toHaveTextContent("Excel");
+    expect(screen.queryByText("books.xlsx")).toBeNull();
+  });
+});
+
+// A staged file is PREVIEWED IN PLACE and enlarged over the dialog. It must never leave the
+// app: an anchor here was the bug (the whole pane used to be a target="_blank" link), so the
+// absence of one is the thing worth asserting.
+describe("previewing a staged file", () => {
+  it("shows the file inline with no link out of the app", async () => {
+    show();
+
+    await attach(file("receipt.png", "image/png"));
+
+    const pane = await findPane();
+    expect(within(pane).getByAltText("receipt.png")).toBeInTheDocument();
+    expect(within(pane).queryAllByRole("link")).toHaveLength(0);
+    expect(pane.querySelector('[target="_blank"]')).toBeNull();
+  });
+
+  it("enlarges to a full-screen preview over the dialog", async () => {
+    show();
+    await attach(file("receipt.png", "image/png"));
+
+    await userEvent.click(await screen.findByRole("button", { name: "View full — receipt.png" }));
+
+    const viewer = await findViewer();
+    expect(viewer).toHaveAttribute("aria-modal", "true");
+    expect(within(viewer).getByAltText("receipt.png")).toBeInTheDocument();
+    expect(within(viewer).queryAllByRole("link")).toHaveLength(0);
+  });
+
+  it("unwinds one layer per Escape: the viewer first, then the dialog", async () => {
+    show();
+    await attach(file("receipt.png", "image/png"));
+    await userEvent.click(await screen.findByRole("button", { name: "View full — receipt.png" }));
+    await findViewer();
+
+    await userEvent.keyboard("{Escape}");
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Close preview" })).toBeNull());
+    expect(screen.getByText("Add Payment Request")).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("says so, rather than offering a download, for a file it cannot draw", async () => {
+    show();
+
+    await attach(file("payload.bin", "application/octet-stream"));
+
+    // Refused at the gate - the point is that no download link appears anywhere.
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+    expect(document.querySelector("a[download]")).toBeNull();
   });
 });
