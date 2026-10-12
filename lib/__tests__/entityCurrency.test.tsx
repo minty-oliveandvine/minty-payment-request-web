@@ -119,3 +119,59 @@ describe("useEntityCurrency", () => {
     expect(screen.getByRole("status").textContent).toBe("currency=");
   });
 });
+
+describe("useEntityCurrencyState", () => {
+  function probe(useState: () => { code: string; status: string; retry: () => void }) {
+    return function Probe() {
+      const { code, status, retry } = useState();
+      return (
+        <>
+          <p role="status">{`${status}:${code}`}</p>
+          <button onClick={retry}>retry</button>
+        </>
+      );
+    };
+  }
+
+  it("is loading, then ready with the code", async () => {
+    const { useEntityCurrencyState } = await freshModule();
+    const Probe = probe(useEntityCurrencyState);
+    fetchMock.mockResolvedValueOnce(answer(200, { currency_code: "hkd" }));
+
+    render(<Probe />);
+
+    expect(screen.getByRole("status").textContent).toBe("loading:");
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("ready:HKD"));
+  });
+
+  it("says unset when the company has no currency", async () => {
+    const { useEntityCurrencyState } = await freshModule();
+    const Probe = probe(useEntityCurrencyState);
+    fetchMock.mockResolvedValueOnce(answer(200, { currency_code: "" }));
+
+    render(<Probe />);
+
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("unset:"));
+  });
+
+  it("says error when the read fails, logs it, and reads again on retry", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const { useEntityCurrencyState } = await freshModule();
+      const Probe = probe(useEntityCurrencyState);
+      fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+      render(<Probe />);
+
+      await waitFor(() => expect(screen.getByRole("status").textContent).toBe("error:"));
+      expect(consoleError).toHaveBeenCalled();
+
+      fetchMock.mockResolvedValueOnce(answer(200, { currency_code: "HKD" }));
+      screen.getByRole("button", { name: "retry" }).click();
+
+      await waitFor(() => expect(screen.getByRole("status").textContent).toBe("ready:HKD"));
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+});

@@ -4,7 +4,11 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
-import { useEntityCurrency } from "@/lib/entityCurrency";
+import { getEntityIdSnapshot } from "@/lib/auth";
+import { useEntityCurrencyState } from "@/lib/entityCurrency";
+import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
+import { useClientValue } from "@/lib/useClientValue";
+import { integrationTabUrl } from "@/components/settings/SettingsPills";
 import { formatFileSize, isAllowedAttachment, ATTACHMENT_ACCEPT } from "@/lib/fileAttachmentPreview";
 import {
   AttachmentFullScreenViewer,
@@ -171,7 +175,11 @@ export function PaymentRequestModal({
 }: PaymentRequestModalProps) {
   const router = useRouter();
   const pages = useCompanyPages();
-  const entityCurrency = useEntityCurrency();
+  // The bill's currency is the company's; with none set (or unreadable) the form can't be sent.
+  const currency = useEntityCurrencyState();
+  const entityCurrency = currency.code;
+  const currencyBlocked = currency.status !== "ready";
+  const entityId = useClientValue(getEntityIdSnapshot, "");
   const titleId = useId();
   const previewSubtitleId = useId();
   const attachmentsErrorId = useId();
@@ -391,7 +399,7 @@ export function PaymentRequestModal({
   };
 
   const handleSaveDraft = async () => {
-    if (draftSubmitting) return;
+    if (draftSubmitting || currencyBlocked) return;
     setFieldErrors({});
     setFormError(null);
     setDraftSubmitting(true);
@@ -465,6 +473,7 @@ export function PaymentRequestModal({
   };
 
   const handleConfirm = async () => {
+    if (currencyBlocked) return;
     const next = validatePaymentRequestForm({
       amount,
       contact,
@@ -726,10 +735,12 @@ export function PaymentRequestModal({
                   aria-label="Currency"
                   className={
                     "box-border flex h-11 min-h-[44px] w-24 shrink-0 items-center justify-center rounded-l-2xl rounded-r-none border border-r-0 bg-white px-2 text-base text-black sm:min-h-11 sm:px-3 sm:text-sm " +
-                    (fieldErrors.amount ? "border-red-500" : "border-gray-300")
+                    (fieldErrors.amount || currency.status === "unset" || currency.status === "error"
+                      ? "border-red-500"
+                      : "border-gray-300")
                   }
                 >
-                  {entityCurrency}
+                  {currency.status === "ready" ? entityCurrency : currency.status === "loading" ? "…" : "—"}
                 </div>
                 <input
                   id="pr-amount"
@@ -777,6 +788,29 @@ export function PaymentRequestModal({
               {fieldErrors.amount ? (
                 <p className="mt-1 text-xs text-red-600" role="alert">
                   {fieldErrors.amount}
+                </p>
+              ) : null}
+              {currency.status === "unset" ? (
+                <p className="mt-1 text-xs text-red-600" role="alert">
+                  Your company has no currency set. Choose one in{" "}
+                  <a
+                    href={integrationTabUrl(MINTY_MODULE_URL, entityId)}
+                    className="font-medium underline underline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                  >
+                    Entity &amp; Integration settings
+                  </a>
+                  .
+                </p>
+              ) : currency.status === "error" ? (
+                <p className="mt-1 text-xs text-red-600" role="alert">
+                  We couldn&apos;t load your company&apos;s currency.{" "}
+                  <button
+                    type="button"
+                    onClick={currency.retry}
+                    className="inline-flex min-h-[44px] cursor-pointer items-center font-medium underline underline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                  >
+                    Try again
+                  </button>
                 </p>
               ) : null}
             </div>
@@ -852,11 +886,11 @@ export function PaymentRequestModal({
             <button type="button" onClick={handleCancel} className="box-border h-12 min-h-[48px] min-w-0 flex-1 cursor-pointer rounded-lg border-2 border-secondary bg-white px-3 text-sm font-semibold text-secondary transition-colors hover:bg-secondary/10">
               Cancel
             </button>
-            <button type="button" onClick={() => void handleConfirm()} disabled={confirmSubmitting} className="box-border h-12 min-h-[48px] min-w-0 flex-1 rounded-lg border border-transparent bg-secondary px-4 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60">
+            <button type="button" onClick={() => void handleConfirm()} disabled={confirmSubmitting || currencyBlocked} className="box-border h-12 min-h-[48px] min-w-0 flex-1 rounded-lg border border-transparent bg-secondary px-4 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60">
               {confirmSubmitting ? "Confirming…" : "Confirm"}
             </button>
           </div>
-          <button type="button" onClick={() => void handleSaveDraft()} disabled={draftSubmitting} className="order-2 box-border h-12 min-h-[48px] w-full rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-primary transition-colors hover:bg-gray-50 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="button" onClick={() => void handleSaveDraft()} disabled={draftSubmitting || currencyBlocked} className="order-2 box-border h-12 min-h-[48px] w-full rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-primary transition-colors hover:bg-gray-50 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60">
             {draftSubmitting ? "Saving…" : "Save as Draft"}
           </button>
         </div>
