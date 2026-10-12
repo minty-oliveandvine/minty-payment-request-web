@@ -17,9 +17,6 @@
   /* The "Leave without saving?" dialog copied from minty-web (features/subscription/components/
      ConfirmDialog.tsx, 2026-10-01): its sentences' grey, minty-web's value. */
   --ink-soft: #757575;
-  /* Inter from next/font (--font-inter on <html className>) */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: ui-monospace, monospace;
 }
 
 @theme {
@@ -27,6 +24,14 @@
   --color-secondary: var(--secondary);
   --color-teal-strong: var(--teal-strong);
   --color-accent: var(--accent);
+  /* The faces. These live here and not in :root above: --font-* IS Tailwind's theme namespace,
+     so a :root declaration of the same name cannot be referenced from here the way the colours
+     are, and a token declared only in :root generates no utility - font-sans would silently fall
+     back to Tailwind's own stack instead of Inter. @theme still emits them onto :root, so the
+     body rule below reads them unchanged.
+     Inter from next/font (--font-inter on <html className>). */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: ui-monospace, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
