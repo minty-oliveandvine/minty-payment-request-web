@@ -50,6 +50,10 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
 - [ ] The totals banner reflects only the rows currently shown (after filtering), not the whole
       list.
 - [ ] Every amount displays in the entity's own currency, never a bill's stored currency code.
+- [ ] Add Payment Request for a company with no currency: the box shows "—", the message under
+      Amount links to Entity & Integration, and Confirm / Save as Draft are disabled.
+- [ ] Block `/payments` in devtools: the Bank Slip cell shows **Retry**, never **Upload**;
+      unblock and press Retry → the real count appears.
 - [ ] Bulk-deleting drafts from the table removes exactly the selected rows.
 - [ ] Pagination keeps filters and the active tab when moving between pages.
 

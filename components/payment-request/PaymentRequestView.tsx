@@ -207,6 +207,8 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
   // Bank-slip counts, keyed by bill id and stamped with the load that produced them.
   const [enrichmentById, setEnrichmentById] = useState<Map<string, EnrichmentEntry>>(() => new Map());
   const [enrichEpoch, setEnrichEpoch] = useState(0);
+  /** A failed bank slip lookup's Retry: re-reads the counts of the rows on screen. */
+  const retryBankSlips = useCallback(() => setEnrichEpoch((e) => e + 1), []);
 
   const statusFilterKey = statusFilters.join("|");
 
@@ -214,15 +216,20 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
   const enrichedBills = useMemo(
     () =>
       bills.map((r) => {
-        const e = enrichmentById.get(r.id)?.value;
-        if (!e) return r;
+        const entry = enrichmentById.get(r.id);
+        const e = entry?.value;
+        // No count yet, or the lookup failed: unknown is not zero, so the row offers no upload.
+        if (!e) return { ...r, bankslipState: "loading" as const };
+        if (e.failed) {
+          return { ...r, bankslipState: entry.epoch < enrichEpoch ? ("loading" as const) : ("error" as const) };
+        }
         return {
           ...r,
           bankslipFileCount: e.bankslipFileCount,
           ...(e.bankSlipDetails ? { bankSlipDetails: e.bankSlipDetails } : {}),
         };
       }),
-    [bills, enrichmentById],
+    [bills, enrichmentById, enrichEpoch],
   );
 
   /**
@@ -862,6 +869,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                   setEasyViewPayBillId(isClosing ? null : rowId);
                 }}
                 onOpenBankSlipUpload={(rowId) => setEasyViewBankSlipRowId(rowId)}
+                onRetryBankSlips={retryBankSlips}
                 draftDetailBillId={easyViewDraftBillId}
                 onDraftBillOpen={(rowId) => {
                   const isClosing = easyViewDraftBillId === rowId;
@@ -952,6 +960,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                   }
                 }}
                 onBankSlipUploaded={loadBills}
+                onRetryBankSlips={retryBankSlips}
               />
               <div className="px-4 pb-6 sm:px-6">{pagination}</div>
             </div>

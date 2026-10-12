@@ -263,6 +263,57 @@ describe("a list that did not load", () => {
   });
 });
 
+describe("bank slip counts that did not load", () => {
+  it("say so instead of offering an upload, and load again when asked", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      let paymentsUp = false;
+      fetchMock.mockImplementation(async (input) => {
+        const url = new URL(String(input));
+        const path = url.pathname;
+        if (path.endsWith("/auth/entitlements")) return answer(200, { billing_enabled: true });
+        if (path.endsWith("/auth/entity-currency")) return answer(200, { currency_code: "HKD" });
+        if (path.endsWith("/attachments")) {
+          return answer(200, [
+            {
+              id: "att-1", attachment_role: "bank_slip", sort_order: 0, note: "", created_at: "2026-10-12T02:00:00Z",
+              attachment: {
+                id: "f-1", original_name: "slip.pdf", mime_type: "application/pdf", file_size: 10,
+                file_extension: "pdf", storage_provider: "s3", created_at: "2026-10-12T02:00:00Z", download_url: "",
+              },
+            },
+          ]);
+        }
+        if (path.endsWith("/payments")) {
+          if (!paymentsUp) return answer(500, { detail: "boom" });
+          return answer(200, {
+            paid_total: "0.00",
+            payments: [{ id: "pay-1", bill_id: "b1", payment_status: "completed", amount: "1.00", currency_code: "HKD" }],
+          });
+        }
+        if (path.endsWith("/bills/")) {
+          return answer(200, [billListItem({ id: "b1", contact: "One Supplier", status: "submitted" })]);
+        }
+        return answer(200, {});
+      });
+      show();
+
+      const retry = await table().findByRole("button", {
+        name: "Bank slips didn't load for One Supplier — try again",
+      });
+      expect(table().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
+      expect(consoleError).toHaveBeenCalled();
+
+      paymentsUp = true;
+      await userEvent.click(retry);
+
+      expect(await table().findByRole("button", { name: /View bank slip — 1 file uploaded/ })).toBeInTheDocument();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+});
+
 describe("the status filter", () => {
   it("asks the server for a single status rather than filtering in the browser", async () => {
     serve({ pages: [ALL_STATUSES] });

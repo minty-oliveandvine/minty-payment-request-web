@@ -408,6 +408,46 @@ describe("which payment the slip lands on", () => {
 
     await waitFor(() => expect(onInlineUploadSuccess).toHaveBeenCalledTimes(1));
   });
+
+  it("closes once it has saved, after the caller has refreshed", async () => {
+    const order: string[] = [];
+    serve({ payments: [payment({ id: "p-done", bill_id: BILL_ID, payment_status: "completed" })] });
+    show({
+      inlineUploadBillContext: { billId: BILL_ID },
+      onInlineUploadSuccess: async () => {
+        order.push("refresh");
+      },
+      onClose: () => order.push("close"),
+    });
+    await userEvent.upload(filePicker(), slip());
+
+    await userEvent.click(uploadButton());
+
+    await waitFor(() => expect(order).toEqual(["refresh", "close"]));
+  });
+
+  it("still closes when the refresh after a saved upload fails, and says why in the console", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const { calls } = serve({ payments: [] });
+      show({
+        inlineUploadBillContext: { billId: BILL_ID },
+        onInlineUploadSuccess: async () => {
+          throw new Error("list refresh failed");
+        },
+      });
+      await userEvent.upload(filePicker(), slip());
+
+      await userEvent.click(uploadButton());
+
+      await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+      expect(consoleError).toHaveBeenCalled();
+      // The slip is saved: the payment it created is not rolled back.
+      expect(calls.some((c) => c.method === "DELETE")).toBe(false);
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
 });
 
 describe("an upload that failed", () => {
@@ -423,6 +463,7 @@ describe("an upload that failed", () => {
 
     expect(await within(dialog()).findByText("Files need to be under 10MB.")).toBeInTheDocument();
     expect(onInlineUploadSuccess).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("takes back the payment it had to create, so no empty payment is left behind", async () => {
