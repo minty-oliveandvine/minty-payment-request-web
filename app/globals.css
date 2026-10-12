@@ -29,9 +29,16 @@
      are, and a token declared only in :root generates no utility - font-sans would silently fall
      back to Tailwind's own stack instead of Inter. @theme still emits them onto :root, so the
      body rule below reads them unchanged.
-     Inter from next/font (--font-inter on <html className>). */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: ui-monospace, monospace;
+     Inter from next/font (--font-inter on <html className>).
+     COPY of minty-web/app/globals.css's @theme font block (2026-10-12), byte for byte - lifted
+     into @minty/shared at Part 3 step 4. Change them together. minty-web's copy carries the full
+     reasoning for the two deletions (no --font-mono, no emoji tail).
+     --font-brand is here for parity, but this app draws no lockup as text - its mark is the
+     minty-logo.svg in components/ui/SideMenu.tsx - so Plus Jakarta Sans is NOT loaded and the
+     token falls through to Inter. Adding a text lockup here means adding the next/font call in
+     app/layout.tsx too, not just the class. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-brand: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
