@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ApiError, fetchEntityBillAccounts, fetchXeroStatus, updateEntityBillAccount } from "@/lib/api";
-import { useLeaveGuard } from "@/lib/leaveGuard";
+import { useLeaveGuard } from "@minty/shared/leaveGuard";
 import { useUserRole } from "@/lib/useUserRole";
 import { useToast } from "@/components/Toast";
 import { LeaveDialog } from "@/features/subscription/components/InterruptedDialogs";

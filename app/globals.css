@@ -1,6 +1,17 @@
 @import "tailwindcss";
+/* The faces, shared: @minty/shared/theme.css (--font-sans, --font-brand). Plain CSS resolved by
+   the bundler, like the icon font below - misspell it and the build fails.
+   NOTE this app loads no Plus Jakarta Sans (it draws no lockup as text - its mark is the
+   minty-logo.svg the packaged SideMenu renders), so --font-brand falls through to Inter here.
+   Adding a text lockup means adding the next/font call in app/layout.tsx too, not just a class. */
+@import "@minty/shared/theme.css";
 @import "material-symbols/outlined.css";
 @import "./styles/checkbox/checkbox-secondary-white-tick.css";
+/* Tailwind v4 NEVER scans node_modules, so without this every utility class inside a packaged
+   component (the sidebar) is dropped from the generated CSS - unstyled, with no error anywhere.
+   Relative to this file, not the package name: Tailwind reads it as a path.
+   Guarded by app/__tests__/packagedStyles.test.ts - do not delete either. */
+@source "../node_modules/@minty/shared/src";
 
 :root {
   --background: #ffffff;
@@ -24,21 +35,6 @@
   --color-secondary: var(--secondary);
   --color-teal-strong: var(--teal-strong);
   --color-accent: var(--accent);
-  /* The faces. These live here and not in :root above: --font-* IS Tailwind's theme namespace,
-     so a :root declaration of the same name cannot be referenced from here the way the colours
-     are, and a token declared only in :root generates no utility - font-sans would silently fall
-     back to Tailwind's own stack instead of Inter. @theme still emits them onto :root, so the
-     body rule below reads them unchanged.
-     Inter from next/font (--font-inter on <html className>).
-     COPY of minty-web/app/globals.css's @theme font block (2026-10-12), byte for byte - lifted
-     into @minty/shared at Part 3 step 4. Change them together. minty-web's copy carries the full
-     reasoning for the two deletions (no --font-mono, no emoji tail).
-     --font-brand is here for parity, but this app draws no lockup as text - its mark is the
-     minty-logo.svg in components/ui/SideMenu.tsx - so Plus Jakarta Sans is NOT loaded and the
-     token falls through to Inter. Adding a text lockup here means adding the next/font call in
-     app/layout.tsx too, not just the class. */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-brand: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

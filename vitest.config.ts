@@ -20,6 +20,9 @@ export default defineConfig({
     },
   },
   test: {
+    /** Vitest does not read next.config's transpilePackages: @minty/shared is .ts source in
+     *  node_modules, so it must be transformed here rather than externalised. */
+    server: { deps: { inline: ["@minty/shared"] } },
     environment: "jsdom",
     setupFiles: ["./test/setup.ts"],
     include: ["**/*.test.ts", "**/*.test.tsx"],

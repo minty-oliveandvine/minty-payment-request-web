@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { AUTH_COOKIE_NAME, ENTITY_ID_COOKIE_NAME, ENTITY_NAME_COOKIE_NAME } from "@/lib/auth";
 import { COMPANY_PAGE, companyBase, companyPages, isCanonicalRef } from "@/lib/companyPages";
-import { shortIdOf } from "@/lib/companyRef";
+import { shortIdOf } from "@minty/shared/companyRef";
 import { resolveMintyModuleUrl } from "@/lib/mintyEnv";
 
 const AUTH_COOKIE = AUTH_COOKIE_NAME;

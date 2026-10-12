@@ -13,7 +13,7 @@ import {
   changesFrom,
   planLabel,
 } from "@/features/profile/lib/profileView";
-import { EMAIL_ASCII_HINT } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT } from "@minty/shared/emailInput";
 
 const company = (modules: string[]): ProfileCompany => ({
   id: "e1",

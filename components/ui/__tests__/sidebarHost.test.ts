@@ -99,10 +99,11 @@ describe("links", () => {
   });
 });
 
+// Takes the path since 2026-10-12, instead of reading window.location itself: the packaged
+// sidebar feeds it from this app's router (sidebarHost.usePathname), so it is a pure function.
 describe("currentOf", () => {
   it("is 'settings' only on this app's settings page - the one menu item that is ours", () => {
-    window.history.replaceState({}, "", "/entity/360812e1/olive-and-vine/settings/payment-request");
-    expect(currentOf()).toBe("settings");
+    expect(currentOf("/entity/360812e1/olive-and-vine/settings/payment-request")).toBe("settings");
   });
 
   it("is null on every other page", () => {
@@ -111,10 +112,14 @@ describe("currentOf", () => {
       "/entity/360812e1/olive-and-vine/payment-request/PR-0001",
       "/landing",
       "/",
+      "",
     ]) {
-      window.history.replaceState({}, "", path);
-      expect(currentOf()).toBeNull();
+      expect(currentOf(path)).toBeNull();
     }
+  });
+
+  it("never reports 'profile' - that page is minty-web's, so the menu's name always opens the view", () => {
+    expect(currentOf("/profile")).toBeNull();
   });
 });
 
