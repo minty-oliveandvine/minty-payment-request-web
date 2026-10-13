@@ -1,6 +1,6 @@
 /* Part 14 "Checkbox" - use class `checkbox-secondary-white-tick` on inputs. A 20px box with a
    border/input outline; checked = border/selected fill with a white tick (D14-02); the Part 13
-   2px focus ring outside it. Colours are the Part 13 semantic tokens (styles/tokens.css). */
+   2px focus ring outside it. Colours are the Part 13 semantic tokens (@minty/shared/tokens.css). */
 
 .checkbox-secondary-white-tick {
   appearance: none;

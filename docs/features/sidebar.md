@@ -59,13 +59,12 @@ the last one. `next.config.ts` carries `transpilePackages: ["@minty/shared"]` (t
 `.ts` source) and `vitest.config.ts` carries `server.deps.inline`, since Vitest does not read
 `transpilePackages`. All of it is guarded by `app/__tests__/packagedStyles.test.ts`.
 
-**The Part 13/14 restyle of the sidebar is not in the pinned package yet** (2026-10-13). It lives
-on minty-shared-ts's `design-v2-sidebar` branch: the token sheet (`src/tokens.css`, which
-`app/styles/tokens.css` here copies until then), 44px items, Active by `aria-current`, a 280px
-panel, and an opt-in `rail` (fixed on the right from 1280px, `SIDEBAR_RAIL_OFFSET`). Until a
-`v0.2` tag is pushed and this app's pin bumped, the sidebar keeps its old look beside the restyled
-pages. The bump changes `packagedStyles.test.ts`'s sidebar assertions (353px / 49px / 40px) and
-lets `app/styles/tokens.css` become an `@import "@minty/shared/tokens.css"`.
+**The Part 13/14 restyle of the sidebar is pinned here since `v0.2`** (2026-10-13): the token
+sheet (`@import "@minty/shared/tokens.css"` in `app/globals.css`; the local copy is gone), 44px
+items, Active by `aria-current`, a 280px panel, and an opt-in `rail` (fixed on the right from
+1280px, `SIDEBAR_RAIL_OFFSET`). `packagedStyles.test.ts` pins the v0.2 sidebar (280px panel, 31px
+mark, 72px logo). minty-web stays on `v0.1` until it migrates (owner, 2026-10-13): its sheet
+needs the token sheet, which also changes its radius scale.
 
 The menu's 15 `/menu/*` images stay in **this app's `public/`** — Next cannot serve a static file
 out of `node_modules`. `app/__tests__/packagedAssets.test.ts` asserts the package's

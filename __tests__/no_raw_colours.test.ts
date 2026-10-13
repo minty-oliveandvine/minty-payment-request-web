@@ -1,4 +1,4 @@
-// Part 13 V-01: screens bind to the semantic tokens (app/styles/tokens.css), never a hex and
+// Part 13 V-01: screens bind to the semantic tokens (@minty/shared/tokens.css), never a hex and
 // never a Tailwind palette colour. This guard fails on any that creeps back into the source, the
 // way the date-format guard (rule 11) keeps dates in one place. It reads the files as text - so it
 // catches a class string wherever it is built - and skips comments.
@@ -84,6 +84,6 @@ describe("Part 13 V-01: no raw colours in the source", () => {
         }
       }
     }
-    expect(offences, `raw colours (use a Part 13 token from app/styles/tokens.css):\n${offences.join("\n")}`).toEqual([]);
+    expect(offences, `raw colours (use a Part 13 token from @minty/shared/tokens.css):\n${offences.join("\n")}`).toEqual([]);
   });
 });

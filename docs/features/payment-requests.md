@@ -8,8 +8,8 @@ this page is what the person sees and where each piece of the screen lives.
 2026-10-13 — PRW is the first app on it; minty-web, onboarding and Flask keep their current look
 until they migrate. Its pieces:
 
-- **Tokens:** `app/styles/tokens.css` (a copy of `@minty/shared`'s `tokens.css`, which so far
-  exists only on minty-shared-ts's `design-v2-sidebar` branch) — `--minty-*` primitives in
+- **Tokens:** `@minty/shared/tokens.css` (imported by `app/globals.css` since the `v0.2` pin,
+  2026-10-13) — `--minty-*` primitives in
   `:root`, semantic `--color-*` roles in `@theme`, so the utilities are `bg-action-primary`,
   `text-text-primary`, `bg-status-info-bg`, `border-border-input`, `bg-overlay-scrim`, and so on;
   radius sm/md/lg/xl = 4/8/12/16; text styles `text-display-m`/`title-l`/`title-m`/`body-m`/

@@ -88,8 +88,8 @@ describe("@minty/shared reaches the stylesheet", () => {
     // Declarations, not class selectors: no escaping to get wrong. Each arbitrary value appears in
     // the package's sidebar and nowhere in this app's own source, so if Tailwind stops scanning
     // node_modules they disappear from the output.
-    expect(compiled).toMatch(/width:\s*min\(100%,\s*353px\)/); // Sidebar's menu panel
-    expect(compiled).toMatch(/padding-left:\s*49px/); // SideMenu's nav
-    expect(compiled).toMatch(/gap:\s*40px/); // the person block
+    expect(compiled).toMatch(/width:\s*min\(100%,\s*280px\)/); // Sidebar's menu panel (v0.2)
+    expect(compiled).toMatch(/height:\s*31px/); // SideMenu's section mark
+    expect(compiled).toMatch(/width:\s*72px/); // SideMenu's logo
   });
 });

@@ -6,9 +6,8 @@
    Adding a text lockup means adding the next/font call in app/layout.tsx too, not just a class. */
 @import "@minty/shared/theme.css";
 /* The Part 13 design tokens (Minty/docs/design/part-13-visual-design-system.md): semantic colour
-   roles, the radius scale, type styles, elevation. A copy of @minty/shared/tokens.css until the
-   pin moves past v0.1 - then this line becomes `@import "@minty/shared/tokens.css";`. */
-@import "./styles/tokens.css";
+   roles, the radius scale, type styles, elevation - the packaged sidebar draws in them. */
+@import "@minty/shared/tokens.css";
 /* Part 13 D-20: Material Symbols ROUNDED (components/ui/Icon.tsx). */
 @import "material-symbols/rounded.css";
 @import "./styles/checkbox/checkbox-secondary-white-tick.css";
@@ -40,7 +39,7 @@
 }
 
 /* No prefers-color-scheme block: Light is the theme at launch (Part 13 D-24). The dark values
-   live in styles/tokens.css under [data-theme="dark"], and nothing switches them on yet. */
+   live in @minty/shared/tokens.css under [data-theme="dark"], and nothing switches them on yet. */
 
 html {
   background: var(--background);

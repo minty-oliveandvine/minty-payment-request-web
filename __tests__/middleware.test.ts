@@ -32,9 +32,22 @@ function run(path: string, jar: Jar = {}) {
   if (jar.entityId !== undefined) request.cookies.set(ENTITY_ID_COOKIE_NAME, jar.entityId);
   if (jar.entityName !== undefined) request.cookies.set(ENTITY_NAME_COOKIE_NAME, jar.entityName);
   const response = middleware(request);
+  // Every trip to Flask names this app's origin (`return_origin`, for branch preview sets -
+  // Minty blueprints/shared/preview_origin.py). Lifted off here so the tables below read as the
+  // addresses they are; "names its origin" is pinned once, below.
+  const raw = response.headers.get("location");
+  let location = raw;
+  let returnOrigin: string | null = null;
+  if (raw?.startsWith(MINTY)) {
+    const url = new URL(raw);
+    returnOrigin = url.searchParams.get("return_origin");
+    url.searchParams.delete("return_origin");
+    location = url.toString().replace(/\/(\?|$)/, (m, q) => (url.pathname === "/" ? m : q));
+  }
   return {
     status: response.status,
-    location: response.headers.get("location"),
+    location,
+    returnOrigin,
     /** What NextResponse.next() sets, so "the page renders" is assertable rather than implied. */
     rewritten: response.headers.get("x-middleware-next") === "1",
   };
@@ -231,5 +244,24 @@ describe("the status code", () => {
     ["/whatever", {}],
   ])("is 307 for %s, never 308", (path, jar) => {
     expect(run(path, jar as Jar).status).toBe(307);
+  });
+});
+
+describe("every trip to Flask names this app's origin", () => {
+  it.each([
+    ["an old profile address", "/profile/billing", {}],
+    ["/profile", "/profile", {}],
+    ["a company page without a cookie", `${BASE}/payment-request`, {}],
+    ["another company's page", `${BASE}/payment-request`, { ...SIGNED_IN, entityId: "99999999-0000-0000-0000-000000000000" }],
+    ["a legacy page without a cookie", "/", {}],
+    ["anything else without a token", "/whatever", {}],
+  ])("%s", (_label, path, jar) => {
+    expect(run(path, jar as Jar).returnOrigin).toBe(APP);
+  });
+
+  it("names the origin the request came in on - a preview set's, in a preview", () => {
+    const response = middleware(new NextRequest(new URL("/whatever", "https://pr-feat-x-payment-request.dailyminty.com")));
+    const target = new URL(response.headers.get("location") ?? "");
+    expect(target.searchParams.get("return_origin")).toBe("https://pr-feat-x-payment-request.dailyminty.com");
   });
 });
