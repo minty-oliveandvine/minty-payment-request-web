@@ -60,7 +60,9 @@ function show(props: Partial<Props> = {}) {
   );
 }
 
-const tabs = () => within(screen.getByRole("tablist", { name: "Filter by status" }));
+/** Part 14 Filter chips: toggle buttons (`aria-pressed`) in a named group. */
+const chips = () => within(screen.getByRole("group", { name: "Filter by status" }));
+const chip = (name: string) => chips().getByRole("button", { name: new RegExp(`^${name}`) });
 const openFilters = async () => {
   await userEvent.click(screen.getByRole("button", { name: "Filter" }));
   return screen.getByRole("dialog", { name: "Filters" });
@@ -90,10 +92,10 @@ describe("the status tabs", () => {
     ]);
   });
 
-  it("are all on screen, in that order", () => {
+  it("are all on screen, in that order - one row, on every width", () => {
     show();
 
-    expect(tabs().getAllByRole("tab").map((t) => t.textContent)).toEqual([
+    expect(chips().getAllByRole("button").map((t) => t.textContent)).toEqual([
       ...PAYMENT_REQUEST_STATUS_FILTERS,
     ]);
   });
@@ -101,21 +103,21 @@ describe("the status tabs", () => {
   it("start on All when nothing is filtered", () => {
     show();
 
-    expect(tabs().getByRole("tab", { name: "All" })).toHaveAttribute("aria-selected", "true");
-    expect(tabs().getByRole("tab", { name: "Draft" })).toHaveAttribute("aria-selected", "false");
+    expect(chip("All")).toHaveAttribute("aria-pressed", "true");
+    expect(chip("Draft")).toHaveAttribute("aria-pressed", "false");
   });
 
   it("mark the one that is filtered", () => {
     show({ activeStatuses: ["Draft"] });
 
-    expect(tabs().getByRole("tab", { name: "Draft" })).toHaveAttribute("aria-selected", "true");
-    expect(tabs().getByRole("tab", { name: "All" })).toHaveAttribute("aria-selected", "false");
+    expect(chip("Draft")).toHaveAttribute("aria-pressed", "true");
+    expect(chip("All")).toHaveAttribute("aria-pressed", "false");
   });
 
   it("report the status that was picked", async () => {
     show();
 
-    await userEvent.click(tabs().getByRole("tab", { name: "Paid" }));
+    await userEvent.click(chip("Paid"));
 
     expect(onActiveStatusesChange).toHaveBeenCalledWith(["Paid"]);
   });
@@ -123,9 +125,35 @@ describe("the status tabs", () => {
   it("report All as no filter at all", async () => {
     show({ activeStatuses: ["Paid"] });
 
-    await userEvent.click(tabs().getByRole("tab", { name: "All" }));
+    await userEvent.click(chip("All"));
 
     expect(onActiveStatusesChange).toHaveBeenCalledWith([]);
+  });
+
+  it("carry their live counts (Part 15.17)", () => {
+    show({ statusCounts: { All: 41, "Payment Requested": 18, Returned: 3 } });
+
+    expect(chip("Payment Requested")).toHaveTextContent("Payment Requested18");
+    expect(chip("Payment Requested")).toHaveAccessibleName("Payment Requested, 18");
+    expect(chip("Returned")).toHaveTextContent("3");
+  });
+});
+
+describe("the view choice", () => {
+  it("is Easy view or Table view, reported as Easy or not", async () => {
+    const onEasyViewChange = vi.fn();
+    show({ easyView: true, onEasyViewChange });
+
+    const group = screen.getByRole("radiogroup", { name: "View" });
+    expect(within(group).getByRole("radio", { name: "Easy view" })).toHaveAttribute("aria-checked", "true");
+
+    await userEvent.click(within(group).getByRole("radio", { name: "Table view" }));
+    expect(onEasyViewChange).toHaveBeenCalledWith(false);
+  });
+
+  it("is not offered when the page does not let it change", () => {
+    show();
+    expect(screen.queryByRole("radiogroup", { name: "View" })).not.toBeInTheDocument();
   });
 });
 
@@ -161,8 +189,8 @@ describe("the filter panel", () => {
     const panel = await openFilters();
 
     expect(within(panel).getByText("Amount")).toBeInTheDocument();
-    expect(within(panel).getByText("Date Type")).toBeInTheDocument();
-    expect(within(panel).getByText("Xero Status")).toBeInTheDocument();
+    expect(within(panel).getByText("Date type")).toBeInTheDocument();
+    expect(within(panel).getByText("Xero status")).toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: "Apply" })).toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: "Reset" })).toBeInTheDocument();
   });
@@ -306,35 +334,11 @@ describe("the bulk actions menu", () => {
   });
 });
 
-describe("Add Payment", () => {
-  it("is offered to a member", () => {
+// "Add payment request" moved to the page header (Part 15.2, the page's one Primary):
+// app/entity/[ref]/[slug]/payment-request/__tests__/page.test.tsx.
+describe("Add payment request", () => {
+  it("is no longer the toolbar's", () => {
     show();
-
-    expect(screen.getByRole("button", { name: /Add Payment/ })).toBeEnabled();
-  });
-
-  it("is dead for somebody with no role on the company", () => {
-    setAuth(unsignedToken({ role: "" }), ENTITY_ID, ENTITY_NAME);
-
-    show();
-
-    expect(screen.getByRole("button", { name: /Add Payment/ })).toBeDisabled();
-  });
-
-  it("is dead, with a reason, for a view-only superuser", async () => {
-    setAuth(
-      unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }),
-      ENTITY_ID,
-      ENTITY_NAME,
-    );
-
-    show();
-
-    const button = screen.getByRole("button", { name: /Add Payment/ });
-    await waitFor(() => expect(button).toBeDisabled());
-    expect(button).toHaveAttribute(
-      "title",
-      "Hmm, I can't let you in there. You have view-only access.",
-    );
+    expect(screen.queryByRole("button", { name: /Add Payment/i })).not.toBeInTheDocument();
   });
 });

@@ -65,7 +65,8 @@ const show = () =>
 const tick = (seed: (typeof ACCOUNTS)[number]) =>
   screen.getByRole("checkbox", { name: `Include ${labelOf(seed)} in payment account dropdown` });
 const saveButton = () => screen.getByRole("button", { name: /Save Changes/ });
-const toastText = () => document.querySelector("[data-toast-type]")?.textContent ?? "";
+/** A refused save is said beside Save, as an Inline alert - never a toast (Part 14). */
+const toastText = () => document.querySelector("[role='alert'][data-tone='danger']")?.textContent ?? "";
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
@@ -95,7 +96,7 @@ describe("without a live Xero connection", () => {
 
     show();
 
-    const link = await screen.findByRole("link", { name: "Entity & Integration" });
+    const link = await screen.findByRole("link", { name: "Connect it in Entity & Integration" });
     expect(link.getAttribute("href")).toBe(INTEGRATION_HREF);
   });
 
@@ -144,9 +145,7 @@ describe("with Xero connected", () => {
     try {
       show();
 
-      expect(await screen.findByRole("alert")).toHaveTextContent(
-        /I couldn't load your account codes/,
-      );
+      expect(await screen.findByRole("alert")).toHaveTextContent(/Your account codes didn't load/);
       expect(screen.queryByText(/No account codes yet/)).not.toBeInTheDocument();
     } finally {
       consoleError.mockRestore();
@@ -218,7 +217,12 @@ describe("Save", () => {
     await userEvent.click(tick(ACCOUNTS[2]));
     await userEvent.click(saveButton());
 
-    await waitFor(() => expect(toastText()).toContain("Payment settings updated successfully"));
+    // Success IS a toast: it confirms something that already happened.
+    await waitFor(() =>
+      expect(document.querySelector("[data-toast-type='success']")?.textContent ?? "").toContain(
+        "Payment settings updated successfully",
+      ),
+    );
   });
 
   it("greys out with nothing ticked, and says to pick one", async () => {

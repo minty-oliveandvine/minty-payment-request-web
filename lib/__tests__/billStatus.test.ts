@@ -50,20 +50,24 @@ describe("billStatusToDisplayLabel", () => {
   });
 });
 
-describe("statusDisplayBadgeClass", () => {
-  it.each(["Paid", "Payment Requested", "Partially Paid", "Returned", "Voided", "Draft"])(
-    "gives %s its own badge",
-    (label) => {
-      expect(statusDisplayBadgeClass(label)).toContain("inline-flex");
-    },
-  );
-
-  it("gives every label a different badge", () => {
-    const labels = ["Paid", "Payment Requested", "Partially Paid", "Returned", "Voided", "Draft"];
-    expect(new Set(labels.map(statusDisplayBadgeClass)).size).toBe(labels.length);
+describe("statusDisplayBadgeClass (Part 14 Status pill, Part 13 tones)", () => {
+  it.each([
+    ["Payment Requested", "status-info"],
+    ["Partially Paid", "status-warning"],
+    ["Returned", "status-warning"],
+    ["Paid", "status-success"],
+    ["Draft", "status-neutral"],
+    // D-27: a confirmed end state is not a failure - Voided is Neutral, never Danger.
+    ["Voided", "status-neutral"],
+  ])("draws %s as a full-radius pill in the %s tone", (label, tone) => {
+    const cls = statusDisplayBadgeClass(label);
+    expect(cls).toContain("rounded-full");
+    expect(cls).toContain(`bg-${tone}-bg`);
+    expect(cls).toContain(`text-${tone}-ink`);
+    expect(cls).not.toMatch(/#[0-9a-f]{3,6}/i);
   });
 
-  it("falls back to the Draft badge for a label it does not know", () => {
+  it("falls back to the neutral pill for a label it does not know", () => {
     expect(statusDisplayBadgeClass("Something New")).toBe(statusDisplayBadgeClass("Draft"));
   });
 });

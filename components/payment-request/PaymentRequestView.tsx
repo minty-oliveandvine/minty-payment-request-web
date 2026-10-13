@@ -17,24 +17,19 @@ import {
 import { PaymentRequestPagination, PAGE_SIZE_OPTIONS } from "./PaymentRequestPagination";
 import { PaymentRequestTotalsBanner } from "./PaymentRequestTotalsBanner";
 import { BulkDeleteConfirmModal } from "./BulkDeleteConfirmModal";
-import { RecordPaymentModal } from "./RecordPaymentModal";
-import { RowDeleteConfirmModal } from "./RowDeleteConfirmModal";
-import type { EasyViewDraftDetailActions } from "./EasyViewDraftDetailedInformation";
+import { RecordPaymentDrawer } from "./RecordPaymentDrawer";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
 import {
   deleteBill,
-  fetchBill,
   fetchBills,
   isXeroAuthError,
   ApiError,
   publishBill,
-  returnBill,
   XERO_RECONNECT_MESSAGE,
-  type BillAttachment,
   type BillListItem,
-  type BillDetail
 } from "@/lib/api";
-import type { InvoiceAttachmentPreviewItem } from "./InvoiceAttachmentPreview";
+import { InlineAlert } from "@/components/ui/InlineAlert";
+import { Button } from "@/components/ui/Button";
 import { useEntityCurrency } from "@/lib/entityCurrency";
 import { formatAmount, formatMoney, parseAmount } from "@/lib/amountFormat";
 import { fetchBillBankSlipEnrichment, type BankSlipEnrichment } from "@/lib/bankSlipEnrichment";
@@ -122,30 +117,15 @@ const STATUS_LABEL_TO_API: Record<string, string> = {
 
 type EnrichmentEntry = { epoch: number; value: BankSlipEnrichment };
 
-/** Same mapping as `PaymentRequestDetailBody.mapServerAttachmentsToPreviewItems`. */
-function mapBillAttachmentsToPreviewItems(
-  billId: string,
-  serverAttachments: BillAttachment[],
-): InvoiceAttachmentPreviewItem[] {
-  return serverAttachments
-    .filter((ba) => ba.attachment?.download_url)
-    .map((ba) => ({
-      url: ba.attachment.download_url,
-      name: ba.attachment.original_name,
-      mime: ba.attachment.mime_type || "application/octet-stream",
-      previewApiPath:
-        (ba.attachment.mime_type || "").toLowerCase() === "application/pdf"
-          ? `/api/v1/bills/${billId}/attachments/${ba.id}/preview/`
-          : undefined,
-      billAttachmentId: ba.id,
-    }));
-}
-
 export type PaymentRequestViewProps = {
+  /** Easy view (record rows) or Table view - the choice applies from 768px; a phone always gets rows. */
   easyView: boolean;
+  onEasyViewChange?: (next: boolean) => void;
+  /** First use's one action (the page header's "Add payment request"), repeated in the empty state. */
+  createAction?: ReactNode;
 };
 
-export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
+export function PaymentRequestView({ easyView, onEasyViewChange, createAction }: PaymentRequestViewProps) {
   const router = useRouter();
   const pages = useCompanyPages();
   const { isElevated, isViewOnly, isReadOnly } = useUserRole();
@@ -184,20 +164,14 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
   const [datasetTruncated, setDatasetTruncated] = useState(false);
   /** False while the fetch-all loop is still committing pages. */
   const [datasetComplete, setDatasetComplete] = useState(false);
+  /** The Record payment Drawer's request (D15-11), from either view; `readOnly` = View payments. */
   const [recordPaymentTarget, setRecordPaymentTarget] = useState<{ billId: string; readOnly: boolean } | null>(null);
-  const [easyViewPayBillId, setEasyViewPayBillId] = useState<string | null>(null);
-  const [easyViewPayReadOnly, setEasyViewPayReadOnly] = useState(false);
-  const [easyViewDraftBillId, setEasyViewDraftBillId] = useState<string | null>(null);
-  const [easyViewDraftDeleteOpen, setEasyViewDraftDeleteOpen] = useState(false);
-  const [easyViewDraftDeletePending, setEasyViewDraftDeletePending] = useState(false);
-  const [easyViewSelectedBillId, setEasyViewSelectedBillId] = useState<string | null>(null);
-  const [easyViewInvoiceAttachments, setEasyViewInvoiceAttachments] = useState<InvoiceAttachmentPreviewItem[]>([]);
-  const [easyViewInvoiceLoading, setEasyViewInvoiceLoading] = useState(false);
+  /** An action that failed (void, publish), shown above the list - never a toast (Part 14). */
+  const [actionError, setActionError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const [bulkDeletePending, setBulkDeletePending] = useState(false);
   const [easyViewBankSlipRowId, setEasyViewBankSlipRowId] = useState<string | null>(null);
-  const [easyViewPayBill, setEasyViewPayBill] = useState<BillDetail | null>(null);
   // Each view keeps its own sort (the table exposes 6 keys, easy view 4), but both
   // live here because the page slice has to be taken *after* sorting.
   const [tableSort, setTableSort] = useState<{ key: SortKey | null; dir: "asc" | "desc" }>({ key: "status", dir: "asc" });
@@ -532,108 +506,10 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
     setBills((prev) => prev.filter((r) => !idSet.has(r.id)));
   }, []);
 
-  const easyViewPaySource = useMemo(() => {
-    if (!easyViewPayBillId) return null;
-    return rawBills.find((b) => b.id === easyViewPayBillId) ?? null;
-  }, [easyViewPayBillId, rawBills]);
-
-  const easyViewPayPanel: ReactNode =
-    easyViewPayBillId && easyViewPaySource ? (
-      <RecordPaymentModal
-        key={easyViewPayBillId}
-        presentation="easyInline"
-        open
-        onClose={() => {
-          setEasyViewPayBillId(null);
-          setEasyViewPayReadOnly(false);
-          setEasyViewSelectedBillId(null);
-        }}
-        billId={easyViewPayBillId}
-        billStatus={easyViewPaySource.status}
-        contactTitle={easyViewPaySource.contact?.trim() ?? ""}
-        readOnly={isViewOnly || easyViewPayReadOnly}
-        invoiceAmount={parseFloat(easyViewPaySource.amount ?? "0") || 0}
-        description={easyViewPayBill?.description ?? ""}
-        onPaymentSaved={loadBills}
-      />
-    ) : null;
-
-  useEffect(() => {
-    if (!easyViewPayBillId) return;
-    if (!filteredBills.some((r) => r.id === easyViewPayBillId)) {
-      setEasyViewPayBillId(null);
-      setEasyViewPayReadOnly(false);
-    }
-  }, [filteredBills, easyViewPayBillId]);
-
-  useEffect(() => {
-    if (!easyViewDraftBillId) return;
-    if (!filteredBills.some((r) => r.id === easyViewDraftBillId)) {
-      setEasyViewDraftBillId(null);
-    }
-  }, [filteredBills, easyViewDraftBillId]);
-
-  useEffect(() => {
-    if (!easyViewDraftBillId) setEasyViewDraftDeleteOpen(false);
-  }, [easyViewDraftBillId]);
-
-  useEffect(() => {
-    if (!easyViewPayBillId) {
-      setEasyViewPayBill(null);
-      return;
-    }
-
-    const fetchBillDetail = async () => {
-    try {
-      const bill = await fetchBill(easyViewPayBillId);
-      setEasyViewPayBill(bill);
-    } catch (e) {
-      console.error("Failed to fetch bill for easy view modal:", e);
-    }
-  };
-
-  fetchBillDetail();
-}, [easyViewPayBillId]);
-
-
-  const easyViewDraftDetailActions = useMemo<EasyViewDraftDetailActions>(
-    () => ({
-      onRequestDelete: () => setEasyViewDraftDeleteOpen(true),
-      deleteDisabled: loading || isViewOnly || !isElevated || easyViewDraftDeletePending,
-    }),
-    [easyViewDraftDeletePending, loading, isViewOnly, isElevated],
+  const recordPaymentSource = useMemo(
+    () => (recordPaymentTarget ? rawBills.find((b) => b.id === recordPaymentTarget.billId) ?? null : null),
+    [recordPaymentTarget, rawBills],
   );
-
-  useEffect(() => {
-    if (!easyViewSelectedBillId) {
-      setEasyViewInvoiceAttachments([]);
-      setEasyViewInvoiceLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setEasyViewInvoiceLoading(true);
-    fetchBill(easyViewSelectedBillId)
-      .then((detail) => {
-        if (cancelled) return;
-        setEasyViewInvoiceAttachments(mapBillAttachmentsToPreviewItems(detail.id, detail.attachments ?? []));
-      })
-      .catch(() => {
-        if (!cancelled) setEasyViewInvoiceAttachments([]);
-      })
-      .finally(() => {
-        if (!cancelled) setEasyViewInvoiceLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [easyViewSelectedBillId]);
-
-  useEffect(() => {
-    if (!easyViewSelectedBillId) return;
-    if (!filteredBills.some((r) => r.id === easyViewSelectedBillId)) {
-      setEasyViewSelectedBillId(null);
-    }
-  }, [filteredBills, easyViewSelectedBillId]);
 
   useEffect(() => {
     loadBills();
@@ -712,28 +588,57 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
       setSelectedIds(new Set());
       setBulkDeleteModalOpen(false);
     } catch (err) {
-      showToast(
-        err instanceof ApiError ? err.message : "Those payments are being a bit stubborn. Mind trying again?",
-        "error",
+      setActionError(
+        err instanceof ApiError ? err.message : "Those payment requests weren't voided. Try again.",
       );
     } finally {
       setBulkDeletePending(false);
     }
-  }, [activeSelectedIds, loadBills, removeBillsLocally, showToast]);
+  }, [activeSelectedIds, loadBills, removeBillsLocally]);
 
   const runBulkPublishSelected = useCallback(async () => {
     if (activeSelectedIds.length < 2) return;
+    setActionError(null);
     try {
       await Promise.all(activeSelectedIds.map((id) => publishBill(id)));
       await loadBills();
       setSelectedIds(new Set());
+      showToast(`${activeSelectedIds.length} payment requests published to Xero.`, "success");
     } catch (err) {
-      showToast(
-        err instanceof ApiError ? err.message : "Those payments didn't quite make it over. Mind trying again?",
-        "error",
+      setActionError(
+        err instanceof ApiError ? err.message : "Those payment requests didn't reach Xero. Try publishing again.",
       );
     }
   }, [activeSelectedIds, loadBills, showToast]);
+
+  /** Each status's live count, for its filter chip (Part 15.17: chips with live counts). */
+  const statusCounts = useMemo(() => {
+    const counts: Partial<Record<string, number>> = { All: 0 };
+    for (const r of enrichedBills) {
+      counts[r.status] = (counts[r.status] ?? 0) + 1;
+      if (r.status !== "Voided") counts.All = (counts.All ?? 0) + 1;
+    }
+    return counts;
+  }, [enrichedBills]);
+  // One chip on its own is fetched server-side (only that status comes back), so its counts would
+  // read 0 for every other chip: keep the counts from the last whole-list load instead.
+  const [chipCounts, setChipCounts] = useState<Partial<Record<string, number>> | null>(null);
+  useEffect(() => {
+    if (statusFilters.length !== 1 && datasetComplete) setChipCounts(statusCounts);
+  }, [statusFilters.length, datasetComplete, statusCounts]);
+
+  const clearFilters = useCallback(() => {
+    setStatusFilters([]);
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setSearchMode("contains");
+    setMinAmount("");
+    setMaxAmount("");
+    setDateType(DEFAULT_FILTER_DATE_TYPE);
+    setStartDate("");
+    setEndDate("");
+    setXeroStatus("");
+  }, []);
 
   /** A deliberate narrowing of the list: search or the filter panel. */
   const hasActiveFilters =
@@ -775,15 +680,22 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
     />
   );
 
+  const recordPayment = useCallback(
+    (rowId: string, readOnly?: boolean) => setRecordPaymentTarget({ billId: rowId, readOnly: readOnly ?? false }),
+    [],
+  );
+
   return (
     <>
       <PaymentRequestToolbar
         activeStatuses={statusFilters}
         onActiveStatusesChange={setStatusFilters}
-        onBillCreated={loadBills}
+        statusCounts={chipCounts ?? undefined}
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
         onSearchSubmit={onSearchSubmit}
+        easyView={easyView}
+        onEasyViewChange={onEasyViewChange}
         bulkActionsEnabled={bulkActionsEnabled}
         bulkSelectedCount={activeSelectedIds.length}
         onBulkDeleteSelected={openBulkDeleteModal}
@@ -806,36 +718,39 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
         canVoidPaid={isElevated}
         canPublish={isElevated}
       />
-      {showReadOnlyBanner ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mx-auto flex w-full max-w-[1920px] items-center gap-2 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 sm:px-6"
-        >
-          <span className="material-symbols-outlined shrink-0 text-[18px] leading-none text-amber-600" aria-hidden>
-            visibility
-          </span>
-          <span>Read-only access — you are not a member of this entity.</span>
-        </div>
-      ) : null}
       <main
-        className="mx-auto flex min-h-0 min-w-0 w-full max-w-[1920px] flex-1 flex-col overflow-x-hidden pt-2 sm:pt-3"
+        className="mx-auto flex min-h-0 min-w-0 w-full max-w-[1920px] flex-1 flex-col overflow-x-hidden pt-4"
         data-easy-view={easyView ? "true" : undefined}
       >
+        {showReadOnlyBanner || actionError ? (
+          <div className="mx-auto mb-4 flex w-full max-w-[1200px] flex-col gap-2 px-4 sm:px-6 lg:px-8">
+            {showReadOnlyBanner ? (
+              <InlineAlert tone="info">Read-only access — you are not a member of this entity.</InlineAlert>
+            ) : null}
+            {actionError ? <InlineAlert tone="danger">{actionError}</InlineAlert> : null}
+          </div>
+        ) : null}
         {loadError ? (
-          <div className="px-4 py-8 text-center sm:px-6">
-            <p className="text-sm text-red-600">{loadError}</p>
-            <button type="button" onClick={loadBills} className="mt-2 text-sm font-medium text-secondary hover:underline">
-              Retry
-            </button>
+          // Part 15.17: a load error is an Inline alert in place of the rows, with Retry.
+          <div className="mx-auto w-full max-w-[960px] px-4 sm:px-6 lg:px-8">
+            <InlineAlert
+              tone="danger"
+              title={loadError}
+              action={
+                <Button kind="link" onClick={loadBills}>
+                  Retry
+                </Button>
+              }
+            />
           </div>
         ) : (
           <>
-            <div className={easyView ? "hidden min-h-0 flex-1 flex-col lg:flex" : "hidden"}>
+            {/* Easy view on a computer by choice; a phone ALWAYS gets the rows - Table view is
+                hidden below 768px (Part 15.17, D15-18). */}
+            <div className={easyView ? "flex min-h-0 flex-1 flex-col" : "flex min-h-0 flex-1 flex-col md:hidden"}>
               <PaymentRequestEasyView
                 rows={easyPageRows}
                 loading={loading}
-                activeStatuses={statusFilters}
                 sort={easySort}
                 onSortChange={onEasySortChange}
                 selectedIds={selectedIds}
@@ -843,64 +758,17 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 onToggleAll={onToggleAll}
                 totalsBanner={totalsBanner}
                 pagination={pagination}
-                payPanelBillId={easyViewPayBillId}
-                payPanel={easyViewPayPanel}
-                selectedBillId={easyViewSelectedBillId}
-                invoiceAttachments={easyViewInvoiceAttachments}
-                invoiceAttachmentsLoading={easyViewInvoiceLoading}
-                onRowClick={(rowId, reference) => router.push(pages.request(rowId, reference))}
-                onPaymentRequestedPay={(rowId) => {
-                  const isClosing = easyViewPayBillId === rowId;
-                  setEasyViewPayReadOnly(false);
-                  setEasyViewSelectedBillId(isClosing ? null : rowId);
-                  setRecordPaymentTarget(null);
-                  setEasyViewDraftDeleteOpen(false);
-                  setEasyViewDraftBillId(null);
-                  setEasyViewPayBillId(isClosing ? null : rowId);
-                }}
-                onPaidStatusOpen={(rowId) => {
-                  const isSameRow = easyViewPayBillId === rowId;
-                  const isClosing = isSameRow && easyViewPayReadOnly;
-                  setRecordPaymentTarget(null);
-                  setEasyViewDraftDeleteOpen(false);
-                  setEasyViewDraftBillId(null);
-                  setEasyViewSelectedBillId(isClosing ? null : rowId);
-                  setEasyViewPayReadOnly(!isClosing);
-                  setEasyViewPayBillId(isClosing ? null : rowId);
-                }}
+                onRecordPayment={recordPayment}
                 onOpenBankSlipUpload={(rowId) => setEasyViewBankSlipRowId(rowId)}
                 onRetryBankSlips={retryBankSlips}
-                draftDetailBillId={easyViewDraftBillId}
-                onDraftBillOpen={(rowId) => {
-                  const isClosing = easyViewDraftBillId === rowId;
-                  setRecordPaymentTarget(null);
-                  setEasyViewDraftDeleteOpen(false);
-                  setEasyViewPayBillId(null);
-                  setEasyViewPayReadOnly(false);
-                  setEasyViewSelectedBillId(isClosing ? null : rowId);
-                  setEasyViewDraftBillId(isClosing ? null : rowId);
-                }}
-                onOutsideCloseRequested={() => {
-                  setRecordPaymentTarget(null);
-                  setEasyViewDraftDeleteOpen(false);
-                  setEasyViewPayBillId(null);
-                  setEasyViewPayReadOnly(false);
-                  setEasyViewDraftBillId(null);
-                  setEasyViewSelectedBillId(null);
-                }}
-                draftDetailActions={easyViewDraftDetailActions}
                 isElevated={isElevated}
                 isViewOnly={isViewOnly}
-                onDraftBillSaved={loadBills}
-                easyViewBillMutatePending={easyViewDraftDeletePending}
-                onRowDelete={(rowId) => {
-                  setEasyViewDraftBillId(rowId);
-                  setEasyViewDraftDeleteOpen(true);
-                }}
-                easyViewDraftDeleteOpen={easyViewDraftDeleteOpen}
+                filtered={hasActiveFilters || statusFilters.length > 0}
+                onClearFilters={clearFilters}
+                createAction={createAction}
               />
             </div>
-            <div className={easyView ? "max-lg:block lg:hidden" : "block"}>
+            <div className={easyView ? "hidden" : "hidden md:block"}>
               <PaymentRequestTable
                 rows={tablePageRows}
                 statusFilters={statusFilters}
@@ -911,58 +779,53 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 onToggleRow={onToggleRow}
                 onToggleAll={onToggleAll}
                 headerSlot={totalsBanner}
-                onRecordPayment={(rowId, readOnly) => setRecordPaymentTarget({ billId: rowId, readOnly: readOnly ?? false })}
+                onRecordPayment={recordPayment}
                 onRowClick={(rowId, reference) => router.push(pages.request(rowId, reference))}
                 onRowDelete={async (rowId) => {
+                  setActionError(null);
                   try {
                     await deleteBill(rowId);
                     removeBillsLocally([rowId]);
                     await loadBills();
                   } catch (err) {
-                    showToast(
-                      err instanceof ApiError ? err.message : "This payment's being a bit stubborn. Mind trying again?",
-                      "error",
-                    );
+                    setActionError(err instanceof ApiError ? err.message : "That payment request wasn't voided. Try again.");
                     await loadBills();
                     throw err;
                   }
                 }}
                 onRowPublish={async (rowId) => {
+                  setActionError(null);
                   try {
                     await publishBill(rowId);
                     await loadBills();
                   } catch (err) {
-                    showToast(
-                      err instanceof ApiError ? err.message : "This payment didn't quite make it over. Mind trying again?",
-                      "error",
+                    setActionError(
+                      err instanceof ApiError ? err.message : "That payment request didn't reach Xero. Try publishing again.",
                     );
                   }
                 }}
                 onRowRepublish={async (rowId) => {
-                  // Same endpoint as publish - there is no separate republish
-                  // route. This prop was declared and called by the row menu
-                  // but never passed, so the menu item did nothing at all.
+                  // Same endpoint as publish - there is no separate republish route.
+                  setActionError(null);
                   try {
                     await publishBill(rowId);
                     await loadBills();
                   } catch (err) {
-                    // Republish is the path taken right after reconnecting
-                    // Xero, so surface the reconnect hint the detail page
-                    // already gives rather than a raw API message.
-                    showToast(
+                    // Republish is the path taken right after reconnecting Xero, so surface the
+                    // reconnect hint the detail page already gives rather than a raw API message.
+                    setActionError(
                       isXeroAuthError(err)
                         ? XERO_RECONNECT_MESSAGE
                         : err instanceof ApiError
                           ? err.message
-                          : "This payment didn't quite make it over. Mind trying again?",
-                      "error",
+                          : "That payment request didn't reach Xero. Try publishing again.",
                     );
                   }
                 }}
                 onBankSlipUploaded={loadBills}
                 onRetryBankSlips={retryBankSlips}
               />
-              <div className="px-4 pb-6 sm:px-6">{pagination}</div>
+              <div className="px-4 pb-6 sm:px-6 lg:px-8">{pagination}</div>
             </div>
           </>
         )}
@@ -976,62 +839,17 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
         }}
         onConfirm={executeBulkDelete}
       />
-      <RecordPaymentModal
+      <RecordPaymentDrawer
+        key={recordPaymentTarget?.billId ?? "none"}
         open={recordPaymentTarget != null}
         onClose={() => setRecordPaymentTarget(null)}
         billId={recordPaymentTarget?.billId ?? ""}
-        billStatus={
-          recordPaymentTarget ? rawBills.find((b) => b.id === recordPaymentTarget.billId)?.status : undefined
-        }
-        contactTitle={
-          recordPaymentTarget
-            ? rawBills.find((b) => b.id === recordPaymentTarget.billId)?.contact?.trim() ?? ""
-            : ""
-        }
+        billStatus={recordPaymentSource?.status}
+        contactTitle={recordPaymentSource?.contact?.trim() ?? ""}
+        description={recordPaymentSource?.description ?? ""}
         readOnly={isViewOnly || (recordPaymentTarget?.readOnly ?? false)}
-        invoiceAmount={
-          recordPaymentTarget
-            ? parseFloat(rawBills.find((b) => b.id === recordPaymentTarget.billId)?.amount ?? "0")
-            : 0
-        }
+        invoiceAmount={parseFloat(recordPaymentSource?.amount ?? "0") || 0}
         onPaymentSaved={loadBills}
-      />
-      <RowDeleteConfirmModal
-        open={easyViewDraftDeleteOpen}
-        contactTitle={bills.find((r) => r.id === easyViewDraftBillId)?.contactTitle ?? ""}
-        isDraft={bills.find((r) => r.id === easyViewDraftBillId)?.status === "Draft"}
-        pending={easyViewDraftDeletePending}
-        onClose={() => {
-          if (!easyViewDraftDeletePending) {
-            setEasyViewDraftDeleteOpen(false);
-            setEasyViewDraftBillId(null);
-          }
-        }}
-        onConfirm={async () => {
-          if (!easyViewDraftBillId) return;
-          const row = bills.find((r) => r.id === easyViewDraftBillId);
-          setEasyViewDraftDeletePending(true);
-          try {
-            if (row?.status === "Draft") {
-              await deleteBill(easyViewDraftBillId);
-            } else if (row?.status === "Returned") {
-              await returnBill(easyViewDraftBillId, "void");
-            } else {
-              await deleteBill(easyViewDraftBillId);
-            }
-            removeBillsLocally([easyViewDraftBillId]);
-            setEasyViewDraftDeleteOpen(false);
-            setEasyViewDraftBillId(null);
-            await loadBills();
-          } catch (err) {
-            showToast(
-              err instanceof ApiError ? err.message : "That didn't quite work. Mind trying again?",
-              "error",
-            );
-          } finally {
-            setEasyViewDraftDeletePending(false);
-          }
-        }}
       />
       {easyViewBankSlipRowId != null && easyViewBankSlipPayload ? (
         <BankSlipDetailsModal

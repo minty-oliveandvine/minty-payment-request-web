@@ -17,7 +17,8 @@ export function SettingsContent() {
 
   return (
     <div className="mx-auto w-full max-w-[1024px] px-4 sm:px-6">
-      <div className="sticky top-0 z-10 bg-white pt-3 pb-3 sm:pt-4 sm:pb-4">
+      <h1 className="pt-6 text-display-m text-text-primary lg:pt-8">Settings</h1>
+      <div className="sticky top-0 z-10 bg-surface-page pt-4 pb-3 sm:pb-4">
         <SettingsPills activeTab={tab} entityId={entityId} module1Url={MINTY_MODULE_URL} />
       </div>
       {tab === "bill" ? (

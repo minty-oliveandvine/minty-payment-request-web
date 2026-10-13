@@ -44,9 +44,10 @@ export function planLabel(company: ProfileCompany | null): PlanLabel | null {
   const petty = company.modules.includes("PETTY_CASH");
   const payments = company.modules.includes("PAYMENT_REQUEST");
   if (petty && payments)
-    return { text: "SuperMinty", tone: "font-bold text-teal-strong", cat: true };
-  if (payments) return { text: "Payment Request", tone: "text-[#2e6ff2]", cat: false };
-  if (petty) return { text: "Petty Cash", tone: "text-[#ea9713]", cat: false };
+    return { text: "SuperMinty", tone: "font-bold text-text-link", cat: true };
+  // Module identity colours (Part 13 §13.4) - identity, never status.
+  if (payments) return { text: "Payment Request", tone: "text-module-payment-ink", cat: false };
+  if (petty) return { text: "Petty Cash", tone: "text-module-pettycash-ink", cat: false };
   return null;
 }
 

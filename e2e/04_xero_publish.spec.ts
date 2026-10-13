@@ -4,7 +4,7 @@
 // E2E_XERO=1, against a shop linked to a Xero Demo Company by hand; every run writes a real
 // bill into that organisation, which is what a Demo Company is for.
 import { expect, test } from '@playwright/test';
-import { fixtures, handoff, moneyRegex, requireCredentials, requireStack, xeroLive } from './helpers';
+import { addRequestLink, fixtures, handoff, moneyRegex, requireCredentials, requireStack, xeroLive } from './helpers';
 
 const AMOUNT = 87.25;
 const DESCRIPTION = `E2E toner cartridge ${Date.now()}`;
@@ -31,13 +31,14 @@ test.describe('publish to Xero', () => {
     await handoff(page, requireCredentials(), '/');
     const fx = fixtures();
 
-    // a complete request: amount, supplier, account, both dates and the attachment Confirm insists on
-    await page.getByRole('button', { name: 'Add Payment' }).click();
-    const dlg = page.getByRole('dialog', { name: /add payment request/i });
-    await expect(dlg).toBeVisible();
+    // a complete request: amount, supplier, account, both dates and the attachment Submit insists on
+    // (the Add page, `<list>/new`, since 2026-10-13)
+    await addRequestLink(page).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'New payment request' })).toBeVisible();
+    const dlg = page.locator('form');
     await dlg.getByRole('textbox', { name: /amount/i }).fill(String(AMOUNT));
     await dlg.getByRole('textbox', { name: /description/i }).fill(DESCRIPTION);
-    const supplier = dlg.getByRole('textbox', { name: /supplier/i });
+    const supplier = dlg.getByRole('combobox', { name: /supplier/i });
     await supplier.click();
     await supplier.pressSequentially(fx.supplierQuery);
     await page.getByRole('option', { name: fx.supplierName, exact: true }).click();
@@ -51,9 +52,9 @@ test.describe('publish to Xero', () => {
       mimeType: 'application/pdf',
       buffer: RECEIPT_PDF,
     });
-    await dlg.getByRole('button', { name: /^confirm$/i }).click();
+    await dlg.getByRole('button', { name: 'Submit for payment' }).click();
 
-    // Confirm submits the request and opens it
+    // Submit sends the request and opens it
     // by its Payment No. since 2026-10-05 (the id when it has none)
     await expect(page).toHaveURL(/\/payment-request\/[^/?#]+(?:[?#]|$)/, { timeout: 30_000 });
     const body = page.locator('body');
@@ -69,11 +70,12 @@ test.describe('publish to Xero', () => {
     const busy = page.getByRole('status').filter({ hasText: /publishing/i });
     await expect(busy).toBeVisible();
     await expect(busy).toBeHidden({ timeout: 150_000 });
-    // a failure arrives as an error toast that says why; surface it instead of a bare timeout
-    // below. Only the toast: Next's route announcer is an alert too (it reads the page title)
-    const errorToast = page.getByRole('alert').filter({ has: page.getByRole('img', { name: 'Error' }) });
-    if ((await errorToast.count()) > 0) {
-      throw new Error(`publish failed: ${(await errorToast.allInnerTexts()).join(' | ')}`);
+    // a failure arrives as an inline danger alert under the header that says why; surface it
+    // instead of a bare timeout below. Only that alert: Next's route announcer is an alert too
+    // (it reads the page title), and it sits outside <main>
+    const errorAlert = page.getByRole('main').getByRole('alert');
+    if ((await errorAlert.count()) > 0) {
+      throw new Error(`publish failed: ${(await errorAlert.allInnerTexts()).join(' | ')}`);
     }
 
     // the menu now offers Republish, and still does after the page is loaded afresh

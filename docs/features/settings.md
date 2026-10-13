@@ -37,8 +37,9 @@ Change all three (here, minty-web, Flask's `MintyLeaveGuard`).
   dialog alone (caught on `window` on the way down): a drawer open under it stays open.
 - A successful save clears `hasChanges`, so nothing asks; a failed save keeps it. A save that
   partly went through moves the saved set by each row that did (`Promise.allSettled`), so the
-  guard and "Discard changes" measure from what the server holds, and the toast says some
-  changes didn't save - or, for a 409, the server's own sentence.
+  guard and "Discard changes" measure from what the server holds, and an inline danger alert
+  above Save says some changes didn't save - or, for a 409, the server's own sentence (errors
+  are never a toast here since 2026-10-13, Part 14).
 - A reload, a typed address or a closed tab get the browser's own prompt (`beforeunload`, on
   only while dirty and removed before Discard leaves, so the two never both show).
 - **Logout** (the sidebar's and My Profile's, `sidebarHost.ts` `logOut()`) asks the same way
@@ -79,21 +80,23 @@ hand turn it off again. With codes on the list and none ticked, **Save is off** 
 shows under it (plain text, never a `title`). A save sends the rows turning ON first, then the
 rows turning OFF (each batch `Promise.allSettled`), so it never passes through a moment with
 nothing ticked. minty-payment-request-api enforces the same rule: unticking the entity's last ticked code
-answers **409** "Keep at least one account code ticked." and writes nothing; the toast shows
-that sentence. These ticks are the payment module's own (`entity_bill_account_xero.is_active`);
+answers **409** "Keep at least one account code ticked." and writes nothing; the inline alert
+shows that sentence. These ticks are the payment module's own (`entity_bill_account_xero.is_active`);
 they no longer touch Petty Cash's `account_info.status` (that mirror was removed 2026-10-01 - it
 unticked codes in Petty Cash, whose publish refuses them).
 
-**The dialog is a COPY** of minty-web's, at its own paths, each headed `COPY of minty-web/<path>
-... change all three (minty-web, here, Flask's port: Minty static/js/minty_dialog.js +
-static/css/minty_dialog.css)`: `features/subscription/components/ModalFrame.tsx`,
-`ConfirmDialog.tsx` (its image table trimmed to `public/portal/minty-dont.png`),
-`InterruptedDialogs.tsx` (`LeaveDialog` only) and `features/subscription/lib/changeModal.ts`
-(the two types). `--ink-soft` in `app/globals.css` is minty-web's token. Change all three.
+**The dialog is Part 14's Confirmation** (`role="alertdialog"`, `components/ui/Overlay.tsx`'s
+`Modal`; Go Back is the Primary and has focus, Discard changes is Secondary) since 2026-10-13: in
+this app Part 14 wins over minty-web's look (the owner's decision), so the copied
+`ModalFrame.tsx`, `ConfirmDialog.tsx`, `features/subscription/lib/changeModal.ts`,
+`public/portal/minty-dont.png` and `--ink-soft` are gone. `InterruptedDialogs.tsx` keeps only the
+WORDS in common with minty-web (`LEAVE_TITLE`, the two sentences, the two button labels) - change
+those in minty-web and Flask's `MintyLeaveGuard` too; the look is no longer shared until
+minty-web migrates.
 
-A failed read of the codes says so ("I couldn't load your account codes. Mind refreshing the
-page?", logged on the console) instead of "No account codes yet" (fixed 2026-10-01; it was
-swallowed).
+A failed read of the codes says so (an inline danger alert, "Your account codes didn't load.
+Refresh the page to try again.", logged on the console) instead of "No account codes yet" (fixed
+2026-10-01; it was swallowed).
 
 ### Without a live Xero connection (2026-10-06)
 
@@ -101,11 +104,12 @@ The codes are the company's Xero chart, so the card first asks `GET /api/auth/xe
 (`fetchXeroStatus`, read by `AccountCodeSettings` itself - the page no longer fetches it for the
 header, which never used it). The answer is the **company's** connection, read from the database:
 a Xero org linked, the entity not marked `disconnected`, and a refresh token on the connector (or
-the viewer). It is not live → the card keeps its heading and shows only "Xero isn't connected.
-Connect it in Entity & Integration to set these up." (the link is the pills'
-`integrationTabUrl`). The search, the codes and Save are not shown, and the codes are not read
-(so the read's chart re-sync trigger to Minty doesn't fire either). A failed status read is a
-failed read ("I couldn't load your account codes…"), never "not connected". Minty's Petty Cash
+the viewer). It is not live → the card keeps its heading and shows only a warning alert, "Xero
+isn't connected yet. Account codes come from your Xero chart, so connect Xero to set them up.",
+with the link **Connect it in Entity & Integration** (the pills' `integrationTabUrl`). The
+search, the codes and Save are not shown, and the codes are not read (so the read's chart
+re-sync trigger to Minty doesn't fire either). A failed status read is a failed read ("Your
+account codes didn't load."), never "not connected". Minty's Petty Cash
 Settings hides its two Xero cards the same way.
 
 **The header on a phone** (`components/layout/Header.tsx`, fixed 2026-10-01): the company name's

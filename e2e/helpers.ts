@@ -11,7 +11,8 @@
 import { createHmac } from 'node:crypto';
 import { test, type Page, type Route } from '@playwright/test';
 
-import { companyPages, type CompanyPages } from '../lib/companyPages';
+import { pagesUnder, type CompanyPages } from '../lib/companyPaths';
+import { companyRef } from './companyRef';
 import { entityBillAccounts } from '../lib/__fixtures__/accounts';
 import { ALL_STATUSES } from '../lib/__fixtures__/bills';
 import type { BillListItem } from '../lib/api';
@@ -90,7 +91,7 @@ export async function stubXeroStatus(page: Page, connected: boolean): Promise<vo
 
 /** The company's pages in this app - `/entity/<shortid>/<name>/...` since 2026-10-05 (lib/companyPages.ts). */
 export function pagesOf(creds: Credentials): CompanyPages {
-  return companyPages(creds.entityId, creds.entityName);
+  return pagesUnder(`/entity/${companyRef(creds.entityId, creds.entityName)}`);
 }
 
 /** Arrive the way Minty sends people: /landing stores the token and forwards to ``next``. */
@@ -207,6 +208,8 @@ export async function stubApi(page: Page, stub: ApiStub = {}): Promise<void> {
     if (path.endsWith('/audit')) return answer(route, []);
     if (path.endsWith('/payments')) return answer(route, stub.payments ?? { paid_total: '0.00', payments: [] });
     if (path.includes('/attachments')) return answer(route, []);
+    // The Add page fills Payment No. from the server's suggestion (lib/api.ts).
+    if (path.endsWith('/bills/suggested-reference/')) return answer(route, { reference: 'MBIE2E-1' });
     if (path.endsWith('/bills/')) {
       const pageNum = Number(url.searchParams.get('page') ?? '1');
       const all = typeof bills === 'function' ? bills(pageNum) : pageNum === 1 ? bills : [];
@@ -277,6 +280,19 @@ export async function stubSubscriptionNotice(page: Page, notice: Json | null): P
         }),
   );
 }
+
+/** The list's way in to the Add page (`<list>/new`): a link, the page's one Primary. */
+export const addRequestLink = (page: Page) => page.getByRole('link', { name: 'Add payment request' });
+
+/** The status filter: one group of toggle chips, each "<status>" then its count (Part 14 Filter chip). */
+export const statusChips = (page: Page) => page.getByRole('group', { name: 'Filter by status' }).getByRole('button');
+
+/** One status chip - anchored, so "Paid" is never "Partially Paid". */
+export const statusChip = (page: Page, status: string) =>
+  statusChips(page).filter({ hasText: new RegExp(`^${status}\\s*\\d*$`) });
+
+/** The Easy view | Table view control (radios, from 768px only). */
+export const viewChoice = (page: Page, view: 'Easy view' | 'Table view') => page.getByRole('radio', { name: view });
 
 /** Nothing spills sideways: the page is never wider than the screen. */
 export async function expectNoSideScroll(page: Page, width: number): Promise<void> {

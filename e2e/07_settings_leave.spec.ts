@@ -87,7 +87,8 @@ async function arrive(page: Page): Promise<Run> {
   return run;
 }
 
-const leaveDialog = (page: Page) => page.getByRole('dialog', { name: 'Leave without saving?' });
+// A Part 14 Confirmation: an alertdialog, not a plain dialog.
+const leaveDialog = (page: Page) => page.getByRole('alertdialog', { name: 'Leave without saving?' });
 const saveButton = (page: Page) => page.getByRole('button', { name: 'Save Changes' });
 /** The history entry the tab is on (Chrome's Navigation API): shows the sentinel come and go. */
 const historyIndex = (page: Page) =>
@@ -102,7 +103,7 @@ async function arriveFromTheList(page: Page): Promise<Run> {
   await expect(tick(page, '200')).toBeChecked();
   return run;
 }
-const backLink = (page: Page) => page.getByRole('banner').getByRole('link', { name: /Payments/ });
+const backLink = (page: Page) => page.getByRole('banner').getByRole('link', { name: 'Back to Payment Requests' });
 
 /**
  * Arrive on Payment Settings, then take the Payment Settings pill (a Next `<Link>` to

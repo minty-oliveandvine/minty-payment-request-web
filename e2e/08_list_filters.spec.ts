@@ -16,9 +16,11 @@ import {
   handoff,
   pagesOf,
   requireNextOnly,
+  statusChip,
   stubApi,
   stubCredentials,
   stubFlaskHub,
+  viewChoice,
 } from './helpers';
 
 const creds = () => stubCredentials();
@@ -40,47 +42,42 @@ test.beforeEach(async ({ page }) => {
 /**
  * Open the list in TABLE view.
  *
- * The page opens in EASY VIEW by default on a desktop (`easyView` starts true), so the table is
- * the hidden half and a table query finds nothing at all. The toggle is turned off here on
- * purpose, and the easy view gets its own test below.
+ * The page opens in EASY VIEW by default (`easyView` starts true), so the table is the hidden
+ * half and a table query finds nothing at all. Table view is chosen here on purpose (the
+ * Easy view | Table view radios), and the easy view gets its own test below.
  */
 async function openList(page: import('@playwright/test').Page, rows = ROWS) {
   await stubApi(page, { bills: rows });
   await handoff(page, creds(), pagesOf(creds()).list);
   await expect(page.getByRole('searchbox')).toBeVisible();
 
-  const easyView = page.getByRole('switch', { name: 'Easy view' });
-  if ((await easyView.getAttribute('aria-checked')) === 'true') await easyView.click();
-  await expect(easyView).toHaveAttribute('aria-checked', 'false');
+  await viewChoice(page, 'Table view').click();
+  await expect(viewChoice(page, 'Table view')).toBeChecked();
   await expect(page.getByRole('table')).toBeVisible();
 }
 
 const rowFor = (page: import('@playwright/test').Page, supplier: string) =>
   page.getByRole('table').getByText(supplier, { exact: true });
 
-/** The status filter is drawn twice - a tablist on a desktop, a menu on a phone - so a tab is
- *  always taken from the tablist. */
-const statusTab = (page: import('@playwright/test').Page, name: string) =>
-  page.getByRole('tablist', { name: 'Filter by status' }).getByRole('tab', { name });
 
 test('the list shows the company every request, minus the voided ones', async ({ page }) => {
   await openList(page);
 
   await expect(rowFor(page, 'Exact Three Thousand')).toBeVisible();
   await expect(rowFor(page, 'Draft Supplier')).toBeVisible();
-  // A voided request is out of the way until its tab is asked for.
+  // A voided request is out of the way until its chip is asked for.
   await expect(rowFor(page, 'Cancelled Order Inc')).toHaveCount(0);
 });
 
-test('a status tab narrows the list to that status', async ({ page }) => {
+test('a status chip narrows the list to that status', async ({ page }) => {
   await openList(page);
 
-  await statusTab(page, 'Draft').click();
+  await statusChip(page, 'Draft').click();
 
   await expect(rowFor(page, 'Draft Supplier')).toBeVisible();
   await expect(rowFor(page, 'Exact Three Thousand')).toHaveCount(0);
 
-  await statusTab(page, 'Voided').click();
+  await statusChip(page, 'Voided').click();
   await expect(rowFor(page, 'Cancelled Order Inc')).toBeVisible();
 });
 
@@ -165,7 +162,7 @@ test('the pager walks a long list and says where it is', async ({ page }) => {
 
   // Both views mount a pager, and Tailwind hides one of them - so the count is read from
   // whichever is actually on screen.
-  await expect(page.getByText(/Showing 1–10 of 24 items/).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(/Showing 1–10 of 24/).filter({ visible: true })).toBeVisible();
 
   await page
     .getByRole('navigation', { name: 'Pagination' })
@@ -173,14 +170,14 @@ test('the pager walks a long list and says where it is', async ({ page }) => {
     .getByRole('button', { name: 'Page 3' })
     .click();
 
-  await expect(page.getByText(/Showing 21–24 of 24 items/).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(/Showing 21–24 of 24/).filter({ visible: true })).toBeVisible();
   await expect(rowFor(page, 'Supplier 24')).toBeVisible();
 });
 
 test('the Easy view choice survives a reload', async ({ page }) => {
   await openList(page);
 
-  await page.getByRole('switch', { name: /Easy view/i }).or(page.getByLabel(/Easy view/i)).first().click();
+  await viewChoice(page, 'Easy view').click();
   await page.reload();
   await expect(page.getByRole('searchbox')).toBeVisible();
 
@@ -221,13 +218,13 @@ for (const width of [360, 768, 1440]) {
   test(`nothing is wider than the screen at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
 
-    // Not `openList`: the Easy view switch is desktop-only chrome, so a phone cannot toggle it
-    // and the view the page opens in is the one worth checking at that width.
+    // Not `openList`: the Easy view | Table view control is shown from 768px only, so a phone
+    // cannot choose, and the view the page opens in is the one worth checking at that width.
     await stubApi(page, { bills: ROWS });
     await handoff(page, creds(), pagesOf(creds()).list);
     await expect(page.getByRole('searchbox')).toBeVisible();
-    // Easy view below 1024px is the hidden half and the table's card list is shown, so the row
-    // is taken from whichever copy the width actually puts on screen.
+    // Both views are mounted and CSS hides one, so the row is taken from whichever copy the
+    // width actually puts on screen.
     await expect(page.getByText('Exact Three Thousand').filter({ visible: true }).first()).toBeVisible();
 
     await expectNoSideScroll(page, width);

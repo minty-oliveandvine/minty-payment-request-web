@@ -295,22 +295,22 @@ function ActivityHistoryTimelineSkeleton() {
   return (
     <div className="min-h-0 max-h-[min(14rem,38dvh)] overflow-hidden pr-1 sm:max-h-[min(17.5rem,45vh)]">
       <div className="relative pb-0.5">
-        <div className="absolute bottom-3 left-[7px] top-3 w-px bg-[#e0e0e0]" aria-hidden />
+        <div className="absolute bottom-3 left-[7px] top-3 w-px bg-border-subtle" aria-hidden />
         <ul className="relative flex flex-col gap-3">
           {Array.from({ length: 3 }, (_, i) => (
             <li key={`activity-sk-${i}`} className="relative flex gap-3" aria-hidden>
               <div className="relative z-[1] flex w-4 shrink-0 justify-center pt-[18px]">
-                <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-gray-300 ring-[3px] ring-white" />
+                <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-border-default ring-[3px] ring-surface-card" />
               </div>
-              <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-[#f9f9f9] px-4 py-3.5 sm:px-5 sm:py-4">
+              <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-surface-sunk px-4 py-3.5 sm:px-5 sm:py-4">
                 <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
-                    <div className="h-7 w-7 shrink-0 animate-pulse rounded-full bg-[#FFE6B1]/60" />
+                    <div className="h-7 w-7 shrink-0 animate-pulse rounded-full bg-accent-avatar-bg" />
                     <div className="min-w-0 flex-1 pt-0.5">
-                      <div className="h-4 max-w-[min(100%,20rem)] animate-pulse rounded bg-gray-200" />
+                      <div className="h-4 max-w-[min(100%,20rem)] animate-pulse rounded bg-border-subtle" />
                     </div>
                   </div>
-                  <div className="h-3 w-[7.5rem] shrink-0 animate-pulse rounded bg-gray-100 pl-10 sm:pl-0 sm:ml-0" />
+                  <div className="h-3 w-[7.5rem] shrink-0 animate-pulse rounded bg-surface-sunk pl-10 sm:pl-0 sm:ml-0" />
                 </div>
               </div>
             </li>
@@ -374,10 +374,10 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
   };
 
   return (
-    <section ref={sectionRef} className="scroll-mt-4 rounded-xl border border-gray-200/90 bg-white">
+    <section ref={sectionRef} className="scroll-mt-4 rounded-lg border border-border-default bg-surface-card">
       <button type="button" className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-3 text-left sm:px-5 sm:py-4" onClick={toggle} aria-expanded={open}>
-        <h2 className="text-base font-semibold text-[#5c5c5c] sm:text-lg">History</h2>
-        <span className="material-symbols-outlined text-[#5c5c5c]/70" aria-hidden>
+        <h2 className="text-base font-semibold text-text-secondary sm:text-lg">History</h2>
+        <span className="material-symbols-rounded text-text-secondary" aria-hidden>
           {open ? "expand_less" : "expand_more"}
         </span>
       </button>
@@ -389,17 +389,17 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
             </div>
           ) : failed ? (
             <div className="flex flex-col items-center gap-3 py-6 text-center" role="alert">
-              <p className="text-sm text-[#4b5563]">I couldn&apos;t load the history. Mind trying again?</p>
+              <p className="text-sm text-text-secondary">I couldn&apos;t load the history. Mind trying again?</p>
               <button
                 type="button"
                 onClick={() => setRetryCount((n) => n + 1)}
-                className="min-h-11 cursor-pointer rounded-xl bg-[#54d3da] px-5 text-sm font-medium text-white hover:bg-[#54d3da]/80"
+                className="min-h-11 cursor-pointer rounded-lg bg-action-primary px-5 text-sm font-medium text-action-on-primary hover:bg-action-primary"
               >
                 Try again
               </button>
             </div>
           ) : items.length === 0 ? (
-            <div className="flex items-center justify-center py-6 text-sm text-gray-400">No activity yet</div>
+            <div className="flex items-center justify-center py-6 text-sm text-text-muted">No activity yet</div>
           ) : (
             <div
               className="min-h-0 max-h-[min(14rem,38dvh)] overflow-y-auto overscroll-y-contain pr-1 [scrollbar-gutter:stable] sm:max-h-[min(17.5rem,45vh)]"
@@ -407,31 +407,31 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
               aria-label="Activity history list"
             >
               <div className="relative pb-0.5">
-                <div className="absolute bottom-3 left-[7px] top-3 w-px bg-[#e0e0e0]" aria-hidden />
+                <div className="absolute bottom-3 left-[7px] top-3 w-px bg-border-subtle" aria-hidden />
                 <ul className="relative flex flex-col gap-3">
                   {items.map((item) => (
                     <li key={item.id} className="relative flex gap-3">
                       <div className="relative z-[1] flex w-4 shrink-0 justify-center pt-[18px]">
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#9ca3af] ring-[3px] ring-white" aria-hidden />
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-surface-sunk ring-[3px] ring-surface-card" aria-hidden />
                       </div>
-                      <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-[#f9f9f9] px-4 py-3.5 sm:px-5 sm:py-4">
+                      <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-surface-sunk px-4 py-3.5 sm:px-5 sm:py-4">
                         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                           <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
                             <div
-                              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#FFE6B1] text-[12px] font-semibold leading-none text-[#6B3A12]"
+                              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-avatar-bg text-[12px] font-semibold leading-none text-accent-avatar-ink"
                               aria-hidden
                               title={item.userName}
                             >
                               {item.initials}
                             </div>
                             <p className="min-w-0 flex-1 text-sm leading-snug">
-                              <span className="font-bold text-[#333333]">{item.userName}</span>
-                              <span className="font-normal text-[#666666]"> {item.verb} </span>
-                              <span className="font-bold text-[#666666]">{item.subjectBold}</span>
+                              <span className="font-bold text-text-primary">{item.userName}</span>
+                              <span className="font-normal text-text-secondary"> {item.verb} </span>
+                              <span className="font-bold text-text-secondary">{item.subjectBold}</span>
                             </p>
                           </div>
                           <time
-                            className="shrink-0 pl-10 text-xs font-normal tabular-nums text-[#999999] sm:pl-0 sm:text-right sm:text-sm"
+                            className="shrink-0 pl-10 text-xs font-normal tabular-nums text-text-muted sm:pl-0 sm:text-right sm:text-sm"
                             dateTime={item.timeLabel}
                           >
                             {item.timeLabel}
@@ -440,10 +440,10 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
                         {item.changes.length > 0 ? (
                           <ul className="mt-2 flex flex-col gap-1 pl-10">
                             {item.changes.map((c, i) => (
-                              <li key={i} className="text-xs leading-relaxed text-[#888888]">
-                                <span className="text-[#555555]">{c.split("→")[0]?.trim()}</span>
+                              <li key={i} className="text-xs leading-relaxed text-text-muted">
+                                <span className="text-text-secondary">{c.split("→")[0]?.trim()}</span>
                                 <span className="mx-1">→</span>
-                                <span className="font-medium text-[#333333]">{c.split("→")[1]?.trim()}</span>
+                                <span className="font-medium text-text-primary">{c.split("→")[1]?.trim()}</span>
                               </li>
                             ))}
                           </ul>

@@ -1,47 +1,27 @@
 "use client";
 
-import { createPortal } from "react-dom";
-import { useEffect, useId, type ReactNode } from "react";
-import { pushAppScrollLock } from "@/lib/appScrollRoot";
+import { useRef, type ReactNode } from "react";
+
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Overlay";
 
 /**
- * Shared scaffold for the payment-request confirm dialogs (delete / void /
- * warning). Owns the portal, backdrop overlay, scroll-lock, Escape-to-close,
- * and the accessible alertdialog wrapper + button row. Each concrete modal
- * stays a thin wrapper that supplies its own title, body, labels, z-index and
- * confirm styling — so user-facing strings and public props are unchanged.
+ * Shared scaffold for the payment-request confirm dialogs (delete / void / warning), drawn as the
+ * Part 14 "Confirmation modal" (components/ui/Overlay.tsx): 440 wide, radius 12, the Part 13
+ * scrim, a bottom sheet on a phone. Each concrete modal stays a thin wrapper that supplies its
+ * own title, body and labels - so user-facing strings and public props are unchanged.
+ *
+ * Kind = Standard | Destructive (Part 14): a destructive confirmation puts the keyboard on
+ * CANCEL first, so Enter never voids by accident. Escape and a click on the scrim cancel - but
+ * not while the action is in flight.
  */
-
-const focusRing =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
-
-const shellClass =
-  "relative z-[1] w-full min-w-0 max-w-[400px] rounded-xl bg-white p-5 shadow-xl ring-1 ring-black/5 sm:rounded-2xl sm:p-6";
-
-const cancelClass = `box-border h-12 min-h-[48px] w-full cursor-pointer rounded-lg border-2 border-secondary bg-white px-4 text-sm font-semibold text-secondary transition-colors hover:bg-secondary/10 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
-
-/** Red destructive confirm button (delete / void). */
-const dangerClass = `box-border h-12 min-h-[48px] w-full cursor-pointer rounded-lg border border-transparent bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition-opacity duration-200 ease-out hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:opacity-60 ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
-
-/** Secondary-color primary button (e.g. an acknowledgement "OK"). */
-const primaryClass = `box-border h-12 min-h-[48px] w-full cursor-pointer rounded-lg border border-transparent bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
-
-/**
- * The z-index is applied as an inline style, not a `z-[${zIndex}]` class:
- * Tailwind only generates arbitrary values it can see as literal text at build
- * time, so an interpolated class produces no CSS and the overlay would fall back
- * to `z-index: auto` — letting positioned page content paint (and take clicks)
- * above the backdrop.
- */
-const OVERLAY_CLASS =
-  "fixed inset-0 flex items-center justify-center overflow-x-hidden overscroll-x-none bg-black/45 p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4";
 
 export type ConfirmDialogProps = {
   open: boolean;
   /** Stacking context; each modal keeps its historical z-index. */
   zIndex: number;
   title: ReactNode;
-  /** Dialog body, rendered inside the described-by paragraph. */
+  /** Dialog body: what happens, and whether it can be undone. */
   children: ReactNode;
   pending?: boolean;
   onClose: () => void;
@@ -71,73 +51,40 @@ export function ConfirmDialog({
   acknowledgeOnly = false,
   acknowledgeLabel = "OK",
 }: ConfirmDialogProps) {
-  const titleId = useId();
-  const descId = useId();
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const destructive = !acknowledgeOnly && confirmVariant === "danger";
 
-  useEffect(() => {
-    if (!open) return;
-    return pushAppScrollLock();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !pending) onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose, pending]);
-
-  if (!open || typeof document === "undefined") return null;
-
-  const confirmClass = confirmVariant === "primary" ? primaryClass : dangerClass;
-
-  return createPortal(
-    <div
-      className={OVERLAY_CLASS}
-      style={{ zIndex }}
-      role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !pending) onClose();
+  return (
+    <Modal
+      open={open}
+      role="alertdialog"
+      zIndex={zIndex}
+      title={title}
+      description={children}
+      initialFocus={destructive ? cancelRef : undefined}
+      onRequestClose={() => {
+        if (!pending) onClose();
       }}
-    >
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={descId}
-        className={shellClass}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <h2 id={titleId} className="text-lg font-semibold text-primary sm:text-xl">
-          {title}
-        </h2>
-        <p id={descId} className="mt-3 text-sm leading-relaxed text-primary/80">
-          {children}
-        </p>
-        {acknowledgeOnly ? (
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <button type="button" className={primaryClass} onClick={onClose}>
-              {acknowledgeLabel}
-            </button>
-          </div>
+      footer={
+        acknowledgeOnly ? (
+          <Button kind="primary" onClick={onClose}>
+            {acknowledgeLabel}
+          </Button>
         ) : (
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-            <button type="button" className={cancelClass} onClick={onClose} disabled={pending}>
+          <>
+            <Button ref={cancelRef} kind="secondary" onClick={onClose} disabled={pending}>
               Cancel
-            </button>
-            <button
-              type="button"
-              className={confirmClass}
+            </Button>
+            <Button
+              kind={confirmVariant === "primary" ? "primary" : "danger"}
               onClick={() => onConfirm?.()}
-              disabled={pending}
+              processing={pending}
             >
               {confirmLabel}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>,
-    document.body,
+            </Button>
+          </>
+        )
+      }
+    />
   );
 }

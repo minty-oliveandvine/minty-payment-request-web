@@ -1,10 +1,6 @@
-// The desktop table (components/payment-request/PaymentRequestTable.tsx).
-//
-// SCOPING, and it applies to every screen test in this folder: the component renders the table
-// AND a card list of the same rows, with Tailwind hiding one by viewport. No stylesheet is
-// loaded under jsdom, so both are in the document and every row would be found twice. Each
-// query below is therefore scoped to one of them - `table()` or `cards()` - and never to the
-// whole screen.
+// The Table view (components/payment-request/PaymentRequestTable.tsx) - Part 14 Table, Compact
+// density, offered from 768px. It draws ONLY the table since the Part 15 migration (a phone gets
+// Easy view's record rows); queries are still scoped to `table()` so a menu portal never matches.
 
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -84,13 +80,14 @@ const show = (props: Partial<Props> = {}) =>
   );
 
 const table = () => within(screen.getByRole("table"));
-const cards = () => within(screen.getByRole("list", { name: "Payment requests" }));
 const bodyRows = () => screen.getByRole("table").querySelectorAll("tbody tr");
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   setAuth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
-  fetchMock.mockImplementation(async () => answer(200, {}));
+  fetchMock.mockImplementation(async (input) =>
+    String(input).includes("/auth/entity-currency") ? answer(200, { currency_code: "HKD" }) : answer(200, {}),
+  );
 });
 
 afterEach(() => {
@@ -269,47 +266,64 @@ describe("the per-row payment action", () => {
     expect(onRecordPayment).toHaveBeenCalledWith("r-paid", true);
   });
 
-  it("is dead on a returned request, and says why", () => {
+  // Part 15.2: a row offers only what can be done - never a dead button - and the same matrix
+  // as Easy view (lib/requestActions.ts).
+  it("offers no payment action on a returned request", () => {
     show({
       rows: [billRow({ id: "r-ret", contactTitle: "Returned Supplies Ltd", status: "Returned" })],
     });
 
-    expect(
-      table().getByRole("button", {
-        name: "Returned — record payment not available for Returned Supplies Ltd",
-      }),
-    ).toBeDisabled();
+    expect(table().queryByRole("button", { name: /payment/i })).not.toBeInTheDocument();
+    expect(table().getByLabelText("No payment action")).toBeInTheDocument();
   });
 
-  it("is dead for somebody without the permission, and says why", async () => {
+  it("offers no payment action on a draft", () => {
+    show({ rows: [billRow({ id: "r-draft", contactTitle: "Draft Co", status: "Draft" })] });
+
+    expect(table().queryByRole("button", { name: /payment/i })).not.toBeInTheDocument();
+  });
+
+  it("leaves Record payment out for somebody without the permission", async () => {
     setAuth(unsignedToken({ role: "cashier", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
 
     show();
 
-    const button = await within(screen.getByRole("table")).findByRole("button", {
-      name: "Insufficient permissions — record payment not available for Young Bros Transport",
-    });
-    expect(button).toBeDisabled();
+    expect(await within(screen.getByRole("table")).findByText("Young Bros Transport")).toBeInTheDocument();
+    expect(table().queryByRole("button", { name: /Record payment/ })).not.toBeInTheDocument();
   });
 
-  it("is dead on a PAID row for the same person, with the wording for viewing", async () => {
+  it("still lets that person view the payments on a PAID row", async () => {
     setAuth(unsignedToken({ role: "cashier", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
 
     show({ rows: [billRow({ id: "r-paid", contactTitle: "Paid In Full Co", status: "Paid" })] });
 
-    const button = await within(screen.getByRole("table")).findByRole("button", {
-      name: "Insufficient permissions — view payments not available for Paid In Full Co",
-    });
-    expect(button).toBeDisabled();
+    await userEvent.click(
+      await within(screen.getByRole("table")).findByRole("button", { name: "View payments for Paid In Full Co" }),
+    );
+    expect(onRecordPayment).toHaveBeenCalledWith("r-paid", true);
   });
 });
 
-describe("the card list beside it", () => {
-  it("carries the same rows, for a phone", () => {
+// The table has no phone cards any more: Table view is offered from 768px only, and a phone gets
+// Easy view's record rows (PaymentRequestEasyView.test.tsx; Part 15.17, D15-18).
+describe("on a phone", () => {
+  it("draws no card list of its own - the table is the whole of it", () => {
     show();
 
-    expect(cards().getByText("Young Bros Transport")).toBeInTheDocument();
-    expect(cards().getByText("HK$ 6,000.00")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Payment requests" })).not.toBeInTheDocument();
+    expect(table().getByText("Young Bros Transport")).toBeInTheDocument();
+  });
+});
+
+describe("its Part 14 look", () => {
+  it("draws each status as the one Status pill, in its tone", () => {
+    show();
+    expect(table().getByText("Payment Requested")).toHaveClass("rounded-full", "bg-status-info-bg");
+  });
+
+  it("names the currency once, in the amount's header", async () => {
+    show();
+    expect(await within(screen.getByRole("table")).findByText(/Unpaid \(HKD\)/)).toBeInTheDocument();
   });
 });
 
@@ -339,12 +353,4 @@ describe("the bank slip cell before its count is known", () => {
     expect(onRowClick).not.toHaveBeenCalled();
   });
 
-  it("does the same on the phone card", () => {
-    show({ rows: unknown("error") });
-
-    expect(
-      cards().getByRole("button", { name: "Bank slips didn't load for Young Bros Transport — try again" }),
-    ).toBeInTheDocument();
-    expect(cards().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
-  });
 });

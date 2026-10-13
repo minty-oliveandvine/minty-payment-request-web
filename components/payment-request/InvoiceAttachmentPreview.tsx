@@ -9,7 +9,7 @@ import {
   type AttachmentPreviewItem,
 } from "./AttachmentFullScreenViewer";
 
-const ATTACHMENT_CHECKBOX_CLASS = "checkbox-secondary-white-tick h-4 w-4 rounded border border-primary/40";
+const ATTACHMENT_CHECKBOX_CLASS = "checkbox-secondary-white-tick h-4 w-4 rounded border border-border-default";
 
 export type InvoiceAttachmentPreviewItem = AttachmentPreviewItem & {
   billAttachmentId?: string;
@@ -50,23 +50,23 @@ function FillColumnInvoiceLoadingSkeleton() {
       aria-busy="true"
       aria-label="Loading invoice attachment"
     >
-      <figure className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <figure className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-border-default bg-surface-card shadow-sm">
         <div className="flex min-h-[min(14rem,48dvh)] w-full flex-col gap-3 p-3 sm:min-h-[min(18rem,52dvh)] sm:gap-4 sm:p-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 sm:pb-4">
-            <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-gray-200" aria-hidden />
-            <div className="h-2.5 min-w-0 flex-1 animate-pulse rounded-full bg-gray-200/80" aria-hidden />
-            <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-gray-100" aria-hidden />
+          <div className="flex items-center gap-2 border-b border-border-subtle pb-3 sm:pb-4">
+            <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-border-subtle" aria-hidden />
+            <div className="h-2.5 min-w-0 flex-1 animate-pulse rounded-full bg-border-subtle" aria-hidden />
+            <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-surface-sunk" aria-hidden />
           </div>
-          <div className="flex min-h-0 flex-1 flex-col items-center gap-3 rounded-lg border border-dashed border-gray-200 bg-gray-50/90 p-3 sm:p-4">
+          <div className="flex min-h-0 flex-1 flex-col items-center gap-3 rounded-lg border border-dashed border-border-default bg-surface-sunk p-3 sm:p-4">
             <div
-              className="aspect-[8.5/11] w-full max-w-[min(100%,17rem)] animate-pulse rounded-sm bg-gradient-to-b from-gray-100 to-gray-200/90 sm:max-w-[min(100%,20rem)]"
+              className="aspect-[8.5/11] w-full max-w-[min(100%,17rem)] animate-pulse rounded-sm bg-gradient-to-b from-surface-sunk to-border-subtle sm:max-w-[min(100%,20rem)]"
               aria-hidden
             />
             <div className="flex w-full max-w-[14rem] flex-col gap-2">
-              <div className="h-2 w-[96%] animate-pulse rounded-full bg-gray-200/90" aria-hidden />
-              <div className="h-2 w-[88%] animate-pulse rounded-full bg-gray-200/80" aria-hidden />
-              <div className="h-2 w-[92%] animate-pulse rounded-full bg-gray-200/75" aria-hidden />
-              <div className="h-2 w-[72%] animate-pulse rounded-full bg-gray-200/70" aria-hidden />
+              <div className="h-2 w-[96%] animate-pulse rounded-full bg-border-subtle" aria-hidden />
+              <div className="h-2 w-[88%] animate-pulse rounded-full bg-border-subtle" aria-hidden />
+              <div className="h-2 w-[92%] animate-pulse rounded-full bg-border-subtle" aria-hidden />
+              <div className="h-2 w-[72%] animate-pulse rounded-full bg-border-subtle" aria-hidden />
             </div>
           </div>
         </div>
@@ -153,13 +153,13 @@ export function InvoiceAttachmentPreview({
           <FillColumnInvoiceLoadingSkeleton />
         ) : (
           <figure
-            className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded border border-gray-200 bg-white shadow-sm"
+            className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded border border-border-default bg-surface-card shadow-sm"
             role="status"
             aria-busy="true"
             aria-label="Loading invoice attachment"
           >
-            <div className="flex aspect-[8.5/11] w-full max-h-[min(75vh,56rem)] min-h-[min(12rem,40dvh)] items-center justify-center bg-gray-50 sm:min-h-[min(16rem,45dvh)]">
-              <div className="mx-auto h-full w-[92%] max-w-full animate-pulse rounded-sm bg-gray-100" aria-hidden />
+            <div className="flex aspect-[8.5/11] w-full max-h-[min(75vh,56rem)] min-h-[min(12rem,40dvh)] items-center justify-center bg-surface-sunk sm:min-h-[min(16rem,45dvh)]">
+              <div className="mx-auto h-full w-[92%] max-w-full animate-pulse rounded-sm bg-surface-sunk" aria-hidden />
             </div>
           </figure>
         )
@@ -172,14 +172,14 @@ export function InvoiceAttachmentPreview({
                 role="separator"
                 aria-label="Next file"
               >
-                <span className="h-px min-w-0 flex-1 bg-gray-300" aria-hidden />
-                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary/50 sm:text-[11px]">
+                <span className="h-px min-w-0 flex-1 bg-border-default" aria-hidden />
+                <span className="shrink-0 text-caption font-semibold uppercase tracking-[0.14em] text-text-muted">
                   Next file
                 </span>
-                <span className="h-px min-w-0 flex-1 bg-gray-300" aria-hidden />
+                <span className="h-px min-w-0 flex-1 bg-border-default" aria-hidden />
               </div>
             ) : null}
-            <figure className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded border border-gray-200 bg-white shadow-sm">
+            <figure className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded border border-border-default bg-surface-card shadow-sm">
               {item ? (
                 <>
                   {editMode ? (
@@ -208,12 +208,12 @@ export function InvoiceAttachmentPreview({
                   <PreviewBlock {...item} />
                 </>
               ) : (
-                <div className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-2 bg-gray-50 px-4 text-center text-sm text-primary/60">
-                  <span className="material-symbols-outlined text-[40px] text-primary/35" aria-hidden>
+                <div className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-2 bg-surface-sunk px-4 text-center text-sm text-text-muted">
+                  <span className="material-symbols-rounded text-[40px] text-text-disabled" aria-hidden>
                     description
                   </span>
                   <span>Invoice attachment preview</span>
-                  <span className="text-xs text-primary/45">Pinch to zoom on mobile</span>
+                  <span className="text-xs text-text-muted">Pinch to zoom on mobile</span>
                 </div>
               )}
             </figure>
@@ -228,11 +228,11 @@ export function InvoiceAttachmentPreview({
       <div className={`flex min-h-0 w-full flex-1 flex-col ${fillColumn ? "h-full min-h-0" : ""} ${className}`}>
         <div
           ref={scrollRef}
-          className={`visible-scrollbar relative flex min-h-0 min-w-0 flex-1 flex-col overflow-auto rounded-lg border border-gray-200 bg-gray-100 touch-pan-x touch-pan-y ${scrollAreaMinMaxClass}`}
+          className={`visible-scrollbar relative flex min-h-0 min-w-0 flex-1 flex-col overflow-auto rounded-lg border border-border-default bg-surface-sunk touch-pan-x touch-pan-y ${scrollAreaMinMaxClass}`}
           {...touchHandlers}
         >
-          <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/55 px-2 py-1 text-xs text-white sm:hidden">
-            <span className="material-symbols-outlined align-middle text-[16px]" aria-hidden>
+          <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-text-primary px-2 py-1 text-caption text-text-inverse sm:hidden">
+            <span className="material-symbols-rounded align-middle text-[16px]" aria-hidden>
               pinch
             </span>{" "}
             Pinch to zoom

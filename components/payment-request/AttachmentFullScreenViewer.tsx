@@ -98,19 +98,19 @@ export function PreviewBlock({
         referrerPolicy="no-referrer"
         className={
           layout === "fullscreen"
-            ? "block h-[calc(100dvh-7rem)] w-full bg-white"
-            : "block h-[min(75vh,56rem)] w-full bg-white"
+            ? "block h-[calc(100dvh-7rem)] w-full bg-surface-card"
+            : "block h-[min(75vh,56rem)] w-full bg-surface-card"
         }
       />
     );
   }
   return (
-    <div className="flex flex-col items-center justify-center gap-2 bg-gray-50 px-4 py-8 text-center">
-      <span className="material-symbols-outlined text-[40px] text-primary/35" aria-hidden>
+    <div className="flex flex-col items-center justify-center gap-2 bg-surface-sunk px-4 py-8 text-center">
+      <span className="material-symbols-rounded text-[40px] text-text-disabled" aria-hidden>
         draft
       </span>
-      <p className="text-sm font-medium text-primary">{name || "File"}</p>
-      <p className="text-xs text-primary/50">Preview is not available for this file type.</p>
+      <p className="text-sm font-medium text-text-secondary">{name || "File"}</p>
+      <p className="text-xs text-text-muted">Preview is not available for this file type.</p>
     </div>
   );
 }
@@ -234,17 +234,19 @@ export function AttachmentFullScreenViewer({
       aria-modal="true"
       aria-labelledby={titleId}
       onKeyDown={onKeyDownTrap}
-      className="fixed inset-0 z-[340] flex flex-col bg-black/90"
+      // Part 14 "Document viewer", full screen: the surface/document canvas (it stays light in
+      // Dark mode), a toolbar with the file's name and the controls.
+      className="fixed inset-0 z-[340] flex flex-col bg-surface-document"
     >
-      <div className="flex min-w-0 shrink-0 items-center justify-between gap-2 px-3 py-2">
-        <p id={titleId} className="min-w-0 truncate text-sm font-medium text-white/95" title={item.name || undefined}>
+      <div className="flex min-w-0 shrink-0 items-center justify-between gap-2 border-b border-border-subtle bg-surface-card px-3 py-2 pt-[max(8px,env(safe-area-inset-top))]">
+        <p id={titleId} className="min-w-0 truncate text-body-m font-semibold text-text-primary" title={item.name || undefined}>
           {item.name || "Attachment"}
         </p>
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={resetScale}
-            className="min-h-11 rounded-md px-3 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="min-h-11 cursor-pointer rounded-lg px-3 py-1.5 text-button text-action-secondary-text hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
           >
             Reset zoom
           </button>
@@ -252,10 +254,10 @@ export function AttachmentFullScreenViewer({
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-text-secondary hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
             aria-label="Close preview"
           >
-            <span className="material-symbols-outlined text-[28px]" aria-hidden>
+            <span className="material-symbols-rounded" style={{ fontSize: 24 }} aria-hidden>
               close
             </span>
           </button>
@@ -268,7 +270,7 @@ export function AttachmentFullScreenViewer({
           {...touchHandlers}
         >
           <div className="flex w-full flex-col p-2" style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}>
-            <figure className="relative mx-auto w-full min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white shadow-lg">
+            <figure className="relative mx-auto w-full min-w-0 overflow-hidden rounded-lg border border-border-default bg-surface-card">
               <PreviewBlock {...item} layout="fullscreen" />
             </figure>
           </div>
@@ -284,7 +286,7 @@ export function ViewFullButton({ name, onClick }: { name: string; onClick: () =>
   return (
     <button
       type="button"
-      className="absolute right-2 top-2 z-10 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-gray-200/90 bg-white/95 text-primary shadow-sm backdrop-blur-[1px] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+      className="absolute right-2 top-2 z-10 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-border-default bg-surface-card text-text-secondary shadow-sm backdrop-blur-[1px] transition-colors hover:bg-surface-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
       aria-label={`View full — ${name}`}
       title="View full"
       onClick={(e) => {
@@ -292,7 +294,7 @@ export function ViewFullButton({ name, onClick }: { name: string; onClick: () =>
         onClick();
       }}
     >
-      <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>
+      <span className="material-symbols-rounded text-[20px] leading-none" aria-hidden>
         open_in_full
       </span>
     </button>

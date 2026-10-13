@@ -1,10 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/layout";
 import { PaymentRequestDetailSkeleton } from "@/components/payment-request/PaymentRequestDetailSkeleton";
-import { PaymentRequestDetailStatusBadge } from "@/components/payment-request/PaymentRequestDetailStatusBadge";
+import { InlineAlert } from "@/components/ui/InlineAlert";
 import { getAuthSnapshot } from "@/lib/auth";
 import { fetchXeroStatus } from "@/lib/api";
 import { useClientValue } from "@/lib/useClientValue";
@@ -16,12 +16,15 @@ const PaymentRequestDetailBody = dynamic(
   { loading: () => <PaymentRequestDetailSkeleton /> },
 );
 
+/**
+ * A payment request's page: the App bar (with the way back), then the Record page itself -
+ * header, status, actions, document and details - which the body draws, because it holds the
+ * request (Part 15.17).
+ */
 export function PaymentRequestDetailPageClient() {
   // The cookie is client-only: "" on the server and at hydration, the real company once mounted.
   const auth = useClientValue(getAuthSnapshot, null);
   const [xeroConnected, setXeroConnected] = useState<boolean>(false);
-  const [billStatusRefresh, setBillStatusRefresh] = useState(0);
-  const bumpBillStatusInHeader = useCallback(() => setBillStatusRefresh((n) => n + 1), []);
   const { isViewOnly, isReadOnly } = useUserRole();
   const pages = useCompanyPages();
 
@@ -35,31 +38,22 @@ export function PaymentRequestDetailPageClient() {
   const showReadOnlyBanner = isViewOnly && isReadOnly(auth?.entityId ?? "");
 
   return (
-    <div className="flex min-h-dvh min-h-screen min-w-0 max-w-full flex-col overflow-x-clip bg-white">
+    <div className="flex min-h-dvh min-h-screen min-w-0 max-w-full flex-col overflow-x-clip bg-surface-page">
       <Header
-        title="Payment Request Details"
-        showLogo={false}
-        brandHref={null}
+        title="Payment Request"
         backHref={pages.list}
-        backLabel="Payments"
+        backLabel="Payment Requests"
+        backInPage
         companyName={auth?.entityName || "Loading…"}
-        statusBadge={<PaymentRequestDetailStatusBadge refreshSignal={billStatusRefresh} />}
         xeroConnected={xeroConnected}
       />
       {showReadOnlyBanner ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex items-center gap-2 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 sm:px-6"
-        >
-          <span className="material-symbols-outlined shrink-0 text-[18px] leading-none text-amber-600" aria-hidden>
-            visibility
-          </span>
-          <span>Read-only access — you are not a member of this entity.</span>
+        <div className="mx-auto w-full max-w-[1440px] px-4 pt-4 sm:px-6 lg:px-8">
+          <InlineAlert tone="info">Read-only access — you are not a member of this entity.</InlineAlert>
         </div>
       ) : null}
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden pt-2 sm:pt-3 lg:pt-4">
-        <PaymentRequestDetailBody onBillUpdated={bumpBillStatusInHeader} />
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
+        <PaymentRequestDetailBody />
       </main>
     </div>
   );

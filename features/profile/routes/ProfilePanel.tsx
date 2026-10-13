@@ -27,7 +27,7 @@ export function ProfilePanel({ subscriptions }: { subscriptions?: ReactNode }) {
   const sidebar = useSidebar();
 
   return (
-    <div className="flex min-h-full flex-col bg-[#f9fafb]">
+    <div className="flex min-h-full flex-col bg-surface-sunk">
       <ProfilePanelTitlebar onBack={sidebar?.showMenu} onClose={sidebar?.close} />
       <div className="flex flex-col px-4 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))]">
         <ProfileBody model={p} subscriptions={subscriptions} />

@@ -13,7 +13,7 @@ const showNewAppLink =
 
 export default function MaintenancePage() {
   return (
-    <div className="flex min-h-dvh min-h-screen flex-col bg-white">
+    <div className="flex min-h-dvh min-h-screen flex-col bg-surface-card">
       <header className="flex w-full shrink-0 justify-center px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-2 sm:pt-8 sm:pb-3">
         <Image
           src="/minty-mark.png"
@@ -33,10 +33,10 @@ export default function MaintenancePage() {
             priority
             className="mx-auto h-auto w-full max-w-[min(100%,20rem)] object-contain sm:max-w-[22rem]"
           />
-          <h1 className="mt-8 text-3xl font-bold tracking-tight text-black sm:text-4xl md:text-5xl">
+          <h1 className="mt-8 text-3xl font-bold tracking-tight text-text-primary sm:text-4xl md:text-5xl">
             We&apos;ll be back soon
           </h1>
-          <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-600 sm:text-base">
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-text-secondary sm:text-base">
             Minty is down for a scheduled maintenance.
           </p>
         </div>
@@ -45,11 +45,11 @@ export default function MaintenancePage() {
       <footer
         className={`shrink-0 w-full px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 text-center sm:pb-6 sm:pt-4 ${showNewAppLink ? "" : "hidden"}`}
       >
-        <p className="text-[11px] leading-snug text-gray-500 sm:text-xs">
+        <p className="text-caption leading-snug text-text-muted sm:text-xs">
           This will be the new link for the app:{" "}
           <a
             href="https://www.minty.oliveandvinehk.com"
-            className="font-medium text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:text-secondary hover:decoration-secondary"
+            className="font-medium text-text-secondary underline decoration-border-default underline-offset-2 transition-colors hover:text-text-link hover:decoration-text-link"
             target="_blank"
             rel="noopener noreferrer"
           >

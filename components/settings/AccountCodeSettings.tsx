@@ -7,8 +7,14 @@ import { useLeaveGuard } from "@minty/shared/leaveGuard";
 import { useUserRole } from "@/lib/useUserRole";
 import { useToast } from "@/components/Toast";
 import { LeaveDialog } from "@/features/subscription/components/InterruptedDialogs";
+import { Button } from "@/components/ui/Button";
+import { inputClass } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
+import { InlineAlert } from "@/components/ui/InlineAlert";
+import { Skeleton } from "@/components/ui/Skeleton";
 
-const CHECKBOX_CLASS = "checkbox-secondary-white-tick h-4 w-4 shrink-0 rounded border border-primary/40 disabled:opacity-40";
+// Part 14 Checkbox: 20px box, checked fill = border/selected (D14-02); the whole 44px row is the target.
+const CHECKBOX_CLASS = "checkbox-secondary-white-tick size-5 shrink-0 cursor-pointer rounded-sm border border-border-input disabled:cursor-not-allowed disabled:opacity-40";
 
 export type AccountCodeRow = { id: string; label: string };
 
@@ -31,6 +37,8 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
   // The codes are the company's Xero chart: without a live connection the card shows only a
   // way to connect, and the codes are not read at all (nor the chart re-sync that read starts).
   const [xeroConnected, setXeroConnected] = useState<boolean | null>(null);
+  /** A save the server refused, in its words - shown beside Save, never in a toast (Part 14). */
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { showToast } = useToast();
   const selectAllRef = useRef<HTMLInputElement>(null);
 
@@ -96,6 +104,7 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
   const handleSave = async () => {
     if (!hasChanges || saving || noneTicked) return;
     setSaving(true);
+    setSaveError(null);
     try {
       // Ticks ON first, then OFF: unticking A while ticking B must never pass through a
       // moment with nothing ticked, or the server's at-least-one rule refuses the untick.
@@ -125,9 +134,8 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
         // A refusal the server explained (409: "Keep at least one account code ticked.")
         // is shown in its own words; anything else gets the generic retry line.
         const refused = failed.find((f) => f.reason instanceof ApiError && f.reason.status === 409);
-        showToast(
-          refused ? (refused.reason as ApiError).message : "Some of those changes didn't save. Mind trying again?",
-          "error",
+        setSaveError(
+          refused ? (refused.reason as ApiError).message : "Some of those changes didn't save. Try saving again.",
         );
       }
     } finally {
@@ -188,51 +196,46 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
           Held until `loading` clears: the role arrives from the cookie one frame
           late, so an accountant would otherwise see this flash at them. */}
       {!loading && readOnly ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mb-3 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600"
-        >
-          <span className="material-symbols-outlined shrink-0 text-[18px] leading-none text-gray-400" aria-hidden>
-            visibility
-          </span>
-          <span>
-            {isViewOnly
-              ? "Read-only access — you are not a member of this entity."
-              : "You have view-only access to these settings. Ask an Accountant or Admin to make changes."}
-          </span>
-        </div>
+        <InlineAlert tone="info" className="mb-3">
+          {isViewOnly
+            ? "Read-only access — you are not a member of this entity."
+            : "You have view-only access to these settings. Ask an Accountant or Admin to make changes."}
+        </InlineAlert>
       ) : null}
-      <div className={`overflow-hidden rounded-lg border border-gray-200 ${readOnly ? "bg-gray-100" : "bg-white"} shadow-sm`}>
-        <button type="button" onClick={() => setExpanded((e) => !e)} className="flex w-full items-start justify-between gap-3 px-4 py-4 text-left sm:px-5" aria-expanded={expanded}>
+      <section className={`overflow-hidden rounded-lg border border-border-default ${readOnly ? "bg-surface-sunk" : "bg-surface-card"}`}>
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="flex min-h-11 w-full cursor-pointer items-start justify-between gap-3 px-4 py-4 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-border-focus sm:px-5"
+          aria-expanded={expanded}
+        >
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-semibold text-gray-800 sm:text-lg">Payment Account Code</h2>
-            <p className="text-sm text-gray-600">Only selected account code will appear when adding a payment in Payment.</p>
+            <h2 className="text-title-m text-text-primary">Payment Account Code</h2>
+            <p className="text-body-s text-text-secondary">Only the codes you tick here are offered when someone adds a payment request.</p>
           </div>
-          <span
-            className={`material-symbols-outlined shrink-0 cursor-pointer text-[24px] leading-none text-gray-400 transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "rotate-180"}`}
-            aria-hidden
-          >
-            expand_more
-          </span>
+          <Icon
+            name="expand_more"
+            size="lg"
+            className={`text-text-muted transition-transform duration-200 ease-out motion-reduce:transition-none ${expanded ? "rotate-0" : "rotate-180"}`}
+          />
         </button>
 
         {expanded && xeroConnected === false ? (
           <div className="px-4 pb-4 sm:px-5 sm:pb-5">
-            {/* Petty Cash Settings' notice (Minty static/css/settings_page.css `.pcs-notice-alert`), same values. */}
-            <div role="status" className="flex items-start gap-2 rounded-lg border border-[#f3b6ad] bg-[#fff5f5] px-4 py-2.5 text-sm text-[#4a5565]">
-              {/* `!`: material-symbols' own CSS (globals.css, unlayered) sets 24px over any utility. */}
-              <span className="material-symbols-outlined shrink-0 text-[18px]! leading-5! text-[#d92d20]" aria-hidden>
-                link_off
-              </span>
-              <span className="min-w-0">
-                Xero isn&apos;t connected. Connect it in{" "}
-                <a href={integrationHref} className="font-medium text-[#18c4c7] underline underline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary">
-                  Entity &amp; Integration
-                </a>{" "}
-                to set these up.
-              </span>
-            </div>
+            <InlineAlert
+              tone="warning"
+              title="Xero isn't connected yet."
+              action={
+                <a
+                  href={integrationHref}
+                  className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
+                >
+                  Connect it in Entity &amp; Integration
+                </a>
+              }
+            >
+              Account codes come from your Xero chart, so connect Xero to set them up.
+            </InlineAlert>
           </div>
         ) : expanded ? (
           <div className="flex flex-col gap-3 px-4 pb-4 sm:px-5 sm:pb-5">
@@ -240,16 +243,24 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
               <label htmlFor="settings-account-search" className="sr-only">
                 Search account code
               </label>
-              <input id="settings-account-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search account code" autoComplete="off" className="box-border h-11 w-full rounded-lg border border-gray-300 bg-white py-0 pl-3 pr-11 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25" />
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center justify-center text-gray-300" aria-hidden>
-                <span className="material-symbols-outlined inline-flex text-[22px] leading-none">search</span>
+              <input
+                id="settings-account-search"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search account code"
+                autoComplete="off"
+                className={`${inputClass()} pr-11`}
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-text-muted">
+                <Icon name="search" size="md" />
               </span>
             </div>
 
             {loading ? (
               <>
                 <div className="flex items-center justify-between gap-3 px-3 sm:px-4">
-                  <span className="min-w-0 flex-1 text-right text-base font-normal text-primary">Select all</span>
+                  <span className="min-w-0 flex-1 text-right text-body-m text-text-primary">Select all</span>
                   <input
                     ref={selectAllRef}
                     type="checkbox"
@@ -260,23 +271,25 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
                     aria-busy
                   />
                 </div>
-                <div className="flex flex-col gap-3 py-4">
+                <div className="flex flex-col gap-3 py-4" aria-busy="true">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex animate-pulse items-center justify-between gap-3 px-3 sm:px-4">
-                      <div className="h-4 flex-1 rounded bg-gray-100" />
-                      <div className="h-4 w-4 shrink-0 rounded bg-gray-100" />
+                    <div key={i} className="flex items-center justify-between gap-3 px-3 sm:px-4">
+                      <Skeleton className="h-4 flex-1" />
+                      <Skeleton className="size-5 shrink-0" />
                     </div>
                   ))}
                 </div>
               </>
             ) : loadFailed ? (
-              <p role="alert" className="py-8 text-center text-sm text-red-600">I couldn&apos;t load your account codes. Mind refreshing the page?</p>
+              <InlineAlert tone="danger" title="Your account codes didn't load.">
+                Refresh the page to try again.
+              </InlineAlert>
             ) : rows.length === 0 ? (
-              <p className="py-8 text-center text-sm text-primary/60">No account codes yet - I&apos;ll show them here once Xero&apos;s connected.</p>
+              <p className="py-8 text-center text-body-m text-text-secondary">No account codes yet. They show here once Xero is connected.</p>
             ) : filtered.length === 0 ? (
               <>
                 <div className="flex items-center justify-between gap-3 px-3 sm:px-4">
-                  <span className="min-w-0 flex-1 text-right text-base font-normal text-primary">Select all</span>
+                  <span className="min-w-0 flex-1 text-right text-body-m text-text-primary">Select all</span>
                   <input
                     ref={selectAllRef}
                     type="checkbox"
@@ -287,15 +300,15 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
                     aria-label="Select all visible account codes"
                   />
                 </div>
-                <p className="text-center text-sm text-primary/60">No codes match your search.</p>
+                <p className="text-center text-body-m text-text-secondary">No codes match your search.</p>
               </>
             ) : (
               <ul
-                className="visible-scrollbar max-h-[min(24rem,50vh)] overflow-y-auto overscroll-contain rounded-b-lg border-b border-r border-gray-100 [scrollbar-gutter:stable]"
+                className="visible-scrollbar max-h-[min(24rem,50vh)] overflow-y-auto overscroll-contain rounded-b-lg border-b border-r border-border-subtle [scrollbar-gutter:stable]"
                 aria-label="Account codes"
               >
-                <li className={`sticky top-0 z-10 flex items-center justify-between gap-3 ${readOnly ? "bg-gray-100" : "bg-white"} px-3 py-3 sm:px-4`}>
-                  <span className="min-w-0 flex-1 text-right text-base font-normal text-primary">Select all</span>
+                <li className={`sticky top-0 z-10 flex min-h-11 items-center justify-between gap-3 ${readOnly ? "bg-surface-sunk" : "bg-surface-card"} px-3 py-3 sm:px-4`}>
+                  <span className="min-w-0 flex-1 text-right text-body-m text-text-primary">Select all</span>
                   <input
                     ref={selectAllRef}
                     type="checkbox"
@@ -309,8 +322,8 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
                 {filtered.map((row, index) => {
                   const isChecked = selectedIds.has(row.id);
                   return (
-                    <li key={row.id} className={`flex items-center justify-between gap-3 px-3 py-3 sm:px-4 ${index > 0 ? "border-t border-gray-100" : ""}`}>
-                      <span className="min-w-0 flex-1 text-base font-normal text-gray-700">{row.label}</span>
+                    <li key={row.id} className={`flex min-h-11 items-center justify-between gap-3 px-3 py-3 sm:px-4 ${index > 0 ? "border-t border-border-subtle" : ""}`}>
+                      <span className="min-w-0 flex-1 text-body-m text-text-primary" translate="no">{row.label}</span>
                       <input type="checkbox" checked={isChecked} onChange={() => toggleRow(row.id)} disabled={readOnly} className={CHECKBOX_CLASS} aria-label={`Include ${row.label} in payment account dropdown`}/>
                     </li>
                   );
@@ -320,15 +333,30 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
 
           </div>
         ) : null}
-      </div>
+      </section>
 
       {expanded && xeroConnected !== false ? (
-        <div className="mt-3 flex w-full flex-col gap-3">
-          <button type="button" onClick={handleSave} disabled={saving || readOnly || noneTicked || !hasChanges} aria-describedby={noneTicked && !readOnly ? "settings-account-none-ticked" : undefined} title={loading ? undefined : isViewOnly ? "Hmm, I can't let you in there. You have view-only access." : readOnly ? "That task is reserved for our Accountants and Admins." : undefined} className="box-border h-12 w-full cursor-pointer rounded-lg bg-secondary text-base font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:text-sm">
-            {saving ? "Saving…" : "Save Changes"}
-          </button>
+        <div className="mt-3 flex w-full flex-col gap-3 md:items-end">
+          {saveError ? (
+            <InlineAlert tone="danger" className="w-full">
+              {saveError}
+            </InlineAlert>
+          ) : null}
+          <Button
+            kind="primary"
+            full
+            className="md:w-auto"
+            onClick={handleSave}
+            disabled={readOnly || noneTicked || !hasChanges}
+            processing={saving}
+            processingLabel="Saving…"
+            aria-describedby={noneTicked && !readOnly ? "settings-account-none-ticked" : undefined}
+            title={loading ? undefined : isViewOnly ? "Hmm, I can't let you in there. You have view-only access." : readOnly ? "That task is reserved for our Accountants and Admins." : undefined}
+          >
+            Save Changes
+          </Button>
           {noneTicked && !readOnly ? (
-            <p id="settings-account-none-ticked" className="-mt-1 text-sm text-primary/60">Pick at least one account code.</p>
+            <p id="settings-account-none-ticked" className="-mt-1 text-body-s text-text-secondary">Pick at least one account code.</p>
           ) : null}
         </div>
       ) : null}

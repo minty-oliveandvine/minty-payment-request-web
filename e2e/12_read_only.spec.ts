@@ -18,6 +18,7 @@ import {
   stubApi,
   stubCredentials,
   stubFlaskHub,
+  viewChoice,
 } from './helpers';
 
 const creds = () => stubCredentials();
@@ -43,8 +44,7 @@ async function openList(page: import('@playwright/test').Page) {
   await handoff(page, creds(), pagesOf(creds()).list, VIEW_ONLY);
   await expect(page.getByRole('searchbox')).toBeVisible();
 
-  const easyView = page.getByRole('switch', { name: 'Easy view' });
-  if ((await easyView.getAttribute('aria-checked')) === 'true') await easyView.click();
+  await viewChoice(page, 'Table view').click();
   // And wait for a real row: the loading state draws skeleton rows, so a table on screen is
   // not the same as the list having arrived.
   await expect(page.getByRole('table').getByText('Young Bros Transport')).toBeVisible();
@@ -63,30 +63,33 @@ test('the list is perfectly readable', async ({ page }) => {
   await expect(page.getByRole('table').getByText('ABC Furniture')).toBeVisible();
 });
 
-test('Add Payment is dead, and says why', async ({ page }) => {
+test('Add payment request is dead, and says why', async ({ page }) => {
   await openList(page);
 
-  const add = page.getByRole('button', { name: /Add Payment/ });
+  const add = page.getByRole('button', { name: 'Add payment request' });
   await expect(add).toBeDisabled();
   await expect(add).toHaveAttribute('title', "Hmm, I can't let you in there. You have view-only access.");
+  await expect(page.getByText('You have view-only access, so nothing can be added here.')).toBeVisible();
 });
 
 test('no row offers a payment to record', async ({ page }) => {
   await openList(page);
 
-  const record = page
-    .getByRole('table')
-    .getByRole('button', { name: /Insufficient permissions|Record payment for/ });
-  for (const button of await record.all()) {
-    await expect(button).toBeDisabled();
-  }
+  // Part 15.2: an action the person cannot take is left out, not drawn dead.
+  await expect(page.getByRole('table').getByRole('button', { name: /Record payment/ })).toHaveCount(0);
+  // Viewing what was paid is still offered.
+  await expect(page.getByRole('table').getByRole('button', { name: 'View payments for ABC Furniture' })).toBeVisible();
 });
 
 test('the request opens, and offers nothing to change', async ({ page }) => {
   await handoff(page, creds(), pagesOf(creds()).request('b-1', 'PR-0001'), VIEW_ONLY);
 
-  await expect(page.getByText('Young Bros Transport').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Edit' })).toBeDisabled();
+  await expect(page.getByRole('heading', { level: 1, name: 'Young Bros Transport' })).toBeVisible();
+  await expect(page.getByText(BANNER)).toBeVisible();
+  // Role-aware header (Part 15.17): nothing to change is offered at all.
+  await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Record payment' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Return to requester' })).toHaveCount(0);
 });
 
 test('Payment Settings opens, and its ticks cannot be changed', async ({ page }) => {
@@ -104,8 +107,8 @@ for (const width of [360, 768, 1440]) {
   test(`the read-only banner fits the screen at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
 
-    // Not `openList`: the Easy view switch is desktop-only chrome, so toggling it is not a
-    // thing a phone can do. The banner is what this test is about either way.
+    // Not `openList`: the Easy view | Table view control is shown from 768px only, so choosing
+    // is not a thing a phone can do. The banner is what this test is about either way.
     await handoff(page, creds(), pagesOf(creds()).list, VIEW_ONLY);
     await expect(page.getByRole('searchbox')).toBeVisible();
 

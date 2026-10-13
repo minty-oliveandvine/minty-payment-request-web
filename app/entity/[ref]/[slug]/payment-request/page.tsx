@@ -1,11 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { EasyViewToggle, Header } from "@/components/layout";
+import { Header } from "@/components/layout";
 import { PaymentRequestView } from "@/components/payment-request";
 import { ModuleGate } from "@/components/ModuleGate";
 import { SubscriptionNoticeModal } from "@/components/SubscriptionNoticeModal";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getAuthSnapshot } from "@/lib/auth";
+import { useCompanyPages } from "@/lib/useCompanyPages";
+import { useUserRole } from "@/lib/useUserRole";
 import {
   getEasyViewServerSnapshot,
   getEasyViewSnapshot,
@@ -31,6 +37,8 @@ export default function Home() {
     getEasyViewServerSnapshot,
   );
 
+  const pages = useCompanyPages();
+  const { hasAnyRole, isViewOnly } = useUserRole();
   const [xeroConnected, setXeroConnected] = useState<boolean>(false);
   const [notice, setNotice] = useState<SubscriptionNotice | null>(null);
 
@@ -64,21 +72,46 @@ export default function Home() {
     fetchSubscriptionNotice().then((n) => setNotice(n));
   }, [auth?.token, auth?.entityId]);
 
+  // Part 15.2: the page's ONE Primary - creating a request - in the page header. A view-only
+  // visitor gets it dead, with the reason beside it rather than a hidden button.
+  const canCreate = hasAnyRole && !isViewOnly;
+  const createButton = canCreate ? (
+    <Link href={pages.create} className={buttonClass("primary", { full: true })}>
+      <Icon name="add" size="md" />
+      Add payment request
+    </Link>
+  ) : (
+    <Button kind="primary" full disabled title={isViewOnly ? "Hmm, I can't let you in there. You have view-only access." : undefined}>
+      Add payment request
+    </Button>
+  );
+
   return (
     <ModuleGate>
-    <div className="flex min-h-dvh min-h-screen min-w-0 max-w-full flex-col overflow-x-clip bg-white pb-[env(safe-area-inset-bottom,0px)]">
+    <div className="flex min-h-dvh min-h-screen min-w-0 max-w-full flex-col overflow-x-clip bg-surface-page pb-[env(safe-area-inset-bottom,0px)]">
       <Header
         title="Payment Request"
-        showLogo={false}
         companyName={auth?.entityName || "Loading…"}
-        titleActions={
-          <div className="hidden shrink-0 items-center lg:flex">
-            <EasyViewToggle enabled={easyView} onChange={setEasyView} />
-          </div>
-        }
         xeroConnected={xeroConnected}
       />
-      <PaymentRequestView easyView={easyView} />
+      <div className="mx-auto w-full max-w-[1200px]">
+        <PageHeader
+          title="Payment Requests"
+          purpose="Supplier bills waiting to be paid, and what has been paid."
+          primary={createButton}
+          below={
+            isViewOnly ? (
+              <p className="text-body-s text-text-secondary">You have view-only access, so nothing can be added here.</p>
+            ) : null
+          }
+        />
+      </div>
+      <div className="h-4" aria-hidden />
+      <PaymentRequestView
+        easyView={easyView}
+        onEasyViewChange={setEasyView}
+        createAction={canCreate ? createButton : undefined}
+      />
       <SubscriptionNoticeModal notice={notice} onClose={() => setNotice(null)} />
     </div>
   </ModuleGate>

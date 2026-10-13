@@ -1,13 +1,17 @@
 "use client";
 
 /**
- * Toasts: `const { showToast } = useToast(); showToast("Saved", "success")`.
+ * Toasts: `const { showToast } = useToast(); showToast("Payment recorded for Kwok Transport.")`.
  *
- * The house toast, the same card in every Minty app (minty-web's
- * components/ui/Toast.tsx is the reference): a white card, a bold type label
- * (Success / Error / Warning / Information), the message in grey and a close
- * button, stacked at the top-right. No per-type colour or icon by decision -
- * the label carries the type. Auto-dismisses after 4s; errors are role=alert.
+ * Part 14 "Toast" (v1.1, 7 Oct 2026; Part 14 wins over minty-web's look in this app, owner
+ * 2026-10-13): one card on the raised surface (elevation 1), a bold type label and the message,
+ * a close button; at most 480 wide, BOTTOM-LEFT of the page on desktop and bottom-centre on a
+ * phone, never over the page's Primary action. No per-type colour or icon - the label carries
+ * the type. 4s life; errors are role=alert.
+ *
+ * A toast confirms something that already happened. Errors belong in an Inline alert or Page
+ * banner beside their cause (components/ui/InlineAlert.tsx) - the "error" type stays only for
+ * the few call sites that have no surface to hold one.
  */
 
 import {
@@ -21,6 +25,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+
+import { Icon } from "@/components/ui/Icon";
 
 export type ToastType = "success" | "error" | "warning" | "info";
 
@@ -88,7 +94,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {mounted
         ? createPortal(
             <div
-              className="pointer-events-none fixed right-4 top-4 z-[500] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2"
+              className="pointer-events-none fixed inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-[500] mx-auto flex max-w-[480px] flex-col gap-2 sm:left-6 sm:right-auto sm:mx-0 sm:w-[min(480px,calc(100vw-3rem))]"
               aria-live="polite"
               aria-atomic="false"
             >
@@ -108,19 +114,19 @@ function ToastCard({ item, onClose }: { item: ToastItem; onClose: () => void }) 
     <div
       role={item.type === "error" ? "alert" : "status"}
       data-toast-type={item.type}
-      className="pointer-events-auto flex items-start gap-3 rounded border border-[#e5e7eb] bg-white p-3 text-sm text-[#171717] shadow"
+      className="pointer-events-auto flex items-start gap-3 rounded-lg border border-border-default bg-surface-raised p-3 text-body-m text-text-primary shadow-overlay"
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 py-0.5">
         <p className="font-semibold">{LABEL[item.type] ?? LABEL.success}</p>
-        <p className="break-words text-[#6b7280]">{item.message}</p>
+        <p className="break-words text-text-secondary">{item.message}</p>
       </div>
       <button
         type="button"
         onClick={onClose}
         aria-label="Dismiss"
-        className="cursor-pointer text-[#6b7280] hover:text-[#171717] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+        className="-m-1 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-text-secondary hover:bg-state-hover hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
       >
-        ×
+        <Icon name="close" size="md" />
       </button>
     </div>
   );

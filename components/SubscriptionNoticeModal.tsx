@@ -12,29 +12,29 @@ export type SubscriptionNoticeModalProps = {
 };
 
 const overlayClass =
-  "fixed inset-0 z-[460] flex items-center justify-center overflow-x-hidden overscroll-x-none bg-black/45 p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4";
+  "fixed inset-0 z-[460] flex items-center justify-center overflow-x-hidden overscroll-x-none bg-overlay-scrim p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4";
 
 const shellClass =
-  "relative z-[1] w-full min-w-0 max-w-[440px] rounded-xl bg-white p-5 shadow-xl ring-1 ring-black/5 sm:rounded-2xl sm:p-6";
+  "relative z-[1] w-full min-w-0 max-w-[440px] rounded-lg bg-surface-card p-5 shadow-xl ring-1 ring-border-subtle sm:rounded-lg sm:p-6";
 
 const focusRing =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
 
-const dismissClass = `box-border h-12 min-h-[48px] w-full cursor-pointer rounded-lg border-2 border-secondary bg-white px-4 text-sm font-semibold text-secondary transition-colors hover:bg-secondary/10 ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
+const dismissClass = `box-border h-12 min-h-[48px] w-full cursor-pointer rounded-lg border border-action-secondary-border bg-surface-card px-4 text-sm font-semibold text-text-link transition-colors hover:bg-state-selected ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
 
-const primaryClass = `box-border inline-flex h-12 min-h-[48px] w-full cursor-pointer items-center justify-center rounded-lg border border-transparent bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition-opacity duration-200 ease-out hover:opacity-80 ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
+const primaryClass = `box-border inline-flex h-12 min-h-[48px] w-full cursor-pointer items-center justify-center rounded-lg border border-transparent bg-action-primary px-4 text-sm font-semibold text-action-on-primary shadow-sm transition-opacity duration-200 ease-out hover:opacity-80 ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
 
 /** Per-item card colouring. Severity is the server's call, not the component's. */
 const itemToneClass: Record<NoticeSeverity, string> = {
-  critical: "border-red-200 bg-red-50",
-  warning: "border-amber-200 bg-amber-50",
-  info: "border-gray-200 bg-gray-50",
+  critical: "border-action-danger bg-status-danger-bg",
+  warning: "border-status-warning-ink bg-status-warning-bg",
+  info: "border-border-default bg-surface-sunk",
 };
 
 const itemTitleClass: Record<NoticeSeverity, string> = {
-  critical: "text-red-900",
-  warning: "text-amber-900",
-  info: "text-primary",
+  critical: "text-status-danger-ink",
+  warning: "text-status-warning-ink",
+  info: "text-text-secondary",
 };
 
 /**
@@ -91,15 +91,15 @@ export function SubscriptionNoticeModal({ notice, onClose }: SubscriptionNoticeM
         <div className="flex items-start gap-3">
           <span
             className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-              critical ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600"
+              critical ? "bg-status-danger-bg text-status-danger-ink" : "bg-status-warning-bg text-status-warning-ink"
             }`}
             aria-hidden
           >
-            <span className="material-symbols-outlined text-[20px] leading-none">
+            <span className="material-symbols-rounded text-[20px] leading-none">
               {critical ? "error" : "info"}
             </span>
           </span>
-          <h2 id={titleId} className="text-lg font-semibold text-primary sm:text-xl">
+          <h2 id={titleId} className="text-lg font-semibold text-text-secondary sm:text-xl">
             {critical ? "Action needed" : "Your subscription"}
           </h2>
         </div>
@@ -108,12 +108,12 @@ export function SubscriptionNoticeModal({ notice, onClose }: SubscriptionNoticeM
           {notice.items.map((item) => (
             <li
               key={`${item.module_code}-${item.kind}`}
-              className={`rounded-xl border px-3 py-3 ${itemToneClass[item.severity]}`}
+              className={`rounded-lg border px-3 py-3 ${itemToneClass[item.severity]}`}
             >
               <p className={`text-sm font-semibold ${itemTitleClass[item.severity]}`}>
                 {item.title}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-primary/70">{item.detail}</p>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">{item.detail}</p>
             </li>
           ))}
         </ul>
@@ -121,7 +121,7 @@ export function SubscriptionNoticeModal({ notice, onClose }: SubscriptionNoticeM
         {/* Only the payer can act — the server refuses everyone else, so a button
             here would be a click that fails. Name who to ask instead. */}
         {!notice.can_manage && notice.payer ? (
-          <p className="mt-4 text-sm leading-relaxed text-primary/60">
+          <p className="mt-4 text-sm leading-relaxed text-text-muted">
             Billing for this company is managed by{" "}
             {notice.payer.name || notice.payer.email}
             {notice.payer.name && notice.payer.email ? ` <${notice.payer.email}>` : ""} — only

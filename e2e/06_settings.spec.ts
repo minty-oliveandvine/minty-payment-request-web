@@ -28,8 +28,8 @@ test.describe('payment settings', () => {
     await page.goto(pagesOf(requireCredentials()).settings);
 
     await expect(page.getByRole('heading', { name: /payment account code/i })).toBeVisible();
-    await expect(page.getByRole('status').filter({ hasText: "Xero isn't connected." })).toBeVisible();
-    const link = page.getByRole('link', { name: 'Entity & Integration' }).last();
+    await expect(page.getByRole('status').filter({ hasText: "Xero isn't connected yet." })).toBeVisible();
+    const link = page.getByRole('link', { name: 'Connect it in Entity & Integration' });
     await expect(link).toHaveAttribute('href', /\/entity\/[^/]+\/settings\/integration$/);
     await expect(page.getByRole('searchbox', { name: /search account code/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /save changes/i })).toHaveCount(0);

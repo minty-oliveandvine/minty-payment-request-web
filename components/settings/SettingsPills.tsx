@@ -29,9 +29,13 @@ export function getSettingsTabFromSearchParams(tab: string | null): SettingsTabI
   return "bill";
 }
 
+// Part 14 Filter chip geometry (M-01: Minty has no Tabs component). These change PAGE, so they
+// stay links (`aria-current` on the one shown) - selected = state/selected + link ink.
 const pillClass = (isActive: boolean) =>
-  `cursor-pointer shrink-0 rounded-full px-4 py-2 text-center text-sm font-medium transition-colors flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
-    isActive ? "bg-secondary font-semibold text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+  `inline-flex h-8 shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-full border px-3 text-body-s font-medium transition-colors duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus ${
+    isActive
+      ? "border-border-selected bg-state-selected font-semibold text-text-link"
+      : "border-border-default bg-surface-card text-text-secondary hover:bg-state-hover"
   }`;
 
 /** Entity & Integration (where Xero is connected) - also the way there from a Xero-less card. */
@@ -71,8 +75,9 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
   const visibleTabs = TABS.filter((t) => t.id !== "entity" || pettyCashEnabled);
 
   return (
-    <div className="w-full">
-      <div className="flex flex-wrap gap-2 pb-1">
+    <nav className="w-full" aria-label="Settings">
+      {/* Part 14 Filter chip: a phone scrolls the row sideways rather than wrapping it. */}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
         {visibleTabs.map(({ id, label }) => {
           const isActive = activeTab === id;
           const flaskUrl = FLASK_REDIRECT_TABS[id];
@@ -100,6 +105,6 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

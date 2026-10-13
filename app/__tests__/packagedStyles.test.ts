@@ -67,6 +67,23 @@ describe("@minty/shared reaches the stylesheet", () => {
     expect(compiled).toMatch(/appearance:\s*none/);
   });
 
+  it("emits the Part 13 tokens, and the utilities the screens bind to", () => {
+    // Semantic roles generate utilities only when declared in @theme (a :root-only token
+    // generates none - the font lesson of 2026-10-12, again).
+    expect(compiled).toMatch(/--color-action-primary:\s*var\(--minty-mint-action-500\)/);
+    expect(compiled).toMatch(/--minty-mint-action-500:\s*#3cbcc3/i);
+    expect(compiled).toMatch(/\.bg-action-primary\s*\{/);
+    expect(compiled).toMatch(/\.text-text-primary\s*\{/);
+    expect(compiled).toMatch(/\.bg-status-info-bg\s*\{/);
+    // The Part 13 radius scale replaces Tailwind's: rounded-lg is 12px.
+    expect(compiled).toMatch(/--radius-lg:\s*12px/);
+    // Light at launch (D-24): no prefers-color-scheme switch, dark only behind data-theme.
+    expect(compiled).not.toMatch(/prefers-color-scheme:\s*dark/);
+    expect(compiled).toMatch(/\[data-theme="?dark"?\]/);
+    // Part 13 D-20: the Rounded icon set.
+    expect(compiled).toMatch(/\.material-symbols-rounded/);
+  });
+
   it("emits the packaged sidebar's own utilities", () => {
     // Declarations, not class selectors: no escaping to get wrong. Each arbitrary value appears in
     // the package's sidebar and nowhere in this app's own source, so if Tailwind stops scanning

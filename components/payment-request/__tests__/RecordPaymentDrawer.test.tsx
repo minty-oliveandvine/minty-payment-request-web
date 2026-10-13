@@ -1,16 +1,18 @@
-// Recording a payment against a payment request
-// (components/payment-request/RecordPaymentModal.tsx).
+// Recording a payment against a payment request - the Part 15.17 Drawer
+// (components/payment-request/RecordPaymentDrawer.tsx, D15-11).
 //
-// The money rules are the point. Full Pay is only available before any partial payment exists,
-// a payment may never exceed what is left, and the currency on every payload comes from the
-// COMPANY's selected currency rather than the bill's own code or a default.
+// The money rules are the point. Pay in full is only available before any part payment exists,
+// a payment may never exceed what is unpaid (the browser says so AS YOU TYPE - CLAUDE.md's
+// validation rule - and the server refuses anyway), and the currency on every payload is the
+// COMPANY's selected currency rather than the bill's own code or a default. Part 15.2: the
+// Primary names the amount and guards against a double submit; a refusal stays in the drawer.
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ToastProvider } from "@/components/Toast";
-import { RecordPaymentModal } from "@/components/payment-request/RecordPaymentModal";
+import { RecordPaymentDrawer } from "@/components/payment-request/RecordPaymentDrawer";
 import { payment } from "@/lib/__fixtures__/bills";
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
@@ -42,7 +44,7 @@ function serve({
 }: {
   payments?: ReturnType<typeof payment>[];
   paidTotal?: string;
-  create?: () => Response;
+  create?: () => Response | Promise<Response>;
 } = {}) {
   const posted: Posted[] = [];
   fetchMock.mockImplementation(async (input, init) => {
@@ -72,12 +74,12 @@ function serve({
 const onPaymentSaved = vi.fn();
 const onClose = vi.fn();
 
-type Props = Parameters<typeof RecordPaymentModal>[0];
+type Props = Parameters<typeof RecordPaymentDrawer>[0];
 
 const show = (props: Partial<Props> = {}) =>
   render(
     <ToastProvider>
-      <RecordPaymentModal
+      <RecordPaymentDrawer
         open
         onClose={onClose}
         billId={BILL_ID}
@@ -91,13 +93,13 @@ const show = (props: Partial<Props> = {}) =>
     </ToastProvider>,
   );
 
-const dialog = () => screen.getByRole("dialog");
-const amountField = () => within(dialog()).getByPlaceholderText("0.00");
-const addPayment = () => within(dialog()).getByRole("button", { name: /Add Payment/ });
-const fullPay = () => within(dialog()).getByRole("button", { name: "Full Pay" });
-const partialPay = () => within(dialog()).getByRole("button", { name: "Partial Pay" });
+const drawer = () => screen.getByRole("dialog", { name: /Record payment|Payments/ });
+const amountField = () => within(drawer()).getByRole("textbox", { name: /Payment amount/ });
+const record = () => within(drawer()).getByRole("button", { name: /^Record/ });
+const fullPay = () => within(drawer()).getByRole("radio", { name: "Pay in full" });
+const partPay = () => within(drawer()).getByRole("radio", { name: "Part payment" });
 
-/** The modal reads its payments on open; wait for that before acting. */
+/** The drawer reads its payments on open; wait for that before acting. */
 const loadedPayments = () =>
   waitFor(() => expect(screen.queryByRole("status", { name: "Loading payments" })).not.toBeInTheDocument());
 
@@ -111,22 +113,25 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("the dialog", () => {
-  it("names what is being paid, and what it comes to", async () => {
+describe("the drawer", () => {
+  it("names what is being paid, and what is owed", async () => {
     show();
 
     await loadedPayments();
-    expect(dialog()).toHaveTextContent("Corporate stationery");
-    expect(dialog()).toHaveTextContent("HKD 6,000.00");
-    expect(dialog()).toHaveTextContent("Amount to be Paid");
+    expect(drawer()).toHaveTextContent("Young Bros Transport");
+    expect(drawer()).toHaveTextContent("Corporate stationery");
+    expect(drawer()).toHaveTextContent("Invoice amount");
+    expect(drawer()).toHaveTextContent("HKD 6,000.00");
+    expect(drawer()).toHaveTextContent("Unpaid");
   });
 
-  it("offers both ways to pay", async () => {
+  it("offers both ways to pay, and a Primary that names the amount", async () => {
     show();
 
     await loadedPayments();
-    expect(fullPay()).toBeInTheDocument();
-    expect(partialPay()).toBeInTheDocument();
+    expect(fullPay()).toHaveAttribute("aria-checked", "true");
+    expect(partPay()).toBeInTheDocument();
+    expect(record()).toHaveAccessibleName("Record HKD 6,000.00");
   });
 
   it("reads the payments already on the request", async () => {
@@ -141,32 +146,47 @@ describe("the dialog", () => {
 });
 
 describe("paying in full", () => {
-  it("posts what is left, in the COMPANY's currency", async () => {
+  it("posts what is unpaid, in the COMPANY's currency", async () => {
     const { posted } = serve();
     show();
     await loadedPayments();
 
-    await userEvent.click(fullPay());
-    await userEvent.click(addPayment());
+    await userEvent.click(record());
 
     await waitFor(() => expect(posted).toHaveLength(1));
     expect(posted[0].body).toMatchObject({ amount: 6000, currency_code: "HKD", payment_status: "completed" });
   });
 
-  it("tells the page a payment was saved, so the list and the badge catch up", async () => {
+  it("tells the page a payment was saved, and says so in a toast", async () => {
     serve();
     show();
     await loadedPayments();
 
-    await userEvent.click(fullPay());
-    await userEvent.click(addPayment());
+    await userEvent.click(record());
 
     await waitFor(() => expect(onPaymentSaved).toHaveBeenCalled());
+    expect(await screen.findByText("Payment of HKD 6,000.00 recorded for Young Bros Transport.")).toBeInTheDocument();
   });
 
-  // Not offered rather than refused: the button goes dead and carries the reason, so the
-  // guard inside handleAddPayment is a second line that the UI never reaches.
-  it("is not offered once the request is partially paid, and says why", async () => {
+  it("cannot be sent twice while the first is in flight", async () => {
+    let release!: () => void;
+    const { posted } = serve({
+      create: () => new Promise<Response>((r) => (release = () => r(answer(201, payment())))),
+    });
+    show();
+    await loadedPayments();
+
+    await userEvent.click(record());
+    const busy = within(drawer()).getByRole("button", { name: "Recording…" });
+    expect(busy).toBeDisabled();
+    await userEvent.click(busy);
+    release();
+
+    await waitFor(() => expect(onPaymentSaved).toHaveBeenCalled());
+    expect(posted).toHaveLength(1);
+  });
+
+  it("is not offered once part of it is paid, and says why", async () => {
     serve({
       payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00" })],
       paidTotal: "1500.00",
@@ -175,25 +195,8 @@ describe("paying in full", () => {
     await loadedPayments();
 
     expect(fullPay()).toBeDisabled();
-    expect(fullPay()).toHaveAttribute(
-      "title",
-      "Full Pay isn't available once a payment's Partially Paid - Partial Pay will cover the rest.",
-    );
-  });
-
-  it("is not offered when a payment already exists, whatever the status says", async () => {
-    serve({
-      payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "1000.00" })],
-      paidTotal: "1000.00",
-    });
-    show({ billStatus: "submitted" });
-    await loadedPayments();
-
-    expect(fullPay()).toBeDisabled();
-    expect(fullPay()).toHaveAttribute(
-      "title",
-      "Full Pay only works before any partial payment is recorded - Partial Pay will cover the rest.",
-    );
+    expect(partPay()).toHaveAttribute("aria-checked", "true");
+    expect(drawer()).toHaveTextContent("Part of this is paid already, so record the rest as a part payment.");
   });
 });
 
@@ -202,62 +205,59 @@ describe("paying part of it", () => {
     const { posted } = serve();
     show();
     await loadedPayments();
-    await userEvent.click(partialPay());
+    await userEvent.click(partPay());
 
     await userEvent.type(amountField(), "1500");
-    await userEvent.click(addPayment());
+    expect(drawer()).toHaveTextContent("Unpaid after this payment: HKD 4,500.00");
+    await userEvent.click(record());
 
     await waitFor(() => expect(posted).toHaveLength(1));
     expect(posted[0].body).toMatchObject({ amount: 1500, currency_code: "HKD" });
   });
 
-  it("refuses more than what is left, and says what the maximum is", async () => {
+  it("says the limit AS YOU TYPE past it, and clears it the moment it fits", async () => {
     const { posted } = serve();
     show();
     await loadedPayments();
-    await userEvent.click(partialPay());
+    await userEvent.click(partPay());
 
     await userEvent.type(amountField(), "9000");
-    await userEvent.click(addPayment());
+    expect(amountField()).toHaveAccessibleDescription("Enter HKD 6,000.00 or less - that is what is unpaid.");
+    expect(amountField()).toHaveAttribute("aria-invalid", "true");
+    expect(record()).toBeDisabled();
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "That's a bit more than what's left - HKD 6,000.00 is the max.",
-    );
+    await userEvent.clear(amountField());
+    await userEvent.type(amountField(), "900");
+    expect(amountField()).not.toHaveAttribute("aria-invalid");
     expect(posted).toHaveLength(0);
   });
 
   it("counts what is already paid when working out what is left", async () => {
-    const { posted } = serve({
+    serve({
       payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "5000.00" })],
       paidTotal: "5000.00",
     });
     show({ billStatus: "partially_paid" });
     await loadedPayments();
-    await userEvent.click(partialPay());
 
     await userEvent.type(amountField(), "2000");
-    await userEvent.click(addPayment());
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("HKD 1,000.00 is the max.");
-    expect(posted).toHaveLength(0);
+    expect(amountField()).toHaveAccessibleDescription("Enter HKD 1,000.00 or less - that is what is unpaid.");
   });
 
-  it("refuses nothing, and zero", async () => {
+  it("asks for an amount when there is none, after the attempt - not before", async () => {
     const { posted } = serve();
     show();
     await loadedPayments();
-    await userEvent.click(partialPay());
+    await userEvent.click(partPay());
+    expect(amountField()).not.toHaveAttribute("aria-invalid");
 
-    await userEvent.click(addPayment());
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "That amount doesn't look quite right.",
-    );
+    await userEvent.click(record());
 
-    await userEvent.type(amountField(), "0");
-    await userEvent.click(addPayment());
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "That amount doesn't look quite right.",
+    expect(amountField()).toHaveAccessibleDescription(
+      "The amount is still empty. Add the amount you paid to continue.",
     );
+    expect(amountField()).toHaveFocus();
     expect(posted).toHaveLength(0);
   });
 
@@ -265,29 +265,40 @@ describe("paying part of it", () => {
     serve();
     show();
     await loadedPayments();
-    await userEvent.click(partialPay());
+    await userEvent.click(partPay());
     await userEvent.type(amountField(), "1500");
 
-    await userEvent.click(addPayment());
+    await userEvent.click(record());
 
     await waitFor(() => expect(amountField()).toHaveValue(""));
+  });
+
+  it("asks before Escape throws a typed amount away", async () => {
+    serve();
+    show();
+    await loadedPayments();
+    await userEvent.click(partPay());
+    await userEvent.type(amountField(), "1500");
+
+    await userEvent.keyboard("{Escape}");
+
+    expect(screen.getByRole("alertdialog", { name: "Discard this payment?" })).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Discard payment" }));
+    expect(onClose).toHaveBeenCalled();
   });
 });
 
 describe("a payment that would not save", () => {
-  it("says so in the API's own words", async () => {
+  it("says so in the API's own words, in the drawer - not a toast", async () => {
     serve({ create: () => answer(409, { detail: "Someone else paid this a moment ago." }) });
     show();
     await loadedPayments();
 
-    await userEvent.click(fullPay());
-    await userEvent.click(addPayment());
+    await userEvent.click(record());
 
-    await waitFor(() =>
-      expect(document.querySelector("[data-toast-type='error']")?.textContent).toContain(
-        "Someone else paid this a moment ago.",
-      ),
-    );
+    expect(await within(drawer()).findByRole("alert")).toHaveTextContent("Someone else paid this a moment ago.");
+    expect(document.querySelector("[data-toast-type='error']")).toBeNull();
   });
 
   it("falls back to its own sentence when the failure is not the API's", async () => {
@@ -299,19 +310,16 @@ describe("a payment that would not save", () => {
     show();
     await loadedPayments();
 
-    await userEvent.click(fullPay());
-    await userEvent.click(addPayment());
+    await userEvent.click(record());
 
-    await waitFor(() =>
-      expect(document.querySelector("[data-toast-type='error']")?.textContent).toContain(
-        "That payment didn't quite go through. Mind trying again?",
-      ),
+    expect(await within(drawer()).findByRole("alert")).toHaveTextContent(
+      "That payment didn't go through. Try recording it again.",
     );
   });
 });
 
 describe("the payments already recorded", () => {
-  it("are listed, with what is left to pay", async () => {
+  it("are listed", async () => {
     serve({
       payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00", payment_date: "2026-03-10" })],
       paidTotal: "1500.00",
@@ -320,7 +328,7 @@ describe("the payments already recorded", () => {
     show({ billStatus: "partially_paid" });
 
     await loadedPayments();
-    expect(dialog()).toHaveTextContent("1,500.00");
+    expect(drawer()).toHaveTextContent("1,500.00");
   });
 
   it("can be removed by somebody allowed to", async () => {
@@ -332,7 +340,7 @@ describe("the payments already recorded", () => {
     show({ billStatus: "partially_paid" });
 
     await loadedPayments();
-    expect(within(dialog()).getByRole("button", { name: "Remove this payment" })).toBeEnabled();
+    expect(within(drawer()).getByRole("button", { name: "Remove this payment" })).toBeEnabled();
   });
 
   it("cannot be removed by somebody who may not", async () => {
@@ -345,7 +353,7 @@ describe("the payments already recorded", () => {
     show({ billStatus: "partially_paid" });
 
     await loadedPayments();
-    expect(within(dialog()).queryByRole("button", { name: "Remove this payment" })).not.toBeInTheDocument();
+    expect(within(drawer()).queryByRole("button", { name: "Remove this payment" })).not.toBeInTheDocument();
   });
 });
 
@@ -359,7 +367,8 @@ describe("read-only", () => {
     show({ readOnly: true });
 
     await loadedPayments();
-    expect(within(dialog()).queryByRole("button", { name: /Add Payment/ })).not.toBeInTheDocument();
-    expect(within(dialog()).queryByRole("button", { name: "Full Pay" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Payments" })).toBeInTheDocument();
+    expect(within(drawer()).queryByRole("button", { name: /^Record/ })).not.toBeInTheDocument();
+    expect(within(drawer()).queryByRole("radio", { name: "Pay in full" })).not.toBeInTheDocument();
   });
 });

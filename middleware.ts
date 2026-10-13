@@ -53,7 +53,8 @@ function flaskHandoff(ref: string, slug: string, page: string): string {
   const company = `${resolveMintyModuleUrl().replace(/\/+$/, "")}/entity/${ref}/${slug}`;
   if (page.startsWith("settings/")) return `${company}/settings/payment-request`;
   const requestId = page.split("/")[1];
-  return requestId
+  // `payment-request/new` is the Add page, not a request: the other company's list is the place.
+  return requestId && requestId !== "new"
     ? `${company}/payment-request?${new URLSearchParams({ request: requestId }).toString()}`
     : `${company}/payment-request`;
 }

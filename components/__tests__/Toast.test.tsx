@@ -86,7 +86,9 @@ describe("a toast", () => {
     const error = cards()[1].className;
 
     expect(error).toBe(success);
-    expect(success).toContain("bg-white");
+    // Part 14 Toast: the raised surface (elevation 1), a token - never a literal white.
+    expect(success).toContain("bg-surface-raised");
+    expect(success).toContain("shadow-overlay");
   });
 });
 

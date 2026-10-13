@@ -11,12 +11,16 @@ import {
 import { createPortal } from "react-dom";
 import { ApiError, createEntityBillContact, type EntityBillContact } from "@/lib/api";
 import { useToast } from "@/components/Toast";
+import { inputClass } from "@/components/ui/Field";
 
-const inputClassBase =
-  "box-border h-11 min-h-[44px] w-full border bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:text-sm ";
-
+/**
+ * Part 14 "Supplier picker": a 44px ARIA combobox; options 52px tall; "Add '…' as a new supplier"
+ * comes LAST and is never automatic. Geometry and colours are the Field's (components/ui/Field.tsx).
+ */
 export type BillContactPickerProps = {
   id: string;
+  /** The Field's note (helper or error), so the combobox is described by it. */
+  ariaDescribedBy?: string;
   contacts: EntityBillContact[];
   xeroContactId: string;
   contactName: string;
@@ -27,12 +31,11 @@ export type BillContactPickerProps = {
   error?: boolean;
   /** Mandatory: announced here, since the label's red asterisk is aria-hidden. */
   required?: boolean;
-  /** Corner radius on the text field (default matches bill modal). */
-  controlRoundedClassName?: string;
 };
 
 export function BillContactPicker({
   id,
+  ariaDescribedBy,
   contacts,
   xeroContactId,
   contactName,
@@ -41,7 +44,6 @@ export function BillContactPicker({
   disabled = false,
   error = false,
   required = false,
-  controlRoundedClassName = "rounded-2xl",
 }: BillContactPickerProps) {
   const { showToast } = useToast();
   const listboxId = useId();
@@ -139,9 +141,7 @@ export function BillContactPicker({
   };
 
   const invalid = error || createError !== null;
-  const borderTone = invalid
-    ?"border-red-500 focus:border-red-500 focus:ring-red-200/50 "
-    : "border-gray-300 focus:border-secondary focus:ring-secondary/25 ";
+  const createErrorId = `${listboxId}-create-error`;
 
   const addRowText = creating
     ? "Creating supplier…"
@@ -153,7 +153,7 @@ export function BillContactPicker({
         ref={menuRef}
         id={listboxId}
         role="listbox"
-        className="fixed z-[410] max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-gray-300 bg-white py-1 shadow-lg ring-1 ring-black/5 [-webkit-overflow-scrolling:touch]"
+        className="fixed z-[410] max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-border-default bg-surface-raised py-1 shadow-overlay [-webkit-overflow-scrolling:touch]"
         style={{
           top: menuPos.top,
           left: menuPos.left,
@@ -166,10 +166,10 @@ export function BillContactPicker({
             role="option"
             aria-selected={xeroContactId === c.xero_contact_id}
             className={
-              "cursor-pointer px-3 py-2.5 text-sm text-black transition-colors " +
+              "flex min-h-13 cursor-pointer items-center px-3 text-body-m transition-colors " +
               (xeroContactId === c.xero_contact_id
-                ? "bg-secondary/15 font-semibold text-secondary"
-                : "hover:bg-secondary/10")
+                ? "bg-state-selected font-semibold text-text-link"
+                : "text-text-primary hover:bg-state-hover")
             }
             onMouseDown={(e) => {
               e.preventDefault();
@@ -185,11 +185,9 @@ export function BillContactPicker({
             aria-selected={false}
             aria-label={creating ? "Creating supplier in Xero" : `Add ${trimmedName} as a new supplier`}
             className={
-              "cursor-pointer px-3 py-2.5 text-left text-sm font-medium text-primary transition-colors " +
-              (filtered.length > 0 ? "border-t border-gray-100 " : "") +
-              (creating || disabled
-                ? "cursor-not-allowed opacity-60"
-                : "hover:bg-secondary/10")
+              "flex min-h-13 cursor-pointer items-center px-3 text-left text-body-m font-semibold text-text-link transition-colors " +
+              (filtered.length > 0 ? "border-t border-border-subtle " : "") +
+              (creating || disabled ? "cursor-not-allowed text-text-disabled" : "hover:bg-state-hover")
             }
             onMouseDown={(e) => {
               e.preventDefault();
@@ -211,26 +209,28 @@ export function BillContactPicker({
           ref={inputRef}
           id={id}
           type="text"
+          role="combobox"
           autoComplete="off"
           aria-expanded={open}
           aria-controls={open ? listboxId : undefined}
           aria-autocomplete="list"
           aria-invalid={invalid || undefined}
-        aria-required={required || undefined}
+          aria-required={required || undefined}
+          aria-describedby={[ariaDescribedBy, createError ? createErrorId : undefined].filter(Boolean).join(" ") || undefined}
           disabled={disabled || creating}
           value={contactName}
-          placeholder="Select a supplier"
+          placeholder="Search or add a supplier"
           onChange={(e) => {
             onChange({ xero_contact_id: "", contact: e.target.value });
             setCreateError(null);
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
-          className={`${inputClassBase} ${controlRoundedClassName} ${borderTone}`}
+          className={inputClass(invalid)}
         />
       </div>
       {createError ? (
-        <p className="mt-1 text-xs text-red-600" role="alert">
+        <p id={createErrorId} className="mt-1.5 text-caption text-status-danger-ink" role="alert">
           {createError}
         </p>
       ) : null}

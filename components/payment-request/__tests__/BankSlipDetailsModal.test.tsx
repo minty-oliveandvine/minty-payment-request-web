@@ -243,7 +243,7 @@ describe("saying a slip is needed", () => {
     // least one bank slip" guard in handleCommitInlineUpload is belt-and-braces. A REFUSED
     // file is the path that actually leaves this dialog with an error and nothing staged.
     show({ inlineUploadBillContext: { billId: BILL_ID } });
-    expect(dropZone()).toHaveClass("border-gray-300");
+    expect(dropZone()).toHaveClass("border-border-input");
 
     const input = filePicker() as HTMLInputElement;
     Object.defineProperty(input, "files", {
@@ -252,7 +252,7 @@ describe("saying a slip is needed", () => {
     });
     fireEvent.change(input);
 
-    await waitFor(() => expect(dropZone()).toHaveClass("border-red-500"));
+    await waitFor(() => expect(dropZone()).toHaveClass("border-action-danger"));
     expect(filePicker()).toHaveAttribute("aria-invalid", "true");
     expect(uploadButton()).toBeDisabled();
   });
@@ -270,7 +270,7 @@ describe("saying a slip is needed", () => {
     await userEvent.click(uploadButton());
 
     expect(await within(dialog()).findByText("Files need to be under 10MB.")).toBeInTheDocument();
-    expect(dropZone()).toHaveClass("border-gray-300");
+    expect(dropZone()).toHaveClass("border-border-input");
     expect(filePicker()).not.toHaveAttribute("aria-invalid");
   });
 });

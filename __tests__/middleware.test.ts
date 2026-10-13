@@ -102,6 +102,7 @@ describe("a company's own page", () => {
   it.each([
     ["the list", `${BASE}/payment-request`],
     ["one request", `${BASE}/payment-request/PR-0001`],
+    ["the Add page", `${BASE}/payment-request/new`],
     ["the settings page", `${BASE}/settings/payment-request`],
   ])("renders %s when the cookie holds that company", (_label, path) => {
     expect(run(path, SIGNED_IN)).toMatchObject({ rewritten: true, location: null });
@@ -132,6 +133,12 @@ describe("a company's own page", () => {
 
   it("hands it to Flask when the token is gone but the company cookie is not", () => {
     expect(run(`${BASE}/payment-request`, { entityId: ENTITY_ID, entityName: ENTITY_NAME }).location).toBe(
+      `${MINTY}/entity/360812e1/olive-and-vine/payment-request`,
+    );
+  });
+
+  it("hands another company's Add page to that company's LIST - 'new' is not a request", () => {
+    expect(run(`${BASE}/payment-request/new`, {}).location).toBe(
       `${MINTY}/entity/360812e1/olive-and-vine/payment-request`,
     );
   });

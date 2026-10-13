@@ -1,129 +1,191 @@
-# Payment requests — the list, the dialog, the detail page
+# Payment requests — the list, the Add page, the detail page
 
 The screens of the bills module. Every write goes to minty-payment-request-api (`lib/api.ts`), and
 that service's rules are the ones that hold (`minty-payment-request-api/docs/features/payment-requests.md`);
 this page is what the person sees and where each piece of the screen lives.
 
+**The look is the owner's design system** (Parts 13–15, `Minty/docs/design/`), applied here on
+2026-10-13 — PRW is the first app on it; minty-web, onboarding and Flask keep their current look
+until they migrate. Its pieces:
+
+- **Tokens:** `app/styles/tokens.css` (a copy of `@minty/shared`'s `tokens.css`, which so far
+  exists only on minty-shared-ts's `design-v2-sidebar` branch) — `--minty-*` primitives in
+  `:root`, semantic `--color-*` roles in `@theme`, so the utilities are `bg-action-primary`,
+  `text-text-primary`, `bg-status-info-bg`, `border-border-input`, `bg-overlay-scrim`, and so on;
+  radius sm/md/lg/xl = 4/8/12/16; text styles `text-display-m`/`title-l`/`title-m`/`body-m`/
+  `body-s`/`label`/`caption`/`button`. Dark values exist only under `:root[data-theme="dark"]`,
+  which nothing sets (Light at launch). `__tests__/no_raw_colours.test.ts` fails on any `#hex`
+  or Tailwind palette colour in the app's source.
+- **Primitives** (`components/ui/`): `Button` / `buttonClass` (primary, secondary, ghost, danger,
+  link; 44px, radius 12, `processing`), `Icon` (Material Symbols **Rounded**), `StatusPill`,
+  `Field` + `inputClass`, `ErrorSummary`, `InlineAlert` / `PageBanner`, `FilterChip`,
+  `SegmentedControl`, `EmptyState`, `Skeleton`, `Overlay` (`Modal` 440px / phone sheet, `Drawer`
+  480px / full screen on phones — focus trap, capture-phase Escape, scroll lock, focus back to the
+  opener, only the top overlay answers keys) and `PageHeader` ([Secondary] [Primary] [More] from
+  1024px, under the title below that; on a phone the Primary is full width first and the rest
+  share the row below it, More at its end).
+- **Status tones** (`lib/statusTone.ts`): Payment Requested = info, Partially Paid and Returned =
+  warning, Paid = success, Draft and Voided = neutral. Amounts are never coloured.
+- **What a request offers** comes from one table, `lib/requestActions.ts` (Part 15.17's status ×
+  action matrix): a row's ONE next action (`rowNextAction`) and the detail header's extras
+  (`detailActions`). Easy view, Table view and the detail page all read it, and what a person
+  cannot do is left out, never drawn dead (Part 15.2) — the Table's Payment and Bankslip cells
+  show "-" instead.
+- **The App bar** (`components/layout/Header.tsx`) shows the Minty mark (`/minty-mark.png`, the
+  same image and size as minty-web's hub header) where the module name used to be written (the
+  user, 2026-10-13); the module name stays as screen-reader text.
+- **Errors are inline**, never a toast (`InlineAlert`); a toast (`components/Toast.tsx`,
+  bottom-left on a computer, bottom-centre on a phone) only confirms something that worked.
+
+**The Figma frames are a reference, not the spec** (owner, 2026-10-13). The Part 15.G export
+("Templates · Page shells & layouts — 7 Oct 2026") draws these screens, and where it disagrees
+with the written Part 15 the text wins: invoice upload first on the Add page, a row's next action
+Secondary, the detail header's Edit and More, "Continue" for a draft. Table view keeps its
+Submitted, Paid date, Bankslip, Xero and ⋮ columns, and money stays in the currency CODE
+("HKD 4,800.00"), not the Figma's "HK$". **Drawn in the Figma, not built** (follow-ups, some need
+API work): Export CSV; draft autosave ("Saved 2 min ago"); the Table selection bar ("2 requests
+selected · HK$6,040.00 unpaid · Clear · Download slips · Record payment for 2"); invoice rows
+nested under a request ("Invoice INV-… · 2 bank slips").
+
 ## The list (`/entity/<shortid>/<name>/payment-request`, `components/payment-request/PaymentRequestView.tsx`)
 
-- **Tabs** are the bill statuses (`PaymentRequestToolbar.PAYMENT_REQUEST_STATUS_FILTERS`):
-  All, Payment Requested, Partially Paid, Returned, Paid, Draft, Voided — the display
-  labels for `submitted`, `partially_paid`, `returned`, `paid`, `draft`, `void`
-  (`lib/billStatusDisplay.ts`). On desktop several can be stacked; on mobile it is a
-  single-select menu.
+- **Page header:** "Payment Requests", a purpose line, and the Primary link **Add payment
+  request** (to the Add page). Without the role it is a disabled button with its reason; a
+  view-only visitor gets a note instead.
+- **Toolbar** (`PaymentRequestToolbar.tsx`): search in a `role="search"` box ("Search supplier,
+  description or amount"), the **Easy view | Table view** segmented control (radios; from 768px
+  only — a phone always gets Easy view), Filter, Bulk Actions, and the status **chips** — a
+  `role="group"` "Filter by status" of `aria-pressed` buttons, each with its count: All,
+  Payment Requested, Partially Paid, Returned, Paid, Draft, Voided — the display labels for
+  `submitted`, `partially_paid`, `returned`, `paid`, `draft`, `void` (`lib/billStatusDisplay.ts`).
+  Several can be stacked.
 - **Filters**: search (supplier, reference, description), amount range, a date range on
   invoice or due date, Xero publish state (`lib/paymentRequestSearch.ts`, sorting in
   `lib/paymentRequestRowSort.ts`).
-- Two renderings of the same rows: the **table** (`PaymentRequestTable.tsx`) and the
-  **easy view** (`PaymentRequestEasyView.tsx`, cards with a row-actions menu —
-  `role="menu"`, "More options for <supplier>"), toggled in the header
-  (`components/layout/EasyViewToggle.tsx`); `PaymentRequestTotalsBanner` sums what is
-  shown; pagination in `PaymentRequestPagination`. Bulk delete of drafts from the table.
+- **Easy view** (`PaymentRequestEasyView.tsx`): record rows at most 960px wide — the supplier is
+  the row's link (stretched over it), then the Unpaid amount in a 160px track, then the Status
+  pill and the one next action in a 360px track (from 1024px; stacked below). Five skeleton
+  rows while loading; one empty state for first use and another for "nothing matches", with
+  Clear filters.
+- **Table view** (`PaymentRequestTable.tsx`): compact cells, a 40px header naming the currency
+  once ("Unpaid (HKD)"), sortable columns. It has no phone card layout any more.
+- **Record payment** opens one drawer, `RecordPaymentDrawer.tsx`, from either view (below).
 - Every amount is shown in the **entity's currency** (`lib/entityCurrency.ts` from
   `GET /api/auth/entity-currency`), never the bill's stored code.
-- The Add Payment Request dialog uses `useEntityCurrencyState()`: with no currency set it says
-  so under Amount (linking to Entity & Integration settings) and disables Confirm and Save as
-  Draft; a failed read says so with **Try again**. Neither shows as an empty box.
 - **Bank slip counts** load per visible row (`lib/bankSlipEnrichment.ts`). An unknown count is
   never shown as zero: while loading the row shows "…", and a failed lookup is logged and shows
   **Retry** (`BankSlipLoadState.tsx`, re-reads the rows on screen) — never **Upload**, which
   could hide slips that already exist. Easy view shows nothing while loading, Retry on failure.
+- Pagination (`PaymentRequestPagination.tsx`): "Showing 1–10 of 41", rows per page 10/25/50/100,
+  36px targets for a mouse and 44px for touch (`pointer-coarse:`), page numbers hidden on phones.
 
-## Add Payment (`components/PaymentRequestModal.tsx`)
+## Record payment (`components/payment-request/RecordPaymentDrawer.tsx`)
 
-The dialog (`role="dialog"`, *Add Payment Request*): amount, description, the **supplier**
-(a searchable input over the entity's synced contacts — `BillContactPicker.tsx`; "create
-new" makes the contact in Xero; if that fails — e.g. the entity has no Xero connection —
-the menu closes, the field turns red and the API's message shows under it until the name
-is edited), the **account code** (a combobox over
-`entity_bill_account_xero`), bill number (with a suggested reference from
-`GET /api/bills/suggested-reference/`), invoice date and due date (`#pr-invoice-date`,
-`#pr-due-date`, native date inputs behind a formatted overlay — `DateTextField.tsx`), and
-the attachments drop zone (`input[aria-label="Choose files to attach"]`; pdf, jpg, png,
-html — **no spreadsheets since 2026-10-09**, so every accepted type is one the browser can
-draw; images compressed client-side — `lib/compressImage.ts`). The allowlist is the shared
-`ATTACHMENT_ACCEPT` / `isAllowedAttachment` from `lib/fileAttachmentPreview.ts`, so this
-modal, the upload-invoice modal and the bank-slip modal agree by construction. The server
-(`attachment_service.py`) still accepts Excel — it is shared with bank slips and with Xero
-re-publish of bills that already hold one — so narrowing it is a separate decision.
+A drawer (480px; full screen on a phone): Invoice amount, Paid so far and **Unpaid** as
+description rows, then **Pay in full | Part payment** (Pay in full disabled, with its reason,
+once something has been paid), the amount (helper "Unpaid: …"; above the unpaid amount it says
+"Enter HKD X or less - that is what is unpaid." as you type), the payment date, an optional bank
+slip, the payments already recorded, and the Primary **Record HKD …** ("Recording…" while it
+runs; pressed twice it sends once). Success is a toast and the row's new status, no navigation; a
+failure stays in the drawer. Escape with an amount typed asks before discarding.
+`OverpaymentWarningModal` still guards a sum above the bill.
 
-A staged file previews in place, and its top-right **View full** control opens the
-full-screen viewer over the dialog.
+## Add payment request (`/entity/<shortid>/<name>/payment-request/new`, `components/PaymentRequestForm.tsx`)
 
-### Required fields
+A page (max 720px), not a dialog, since 2026-10-13 (`PaymentRequestModal.tsx` is gone;
+`middleware.ts` treats `new` as the list for Flask's hand-off). In invoice order:
 
-**A mandatory field says so before anything is attempted**: a red `*` on its label from the
-moment the dialog opens, and the control turns red only once Confirm has actually been refused.
-An untouched form is never shown as an error.
+1. **Invoice** — the drop zone (`input[aria-label="Choose files to attach"]`; pdf, jpg, png,
+   html — **no spreadsheets since 2026-10-09**, so every accepted type is one the browser can
+   draw; images compressed at upload — `lib/compressImage.ts`; "files up to 10 MB"). The
+   allowlist is the shared `ATTACHMENT_ACCEPT` / `isAllowedAttachment` from
+   `lib/fileAttachmentPreview.ts`, so this page, the upload-invoice modal and the bank-slip
+   modal agree by construction. The server (`attachment_service.py`) still accepts Excel — it is
+   shared with bank slips and with Xero re-publish of bills that already hold one — so narrowing
+   it is a separate decision. A staged file previews in place; **View full** opens the
+   full-screen viewer.
+2. **Supplier** — `BillContactPicker.tsx`, a `role="combobox"` over the entity's synced
+   contacts ("Search or add a supplier"); "create new" makes the contact in Xero, and if that
+   fails — e.g. no Xero connection — the API's message shows under the field until the name is
+   edited.
+3. **Invoice amount** in the entity's currency. With no currency set an alert says so (linking
+   to Entity & Integration settings) and both buttons are disabled with that reason; a failed
+   read says so with **Try again**.
+4. **Invoice date · Due date** (`#pr-invoice-date`, `#pr-due-date`, `DateTextField.tsx`).
+5. **Description**, then the **account code** (a combobox over `entity_bill_account_xero`).
+6. **More details** (collapsed): Payment No., filled from `GET /api/bills/suggested-reference/`.
 
-- The mark is `components/RequiredMark.tsx`. It is **`aria-hidden`**, because an asterisk read
-  aloud is "star"; requiredness is announced on the CONTROL instead, via `aria-required`
-  (`DateTextField`, `ThemedSelect` and `BillContactPicker` each take a `required` prop for
-  this) or the native attribute. Both halves are needed - the mark for the eye, the attribute
-  for everyone else.
-- `FieldLabel`'s `required` prop renders it, so Amount, Supplier, Account Code, Invoice Date
-  and Due Date get it for free. Payment No. and Description are optional and stay unmarked.
-- **The attachments group was the gap (fixed 2026-10-09):** it is a `<p>`, not a `FieldLabel`,
-  so it had no `required` prop to set, and its drop zone was hard-coded `border-gray-300` and
-  never reddened - unlike every other control here. It now carries the mark, and the drop zone
-  red-lines off `fieldErrors.attachments`, which `clearFieldError` already resets when a file
-  arrives, so no new state was needed.
-- The same treatment is on `UploadInvoiceAttachmentModal` and `BankSlipDetailsModal`. Two
-  cautions there: the bank slip only shows the mark when `showInlineUpload` is set, because
-  that dialog also just *lists* saved slips; and both red-line off
-  `uploadError && <staged> === 0`, never `uploadError` alone, since that also carries **API
-  failures** - a failed POST leaves its files staged, a refused file does not, so blaming the
-  drop zone for a server fault is avoided.
-- In the bank-slip dialog, pressing Upload with nothing staged is **not reachable** - the
-  button is disabled until a file is staged - so the red there comes from a *refused* file
-  (wrong type or too big), which is the path a test covers.
+**Save as draft** (`POST /api/bills/draft/`, nothing validated; back to the list with a toast)
+and **Submit for payment** (`POST /api/bills/submit/`: validates amount, supplier, account, both
+dates and at least one attachment, uploads the files once the bill exists, then opens its detail
+page).
 
-Two buttons: **Save as draft** (`POST /api/bills/draft/`, nothing validated) and
-**Confirm** (`POST /api/bills/submit/`): the form validates the amount, supplier, account,
-both dates and *at least one attachment* before sending, shows each field's error inline
-(`role="alert"`), uploads the files right after the bill exists, then opens the new
-request's detail page.
+### Validation (Part 14 + the owner's 2026-10-13 decisions)
+
+Every PRW form — Add/Edit, the Record payment drawer, bank slip, attachments, Settings' account
+codes — follows these:
+
+- **As you type**, not on blur (the owner's exception to Part 14): a format, length or range
+  message appears and clears at once; a "not finished yet" message (a half-typed date) waits
+  until the field is left. Submit re-checks everything, and the API still refuses.
+- **Required:** a red `*` from the moment the form opens plus a screen-reader "(required)" in
+  the label (`Field`), and `aria-required` on the control; the control turns red only after a
+  refused submit. An untouched form is never shown as an error. `components/RequiredMark.tsx`
+  (the `aria-hidden` star) remains in `UploadInvoiceAttachmentModal` and `BankSlipDetailsModal`.
+- **Error summary** (`ErrorSummary`): with two or more problems on a refused submit, a summary at
+  the top ("N details need a look before this can be sent.") takes focus and links to each
+  field; with one, focus goes straight to that field.
+- **Save as draft is never disabled** for missing fields (only the currency gate above stops
+  it, with its reason shown).
+- **Part 11 wording:** issue → action, e.g. "The amount is still empty. Add the invoice amount
+  to continue." Never "Error", "Invalid", "Mandatory" or "required field". Optional fields never
+  warn.
+- In the bank-slip dialog, pressing Upload with nothing staged is **not reachable** — the button
+  is disabled until a file is staged — so the red there comes from a *refused* file (wrong type
+  or too big). That dialog and the upload-invoice one red-line off `uploadError && <staged> === 0`,
+  never `uploadError` alone, since that also carries **API failures**.
 
 ## The detail page (`/entity/<shortid>/<name>/payment-request/<Payment No.>`)
 
 Addressed by the Payment No. (the bill's `reference`) since 2026-10-05, the id when there is none
 (`lib/companyPages.ts` `pages.request(id, reference)`). `lib/useRequestId.ts` turns the address
 into the bill id: an id as it is, a Payment No. through `GET /bills/by-reference/...` (case-
-insensitive; once, shared by the body and the header badge). Once the request has loaded, an id
+insensitive; once, shared by the body and the header). Once the request has loaded, an id
 address (Flask's `?request=<id>` hand-off, an old link) is replaced by the Payment No. one, and an
 edit that changes the Payment No. moves the address with it (`router.replace`, so Back is
 unchanged). A Payment No. the company does not have shows "I couldn't find that payment request".
 
-`PaymentRequestDetailBody.tsx` for a submitted-or-later request,
-`EasyViewDraftDetailBody.tsx` for a draft. What it holds:
+`PaymentRequestDetailBody.tsx` draws every status, drafts included (the Easy View draft panel is
+gone). What it holds:
 
-- the header with the status badge (`PaymentRequestDetailStatusBadge`) and the **action
-  bar** (`BillActionBar.tsx`): Edit / Save / Cancel, the draft's Submit button, and the
-  *payment actions* menu (`aria-label="More payment actions"` → `role="menu"` "Payment
-  actions") with **Publish** (or **Republish** once `bill.published === "published"`) and
-  **Void** / Delete; while a publish runs, a `role="status"` "Publishing…" is shown and
-  the trigger is disabled; a failure is an error toast (`components/Toast.tsx`,
-  `role="alert"`). Elevated roles only for publish, void, return and payments
-  (`useUserRole`).
-- the attachment preview (`InvoiceAttachmentPreview.tsx`, PDFs rendered with pdf.js from
-  `/public/pdfjs` — `PdfJsCanvasPreview.tsx`; images inline) with upload / delete
-  (`UploadInvoiceAttachmentModal`, `AttachmentDeleteConfirmModal`) — the bytes are fetched
-  through the backend's `…/preview/` proxy;
-- the details card (`PaymentRequestDetailedInfo.tsx`, editable in place);
-- **payments** (`PaymentHistoryCard.tsx`, `RecordPaymentModal.tsx` — date, amount, method,
-  reference; `OverpaymentWarningModal` when the sum would exceed the bill;
-  `BankSlipDetailsModal.tsx` uploads the slip and can push it to the Xero invoice, then
-  closes once the caller has refreshed (a failed refresh is logged, never rolled back);
-  `PaymentDeleteConfirmModal`);
-- the **Activity history** (`ActivityHistoryAccordion.tsx`) rendering the backend's audit
-  rows — "published Payment Request #… to Xero", "uploaded receipt.pdf", "submitted …".
-  It starts collapsed; opening it scrolls the section into view, closing it scrolls
-  back to where the page was. A failed read says so ("I couldn't load the history…") with
-  Try again, never "No activity yet". The header's status badge sits after the title, and
-  on its own line under the header below 640 px.
+- the **record header** (`PageHeader`): "‹ Payment Requests" (from 768px; the App bar's back
+  arrow below that), the supplier as the h1, the Status pill, one line "Payment No. X · Submitted
+  d", and the actions — Edit, **Return to requester** (Secondary, through a confirm), View
+  payments, the Primary (**Record payment**; **Submit for payment** for a draft or a returned
+  request; **Save Changes** while editing) and More (`BillActionBar.tsx`: `aria-label="More
+  payment actions"` → `role="menu"` "Payment actions" with **Publish** / **Republish** and
+  **Void** / Delete; while a publish runs a `role="status"` "Publishing…" shows and the trigger
+  is disabled). Elevated roles only for publish, void, return and payments (`useUserRole`).
+  Under it: the Returned banner ("Edit and resubmit"), the already-submitted banner while
+  editing, any action error inline, and the error summary.
+- **document and record side by side** (1:1, max 1440px; stacked below 1024px):
+  - the attachment preview (`InvoiceAttachmentPreview.tsx`, PDFs rendered with pdf.js from
+    `/public/pdfjs` — `PdfJsCanvasPreview.tsx`; images inline) with upload / delete
+    (`UploadInvoiceAttachmentModal`, `AttachmentDeleteConfirmModal`) — the bytes are fetched
+    through the backend's `…/preview/` proxy;
+  - the details (`PaymentRequestDetailedInfo.tsx`): description rows (`dl`, "Not set yet" when
+    empty) — Supplier, Description, Invoice amount, Paid so far, **Unpaid**, the dates, Account
+    code, Payment No. — and `Field`s in the same order while editing;
+  - **Payments** (`#payment-history`, `PaymentHistoryCard.tsx`; `BankSlipDetailsModal.tsx`
+    uploads a slip and can push it to the Xero invoice, then closes once the caller has
+    refreshed — a failed refresh is logged, never rolled back; `PaymentDeleteConfirmModal`);
+  - **History** (`ActivityHistoryAccordion.tsx`) rendering the backend's audit rows — "published
+    Payment Request #… to Xero", "uploaded receipt.pdf", "submitted …". It starts collapsed;
+    opening it scrolls the section into view, closing it scrolls back. A failed read says so
+    ("I couldn't load the history…") with Try again, never "No activity yet".
 
-Return / un-return / void go through the same action bar with the backend's transitions;
-`lib/billStatusRollback.ts` keeps the optimistic status honest when a call fails.
+Return / un-return / void go through the backend's transitions; `lib/billStatusRollback.ts` keeps
+the optimistic status honest when a call fails.
 
 ## Previewing a file: full screen, never a new tab
 
@@ -154,9 +216,9 @@ that component is gone, along with the unused `FileAttachmentPreviewLayer` and t
 - **A reported mime is not trusted** (`resolvePreviewMime` / `nameToPreviewMime`): drag-drop
   can leave `File.type` empty and B2 calls a PDF `application/octet-stream`. Either would
   send a perfectly drawable file to the "cannot preview" card, so the extension decides.
-- Surfaces: the Add Payment Request modal, `UploadInvoiceAttachmentModal` (which had no
+- Surfaces: the Add page, `UploadInvoiceAttachmentModal` (which had no
   enlarge control at all), `BankSlipDetailsModal` (staged, saved and auth-proxy-fetched), and
-  `InvoiceAttachmentPreview` on the detail page and easy view.
+  `InvoiceAttachmentPreview` on the detail page.
 
 ## Tests
 
@@ -164,10 +226,16 @@ that component is gone, along with the unused `FileAttachmentPreviewLayer` and t
 `lib/`, `features/` and `app/` and fails on any `target="_blank"`, `window.open` or
 `download=` outside a short, self-checking list of genuine external links. Plus
 `AttachmentFullScreenViewer.test.tsx` (the dialog contract, the capture-phase Escape, focus
-return, mime resolution) and the preview cases in `PaymentRequestModal.test.tsx`,
+return, mime resolution) and the preview cases in `PaymentRequestForm.test.tsx`,
 `BankSlipDetailsModal.test.tsx` and `InvoiceAttachmentPreview.test.tsx`.
 
-`e2e/02_bill_lifecycle.spec.ts` (draft → listed under Draft; the amount is required;
-Confirm without attachment/due date shows both alerts; the draft's detail page) and
-`e2e/04_xero_publish.spec.ts` with `E2E_XERO=1` (a complete request confirmed → Payment
+The design system's own locks: `components/ui/__tests__/primitives.test.tsx` (every primitive's
+contract - roles, focus, Escape, the error summary), `lib/__tests__/requestActions.test.ts` (the
+status × action matrix), `RecordPaymentDrawer.test.tsx`, `PaymentRequestForm.test.tsx` (field
+order, the validation rules above, draft vs submit) and `__tests__/no_raw_colours.test.ts`.
+
+`e2e/02_bill_lifecycle.spec.ts` (draft from the Add page → back on the list, under Draft; the
+amount is required; without attachment/due date the error summary takes focus and names both;
+the draft's detail page), `e2e/09_detail_payments.spec.ts` (the Record payment drawer, live) and
+`e2e/04_xero_publish.spec.ts` with `E2E_XERO=1` (a complete request submitted → Payment
 Requested → Publish → Republish offered, also after a reload).

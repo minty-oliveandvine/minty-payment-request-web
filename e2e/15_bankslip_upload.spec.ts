@@ -6,11 +6,24 @@
 //
 // The desktop table also proves the Bankslip column ends on one right edge, so a row's (i)
 // lines up whether it shows "Upload" or a file count.
+//
+// Table view only, so 768px and up: since 2026-10-13 Easy view's row offers ONE next action
+// (Part 15.17), and on a phone a slip is added in the Record payment drawer instead.
 
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 import { billListItem, payment } from '../lib/__fixtures__/bills';
-import { cors, expectNoSideScroll, handoff, pagesOf, requireNextOnly, stubApi, stubCredentials, stubFlaskHub } from './helpers';
+import {
+  cors,
+  expectNoSideScroll,
+  handoff,
+  pagesOf,
+  requireNextOnly,
+  stubApi,
+  stubCredentials,
+  stubFlaskHub,
+  viewChoice,
+} from './helpers';
 
 const creds = () => stubCredentials();
 
@@ -76,6 +89,7 @@ async function openList(page: Page) {
   await stubApi(page, { bills: [UPLOAD, SLIP] });
   await stubPayments(page);
   await handoff(page, creds(), pagesOf(creds()).list);
+  await viewChoice(page, 'Table view').click();
   await expect(page.getByRole('button', { name: /View bank slip — 1 file uploaded/ }).first()).toBeVisible();
 }
 
@@ -92,7 +106,7 @@ test.beforeAll(async () => {
   await requireNextOnly();
 });
 
-for (const width of [360, 768, 1440]) {
+for (const width of [768, 1440]) {
   test(`the dialog closes once the slip is saved, and the row counts it (${width}px)`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await openList(page);
@@ -111,7 +125,7 @@ test('the Bankslip column ends on one right edge, Upload or file count', async (
 
   // The (i) beside each row's control: the cell's last glyph.
   const infoRight = async (control: ReturnType<Page['getByRole']>) => {
-    const info = control.locator('xpath=../..').locator('span.material-symbols-outlined', { hasText: 'info' });
+    const info = control.locator('xpath=../..').locator('span.material-symbols-rounded', { hasText: 'info' });
     const box = await info.boundingBox();
     if (!box) throw new Error('no (i) beside the control');
     return box.x + box.width;

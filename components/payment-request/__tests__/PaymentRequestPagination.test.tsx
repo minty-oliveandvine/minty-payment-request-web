@@ -53,22 +53,22 @@ describe("buildPageItems", () => {
 describe("the count", () => {
   it("reads as the range on this page out of the whole", () => {
     show({ page: 2, pageSize: 10, totalItems: 95 });
-    expect(screen.getByText(/Showing 11–20 of 95 items/)).toBeInTheDocument();
+    expect(screen.getByText(/Showing 11–20 of 95/)).toBeInTheDocument();
   });
 
   it("ends the range at the total on the last, short page", () => {
     show({ page: 10, pageSize: 10, totalItems: 95 });
-    expect(screen.getByText(/Showing 91–95 of 95 items/)).toBeInTheDocument();
+    expect(screen.getByText(/Showing 91–95 of 95/)).toBeInTheDocument();
   });
 
   it("reads as zero when there is nothing at all", () => {
     show({ totalItems: 0 });
-    expect(screen.getByText(/Showing 0–0 of 0 items/)).toBeInTheDocument();
+    expect(screen.getByText(/Showing 0–0 of 0/)).toBeInTheDocument();
   });
 
   it("marks the count as a floor when the fetch loop hit its cap", () => {
     show({ totalItems: 2000, truncated: true });
-    expect(screen.getByText(/of 2000\+ items/)).toBeInTheDocument();
+    expect(screen.getByText(/of 2000\+/)).toBeInTheDocument();
   });
 });
 
@@ -123,12 +123,12 @@ describe("the arrows", () => {
 });
 
 describe("items per page", () => {
-  it("offers ten, fifty and a hundred", () => {
-    expect([...PAGE_SIZE_OPTIONS]).toEqual([10, 50, 100]);
+  it("offers ten, twenty-five, fifty and a hundred (Part 14 Pagination)", () => {
+    expect([...PAGE_SIZE_OPTIONS]).toEqual([10, 25, 50, 100]);
     show();
     // ThemedSelect's non-searchable form is a button that opens a listbox, not a combobox -
     // the combobox role is only on its searchable variant's input.
-    const trigger = screen.getByRole("button", { name: "Items per page" });
+    const trigger = screen.getByRole("button", { name: "Rows per page" });
     expect(trigger).toHaveAttribute("aria-haspopup", "listbox");
   });
 
@@ -163,7 +163,7 @@ describe("items per page", () => {
   it("reports the size that was picked as a number", async () => {
     show();
 
-    await userEvent.click(screen.getByRole("button", { name: "Items per page" }));
+    await userEvent.click(screen.getByRole("button", { name: "Rows per page" }));
     await userEvent.click(screen.getByRole("option", { name: "50" }));
 
     expect(onPageSizeChange).toHaveBeenCalledWith(50);

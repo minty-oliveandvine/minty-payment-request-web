@@ -1,6 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import { Icon } from "@/components/ui/Icon";
 import {
   useCallback,
   useEffect,
@@ -33,6 +34,8 @@ type ThemedSelectProps = {
   error?: boolean;
   /** Mandatory: announced here, since the label's red asterisk is aria-hidden. */
   required?: boolean;
+  /** The Field's note (helper or error), so the control is described by it. */
+  ariaDescribedBy?: string;
   disabled?: boolean;
   /** Typable combobox: filter options as you type (e.g. long account code lists). */
   searchable?: boolean;
@@ -53,6 +56,7 @@ export function ThemedSelect({
   centerValue = false,
   error = false,
   required = false,
+  ariaDescribedBy,
   disabled = false,
   searchable = false,
 }: ThemedSelectProps) {
@@ -150,7 +154,7 @@ export function ThemedSelect({
   const displayLabel = placeholderShowing
     ? placeholder
     : selected?.label ?? (options[0]?.label ?? "");
-  const displayTextClass = `${placeholderShowing ? "text-gray-700" : ""} ${centerValue ? "text-center" : ""}`;
+  const displayTextClass = `${placeholderShowing ? "text-text-muted" : ""} ${centerValue ? "text-center" : ""}`;
 
   const closedInputValue = placeholderShowing ? "" : (selected?.label ?? "");
 
@@ -175,33 +179,29 @@ export function ThemedSelect({
     setSearchQuery(closedInputValue);
   }, [disabled, closedInputValue]);
 
+  // Part 14 Select: the Input's geometry - 44px, radius 12, border/input (>= 3:1), a 2px focus
+  // border; an error is the 2px danger ring. The "uniform" variant is the sunk read-only look.
+  const width = fullWidth ? "w-full " : "w-auto ";
+  const ring = (within: boolean) =>
+    error
+      ? "border-2 border-action-danger "
+      : within
+        ? "border border-border-input focus-within:border-2 focus-within:border-border-focus "
+        : "border border-border-input focus:border-2 focus:border-border-focus ";
+  const control =
+    "box-border flex h-11 min-w-0 items-center rounded-lg text-left text-body-m font-normal outline-none transition-colors duration-100 disabled:cursor-not-allowed disabled:text-text-disabled ";
+
   const uniformBase =
-    "box-border flex h-11 min-h-[44px] min-w-0 cursor-pointer items-center justify-between gap-2 rounded-lg border py-0 pl-3 pr-2 text-left text-base font-normal transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm " +
-    (fullWidth ? "w-full " : "w-auto ") +
-    (error
-      ? "border-red-500 bg-red-50 text-black focus:border-red-500 focus:ring-red-200/50 "
-      : "border-gray-300 bg-[#EDEDED] text-[#656565] hover:bg-[#E4E4E4] focus:border-secondary focus:ring-secondary/25 ");
+    control + "cursor-pointer justify-between gap-2 bg-surface-sunk py-0 pl-3 pr-2 text-text-primary hover:bg-state-hover " + width + ring(false);
 
   const splitBase =
-    "box-border flex h-11 min-h-[44px] min-w-0 cursor-pointer items-stretch gap-0 overflow-hidden rounded-lg border bg-white p-0 text-left text-base font-normal text-black transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm " +
-    (fullWidth ? "w-full " : "w-auto ") +
-    (error
-      ? "border-red-500 focus:border-red-500 focus:ring-red-200/50 "
-      : "border-gray-300 focus:border-secondary focus:ring-secondary/25 ");
+    control + "cursor-pointer items-stretch gap-0 overflow-hidden bg-surface-card p-0 text-text-primary " + width + ring(false);
 
   const splitSearchableOuter =
-    "box-border flex h-11 min-h-[44px] min-w-0 cursor-default items-stretch gap-0 overflow-hidden rounded-lg border bg-white p-0 text-left text-base font-normal text-black transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-secondary/25 sm:min-h-11 sm:text-sm " +
-    (fullWidth ? "w-full " : "w-auto ") +
-    (error
-      ? "border-red-500 focus-within:border-red-500 focus-within:ring-red-200/50 "
-      : "border-gray-300 focus-within:border-secondary focus-within:ring-secondary/25 ");
+    control + "cursor-default items-stretch gap-0 overflow-hidden bg-surface-card p-0 text-text-primary " + width + ring(true);
 
   const uniformSearchableOuter =
-    "box-border flex h-11 min-h-[44px] min-w-0 cursor-default items-center justify-between gap-2 rounded-lg border py-0 pl-3 pr-2 text-left text-base font-normal transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-secondary/25 sm:min-h-11 sm:text-sm " +
-    (fullWidth ? "w-full " : "w-auto ") +
-    (error
-      ? "border-red-500 bg-red-50 text-black focus-within:border-red-500 focus-within:ring-red-200/50 "
-      : "border-gray-300 bg-[#EDEDED] text-[#656565] hover:bg-[#E4E4E4] focus-within:border-secondary focus-within:ring-secondary/25 ");
+    control + "cursor-default justify-between gap-2 bg-surface-sunk py-0 pl-3 pr-2 text-text-primary " + width + ring(true);
 
   const menu = isOpen ? (
     <ul
@@ -209,7 +209,7 @@ export function ThemedSelect({
       id={listboxId}
       role="listbox"
       data-themed-select-menu
-      className="fixed z-[400] overflow-auto rounded-lg border border-gray-300 bg-white py-1 shadow-lg ring-1 ring-black/5"
+      className="fixed z-[400] overflow-auto rounded-lg border border-border-default bg-surface-raised py-1 shadow-overlay"
       style={{
         ...(menuPos.placement === "above"
           ? { top: "auto", bottom: menuPos.bottom }
@@ -220,7 +220,7 @@ export function ThemedSelect({
       }}
     >
       {listOptions.length === 0 ? (
-        <li className="px-3 py-2.5 text-sm text-gray-500" role="presentation">
+        <li className="px-3 py-2.5 text-body-m text-text-muted" role="presentation">
           No matches
         </li>
       ) : (
@@ -232,10 +232,8 @@ export function ThemedSelect({
               role="option"
               aria-selected={isSelected}
               className={
-                "cursor-pointer px-3 py-2.5 text-sm text-black transition-colors " +
-                (isSelected
-                  ? "bg-secondary/15 font-semibold text-secondary"
-                  : "hover:bg-secondary/10")
+                "flex min-h-11 cursor-pointer items-center px-3 text-body-m transition-colors " +
+                (isSelected ? "bg-state-selected font-semibold text-text-link" : "text-text-primary hover:bg-state-hover")
               }
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -253,16 +251,11 @@ export function ThemedSelect({
     </ul>
   ) : null;
 
-  const chevron = (
-    <span className="material-symbols-outlined shrink-0 text-[22px] leading-none text-primary" aria-hidden>
-      {isOpen ? "expand_less" : "expand_more"}
-    </span>
-  );
+  const chevron = <Icon name={isOpen ? "expand_less" : "expand_more"} size="md" className="text-text-secondary" />;
 
   const inputClassName =
-    "min-w-0 flex-1 border-0 bg-transparent p-0 text-base outline-none placeholder:text-gray-700 sm:text-sm " +
-    (uniformFill ? "text-[#656565] " : "text-black ") +
-    "disabled:cursor-not-allowed disabled:opacity-50";
+    "min-w-0 flex-1 border-0 bg-transparent p-0 text-body-m text-text-primary outline-none placeholder:text-text-muted " +
+    "disabled:cursor-not-allowed disabled:text-text-disabled";
 
   const chevronToggleMouseDown = (e: { preventDefault: () => void }) => {
     e.preventDefault();
@@ -284,6 +277,7 @@ export function ThemedSelect({
               aria-label={ariaLabel}
               aria-invalid={error}
           aria-required={required || undefined}
+          aria-describedby={ariaDescribedBy}
               autoComplete="off"
               disabled={disabled}
               placeholder={placeholder}
@@ -304,7 +298,7 @@ export function ThemedSelect({
           </div>
         ) : (
           <div className={`${splitSearchableOuter} ${triggerClassName}`}>
-            <span className="flex min-h-[44px] min-w-0 flex-1 items-center py-0 pl-3 pr-2 sm:min-h-11">
+            <span className="flex min-w-0 flex-1 items-center py-0 pl-3 pr-2">
               <input
                 id={id}
                 type="text"
@@ -315,6 +309,7 @@ export function ThemedSelect({
                 aria-label={ariaLabel}
                 aria-invalid={error}
           aria-required={required || undefined}
+          aria-describedby={ariaDescribedBy}
                 autoComplete="off"
                 disabled={disabled}
                 placeholder={placeholder}
@@ -331,7 +326,7 @@ export function ThemedSelect({
               className={
                 plainChevron
                   ? "flex shrink-0 cursor-pointer items-center justify-center px-3 sm:min-h-11"
-                  : "flex w-11 min-w-[44px] shrink-0 cursor-pointer items-center justify-center border-l border-gray-300 bg-[#EDEDED] transition-colors hover:bg-[#E4E4E4] sm:min-h-11"
+                  : "flex w-11 shrink-0 cursor-pointer items-center justify-center border-l border-border-default bg-surface-sunk transition-colors hover:bg-state-hover"
               }
               onMouseDown={chevronToggleMouseDown}
             >
@@ -349,6 +344,7 @@ export function ThemedSelect({
           aria-label={ariaLabel}
           aria-invalid={error}
           aria-required={required || undefined}
+          aria-describedby={ariaDescribedBy}
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((o) => !o)}
           className={`${uniformBase} ${triggerClassName}`}
@@ -366,18 +362,19 @@ export function ThemedSelect({
           aria-label={ariaLabel}
           aria-invalid={error}
           aria-required={required || undefined}
+          aria-describedby={ariaDescribedBy}
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((o) => !o)}
           className={`${splitBase} ${triggerClassName}`}
         >
-          <span className="flex min-h-[44px] min-w-0 flex-1 items-center py-0 pl-3 pr-2 sm:min-h-11">
+          <span className="flex min-w-0 flex-1 items-center py-0 pl-3 pr-2">
             <span className={`min-w-0 flex-1 truncate ${displayTextClass}`}>{displayLabel}</span>
           </span>
           <span
             className={
               plainChevron
                 ? "flex shrink-0 items-center justify-center px-3 sm:min-h-11"
-                : "flex w-11 min-w-[44px] shrink-0 items-center justify-center border-l border-gray-300 bg-[#EDEDED] transition-colors hover:bg-[#E4E4E4] sm:min-h-11"
+                : "flex w-11 shrink-0 items-center justify-center border-l border-border-default bg-surface-sunk transition-colors hover:bg-state-hover"
             }
           >
             {chevron}

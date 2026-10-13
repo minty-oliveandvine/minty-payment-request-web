@@ -33,7 +33,7 @@ describe("planLabel", () => {
   it("says SuperMinty, with the cat, when both modules are on", () => {
     expect(planLabel(company(["PETTY_CASH", "PAYMENT_REQUEST"]))).toEqual({
       text: "SuperMinty",
-      tone: "font-bold text-teal-strong",
+      tone: "font-bold text-text-link",
       cat: true,
     });
   });
@@ -41,12 +41,12 @@ describe("planLabel", () => {
   it("names the one module that is on, in that module's colour and without the cat", () => {
     expect(planLabel(company(["PAYMENT_REQUEST"]))).toEqual({
       text: "Payment Request",
-      tone: "text-[#2e6ff2]",
+      tone: "text-module-payment-ink",
       cat: false,
     });
     expect(planLabel(company(["PETTY_CASH"]))).toEqual({
       text: "Petty Cash",
-      tone: "text-[#ea9713]",
+      tone: "text-module-pettycash-ink",
       cat: false,
     });
   });
