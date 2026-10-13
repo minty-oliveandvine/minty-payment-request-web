@@ -259,9 +259,17 @@ describe("every trip to Flask names this app's origin", () => {
     expect(run(path, jar as Jar).returnOrigin).toBe(APP);
   });
 
-  it("names the origin the request came in on - a preview set's, in a preview", () => {
+  // On a preview-set host the trip must START on a page of this host, or the browser calls it
+  // cross-site (a link from GitHub or an email) and Flask - which names a set only on a
+  // same-site navigation - hands back to the configured hosts instead of the set (2026-10-13).
+  it("on a preview-set host, forwards from a page of its own naming the set's origin", async () => {
     const response = middleware(new NextRequest(new URL("/whatever", "https://pr-feat-x-payment-request.dailyminty.com")));
-    const target = new URL(response.headers.get("location") ?? "");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const html = await response.text();
+    const target = new URL(/url=([^"]+)"/.exec(html)![1].replaceAll("&amp;", "&"));
+    expect(target.pathname).toBe("/entity");
     expect(target.searchParams.get("return_origin")).toBe("https://pr-feat-x-payment-request.dailyminty.com");
   });
 });
