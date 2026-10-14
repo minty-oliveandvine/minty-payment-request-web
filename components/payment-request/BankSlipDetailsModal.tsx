@@ -72,7 +72,7 @@ export type BankSlipDetailsModalProps = {
   onClose: () => void;
   details: BankSlipDetails;
   inlineUploadBillContext?: { billId: string; currencyCode?: string };
-  onInlineUploadSuccess?: () => void;
+  onInlineUploadSuccess?: () => void | Promise<void>;
   onRemoveFile?: (fileId: string) => void;
   allowRemoveFiles?: boolean;
   onBankSlipFileDeleted?: () => void;
@@ -585,6 +585,7 @@ export function BankSlipDetailsModal({
     if (uploading) return;
     setUploading(true);
     let createdPaymentId: string | null = null;
+    let uploaded = false;
     try {
       const { payments } = await fetchPayments(inlineBillId);
       const existingPaymentId = pickExistingPaymentIdForBankSlipUpload(payments, inlineBillId);
@@ -616,19 +617,27 @@ export function BankSlipDetailsModal({
 
       setStagedUploads([]);
       setSelectedStagedId(null);
-      onInlineUploadSuccess?.();
+      uploaded = true;
     } catch (e) {
       if (createdPaymentId) {
         try {
           await deletePayment(inlineBillId, createdPaymentId);
-        } catch {
-          /* best-effort rollback */
+        } catch (rollbackErr) {
+          console.error("Could not remove the payment left by a failed bank slip upload:", rollbackErr);
         }
       }
       setUploadError(e instanceof ApiError ? e.message : "That upload didn't quite go through. Mind trying again?");
     } finally {
       setUploading(false);
     }
+    if (!uploaded) return;
+    // Outside the try: the slip is saved, so a failed refresh must not roll the payment back.
+    try {
+      await onInlineUploadSuccess?.();
+    } catch (e) {
+      console.error("Bank slip uploaded, but the refresh after it failed:", e);
+    }
+    onClose();
   };
 
   const pendingDeleteFile = pendingDeleteFileId ? files.find((f) => f.id === pendingDeleteFileId) : undefined;

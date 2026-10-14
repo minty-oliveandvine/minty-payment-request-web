@@ -19,6 +19,7 @@ import { statusDisplayBadgeClass } from "@/lib/billStatusDisplay";
 import { type SortKey } from "@/lib/paymentRequestRowSort";
 import { HEADER_CHECKBOX_CLASS } from "./paymentRequestCheckboxClasses";
 import type { PaymentRequestRow } from "./PaymentRequestTable";
+import { BankSlipLoadState } from "./BankSlipLoadState";
 import type { PaymentRequestStatusFilter } from "./PaymentRequestToolbar";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
@@ -79,13 +80,20 @@ export type EasyViewSortKey = Extract<SortKey, "contact" | "submittedDate" | "un
 function EasyViewBankSlipControl({
   row,
   onOpen,
+  onRetry,
 }: {
   row: PaymentRequestRow;
   onOpen: (billId: string) => void;
+  onRetry?: () => void;
 }) {
   const isVoided = row.status === "Voided";
   const isDraft = row.status === "Draft";
   const n = row.bankslipFileCount;
+
+  // Easy view shows nothing for "no slips", so a count still loading shows nothing too.
+  if (row.bankslipState === "error") {
+    return <BankSlipLoadState state="error" contactTitle={row.contactTitle} onRetry={onRetry} />;
+  }
 
   if (n == null || n < 1) return null;
 
@@ -176,6 +184,8 @@ export type PaymentRequestEasyViewProps = {
   /** Opens inline payment history (read-only) for paid bills. */
   onPaidStatusOpen: (rowId: string) => void;
   onOpenBankSlipUpload: (rowId: string) => void;
+  /** Reloads the bank slip counts after a lookup failed. */
+  onRetryBankSlips?: () => void;
   /** Inline draft row: same expand pattern as pay panel, but only detailed information. */
   draftDetailBillId: string | null;
   onDraftBillOpen: (rowId: string) => void;
@@ -367,6 +377,7 @@ export function PaymentRequestEasyView({
   onPaymentRequestedPay,
   onPaidStatusOpen,
   onOpenBankSlipUpload,
+  onRetryBankSlips,
   draftDetailBillId,
   onDraftBillOpen,
   onOutsideCloseRequested,
@@ -802,7 +813,7 @@ export function PaymentRequestEasyView({
                             {/* Left spacer balances the right-side info icon so the slip slot centers in the column. */}
                             <span className="size-4 shrink-0" aria-hidden />
                             <div className={EASY_VIEW_BANKSLIP_SLOT}>
-                              <EasyViewBankSlipControl row={row} onOpen={onOpenBankSlipUpload} />
+                              <EasyViewBankSlipControl row={row} onOpen={onOpenBankSlipUpload} onRetry={onRetryBankSlips} />
                             </div>
                             <div className="relative group inline-block transform translate-y-[2px]">
                               <span className="material-symbols-outlined text-[16px] cursor-pointer text-black hover:text-stone-800 block">

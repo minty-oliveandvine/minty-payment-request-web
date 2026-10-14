@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { setAuth } from "@/lib/auth";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
-import { safeNextPath } from "@/lib/safeNext";
+import { safeNextPath } from "@minty/shared/safeNext";
 
 function LandingContent() {
   const router = useRouter();

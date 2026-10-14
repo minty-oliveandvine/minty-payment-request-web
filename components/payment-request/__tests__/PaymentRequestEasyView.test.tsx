@@ -285,3 +285,21 @@ describe("while it is loading", () => {
     expect(document.querySelector("[aria-hidden='true'] .animate-pulse")).not.toBeNull();
   });
 });
+
+describe("a bank slip count that did not load", () => {
+  it("offers a retry rather than nothing, and nothing while it is still loading", async () => {
+    const onRetryBankSlips = vi.fn();
+    show({
+      rows: [
+        billRow({ id: "e-fail", contactTitle: "Failed Lookup Co", status: "Payment Requested", bankslipState: "error" }),
+        billRow({ id: "e-wait", contactTitle: "Still Loading Co", status: "Payment Requested", bankslipState: "loading" }),
+      ],
+      onRetryBankSlips,
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Bank slips didn't load for Failed Lookup Co — try again" }));
+
+    expect(onRetryBankSlips).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: /Still Loading Co — try again/ })).not.toBeInTheDocument();
+  });
+});

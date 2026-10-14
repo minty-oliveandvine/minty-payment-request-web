@@ -1,4 +1,4 @@
-# The sidebar — the menu and My Profile (copied from minty-web)
+# The sidebar — the menu and My Profile (`@minty/shared`)
 
 Since 2026-09-30 every page with the header carries minty-web's **one drawer with two views**
 (the user's call, 2026-09-29; "build it now and transfer later to shared"):
@@ -10,25 +10,58 @@ Since 2026-09-30 every page with the header carries minty-web's **one drawer wit
 Nothing navigates to open it; Escape, a click beside it or a link inside it closes it. 353 px for
 the menu; 440 px for My Profile from 640 px up and the whole screen on a phone.
 
-## COPIES, to be lifted into `@minty/shared`
+## Where it lives: `@minty/shared`, since 2026-10-12
 
-The files sit at minty-web's own paths, each headed `COPY of minty-web/<path> (2026-09-30) -
-lifted into @minty/shared at Part 3 step 4; change all three (minty-web, here, Flask's port)`:
+It was a **copy** of minty-web's from 2026-09-30 ("build it now and transfer later to shared").
+The copies are gone. The components now come from the package, pinned by git tag:
 
-| File | minty-web's original |
+| Path here | What it is now |
 |---|---|
-| `components/ui/Sidebar.tsx` (`SidebarProvider`, `useSidebar`, `SidebarDrawer`) | the same |
-| `components/ui/SideMenu.tsx` (the menu) | the same |
-| `components/ui/ViewerBadge.tsx` (the initials) | the same |
-| `components/ui/NavMenu.tsx` (the ≡) | the same; it replaced this app's `components/layout/NavMenu.tsx` |
-| `lib/viewer.ts` (name and initials, read once per token) | the same |
-| `features/profile/*` (`ProfilePanel` and its parts) | the same, without the `/profile` page |
-| `features/subscription/*` (the Subscriptions Overview card) | `SubscriptionsOverviewCard.tsx`, `overview()` from `lib/billing.ts` |
+| `components/ui/Sidebar.tsx` | a 17-line shim re-exporting `@minty/shared/sidebar` |
+| `components/ui/SideMenu.tsx` | a shim |
+| `components/ui/ViewerBadge.tsx` | a shim |
+| `components/ui/NavMenu.tsx` | a shim (it replaced this app's `components/layout/NavMenu.tsx`) |
+| `lib/viewer.ts` | a shim over `@minty/shared/viewer` |
+| `features/profile/*`, `features/subscription/*` | **still this app's own** — not in the package |
+
+Each shim's first line is `import "@/components/ui/sidebarHost";`, and that is load-bearing: it
+registers this app's host before anything renders. Keeping the paths is why no page, feature or
+test had to change.
 
 **Everything that is this app's lives in ONE file, `components/ui/sidebarHost.ts`** — the company
-and modules in the cookie, where the items lead from here, the scroll lock (`#app-scroll-root`),
-Logout, and how Flask and minty-subscription-api are reached. It is the list of what the shared
-package will take as injection; the lift deletes the copies and keeps the host.
+and modules in the cookie, where the items lead from here, this app's router, the scroll lock
+(`#app-scroll-root`, not `body`: below 1280 px `html`/`body` are `position: fixed`, so a body lock
+would do nothing), Logout, and how Flask and minty-subscription-api are reached. It was written in
+2026-09-30 as the list of what a shared package would have to take as injection, and that is now
+literally its job.
+
+Three fields it gained when the package arrived:
+
+- `app: "minty-payment-request-web"` — the "one page, one app" guard keys on this, not on object
+  identity: Next re-evaluates the module per bundler layer and on every HMR edit, so identity threw
+  on an ordinary dev reload.
+- `usePathname()` — this app's router, imported **here** rather than in the package, because
+  `vi.mock("next/navigation")` does not reach a module inside `node_modules`.
+- `loadViewer()` — the `/api/me/profile` read, since the two apps' fetchers disagree about what a
+  401 means (`"reauth"` here, `"handoff"` in minty-web).
+
+`currentOf` now takes a pathname instead of reading `window.location` itself, so the packaged
+sidebar can feed it. It never reports `"profile"` — that page is minty-web's — which is why the
+menu's person block always opens the profile view here rather than just closing.
+
+### Two config lines, one of which fails silently
+
+`app/globals.css` carries `@import "@minty/shared/theme.css";` (the font tokens) and
+`@source "../node_modules/@minty/shared/src";`. **Tailwind v4 never scans `node_modules`**, so
+without that `@source` line every utility class in the packaged sidebar is dropped from the
+generated CSS — unstyled, no error. `@source` must sit **after every `@import`** or it invalidates
+the last one. `next.config.ts` carries `transpilePackages: ["@minty/shared"]` (the package ships
+`.ts` source) and `vitest.config.ts` carries `server.deps.inline`, since Vitest does not read
+`transpilePackages`. All of it is guarded by `app/__tests__/packagedStyles.test.ts`.
+
+The menu's 15 `/menu/*` images stay in **this app's `public/`** — Next cannot serve a static file
+out of `node_modules`. `app/__tests__/packagedAssets.test.ts` asserts the package's
+`SIDEBAR_ASSETS` list against it.
 
 `app/layout.tsx` composes it, as minty-web's layout does:
 `<SidebarProvider profile={<ProfilePanel subscriptions={<SubscriptionsOverviewCard />} />}>`.

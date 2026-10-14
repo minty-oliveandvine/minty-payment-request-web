@@ -312,3 +312,39 @@ describe("the card list beside it", () => {
     expect(cards().getByText("HK$ 6,000.00")).toBeInTheDocument();
   });
 });
+
+describe("the bank slip cell before its count is known", () => {
+  // Unknown is not zero: an Upload button here could hide slips that already exist.
+  const unknown = (bankslipState: "loading" | "error") => [
+    billRow({ id: "r-unknown", contactTitle: "Young Bros Transport", status: "Payment Requested", bankslipState }),
+  ];
+
+  it("says it is loading, and offers no upload", () => {
+    show({ rows: unknown("loading") });
+
+    expect(table().getByRole("status", { name: "Loading bank slips for Young Bros Transport" })).toBeInTheDocument();
+    expect(table().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
+  });
+
+  it("says the lookup failed, offers no upload, and retries when asked", async () => {
+    const onRetryBankSlips = vi.fn();
+    show({ rows: unknown("error"), onRetryBankSlips });
+
+    expect(table().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
+    await userEvent.click(
+      table().getByRole("button", { name: "Bank slips didn't load for Young Bros Transport — try again" }),
+    );
+
+    expect(onRetryBankSlips).toHaveBeenCalledTimes(1);
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+
+  it("does the same on the phone card", () => {
+    show({ rows: unknown("error") });
+
+    expect(
+      cards().getByRole("button", { name: "Bank slips didn't load for Young Bros Transport — try again" }),
+    ).toBeInTheDocument();
+    expect(cards().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
+  });
+});

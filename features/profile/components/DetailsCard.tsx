@@ -23,7 +23,7 @@ import {
   PASSWORD,
   SAVE,
 } from "@/features/profile/lib/profileView";
-import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT, useEmailInput } from "@minty/shared/emailInput";
 
 const LABEL = "text-[10px] leading-5 text-[#4b5563]";
 const VALUE = "text-sm leading-5 text-[#6b7280]";

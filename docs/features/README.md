@@ -21,6 +21,21 @@ Email fields take English only (2026-10-01): My Profile's email spreads `useEmai
 outside printable ASCII is dropped once an IME composition ends, and the field says why. Flask
 refuses such an address again on save. See minty-web's `docs/features/README.md`.
 
+Fonts (2026-10-12): **Inter**, self-hosted through `next/font` in `app/layout.tsx` and bound to
+`--font-sans` in `app/globals.css`'s `@theme`. That block is a **copy of minty-web's, byte for
+byte** — minty-web's `docs/features/README.md` carries the reasoning — so change the two together
+until `@minty/shared` takes the tokens at Part 3 step 4. Two tokens only, `--font-sans` and
+`--font-brand`; there is no `--font-mono` (nothing uses the mono utility, and Tailwind's own
+default keeps it monospace) and no emoji tail. `--font-brand` is Plus Jakarta Sans for the "Minty"
+name, and it is here only for parity: this app draws no lockup as text — its mark is
+`public/menu/minty-logo.svg` in `components/ui/SideMenu.tsx` — so **Jakarta is not loaded** and the
+token falls through to Inter. Adding a text lockup here means adding the `next/font` call in
+`app/layout.tsx` too, not just the class. The icon font is the `material-symbols` npm package,
+imported without `layer(base)`, so its own unlayered `font-size: 24px` wins and every glyph is
+24px — the pixel font-size utilities on those spans have no effect. Do not write a bare
+Tailwind class name in prose here: v4's source detection scans Markdown and CSS too, so naming a
+class is enough to generate it.
+
 Running it and the environment variables: the repo `README.md`. Tests: `npm test` (Vitest - unit
 and component, no stack) and `npm run test:e2e`
 (Playwright against a running stack — `e2e/README.md`; the Xero publish needs `E2E_XERO=1`). The cleanse log is in `../code_cleanse/`.

@@ -21,6 +21,13 @@ this page is what the person sees and where each piece of the screen lives.
   shown; pagination in `PaymentRequestPagination`. Bulk delete of drafts from the table.
 - Every amount is shown in the **entity's currency** (`lib/entityCurrency.ts` from
   `GET /api/auth/entity-currency`), never the bill's stored code.
+- The Add Payment Request dialog uses `useEntityCurrencyState()`: with no currency set it says
+  so under Amount (linking to Entity & Integration settings) and disables Confirm and Save as
+  Draft; a failed read says so with **Try again**. Neither shows as an empty box.
+- **Bank slip counts** load per visible row (`lib/bankSlipEnrichment.ts`). An unknown count is
+  never shown as zero: while loading the row shows "…", and a failed lookup is logged and shows
+  **Retry** (`BankSlipLoadState.tsx`, re-reads the rows on screen) — never **Upload**, which
+  could hide slips that already exist. Easy view shows nothing while loading, Retry on failure.
 
 ## Add Payment (`components/PaymentRequestModal.tsx`)
 
@@ -105,7 +112,8 @@ unchanged). A Payment No. the company does not have shows "I couldn't find that 
 - the details card (`PaymentRequestDetailedInfo.tsx`, editable in place);
 - **payments** (`PaymentHistoryCard.tsx`, `RecordPaymentModal.tsx` — date, amount, method,
   reference; `OverpaymentWarningModal` when the sum would exceed the bill;
-  `BankSlipDetailsModal.tsx` uploads the slip and can push it to the Xero invoice;
+  `BankSlipDetailsModal.tsx` uploads the slip and can push it to the Xero invoice, then
+  closes once the caller has refreshed (a failed refresh is logged, never rolled back);
   `PaymentDeleteConfirmModal`);
 - the **Activity history** (`ActivityHistoryAccordion.tsx`) rendering the backend's audit
   rows — "published Payment Request #… to Xero", "uploaded receipt.pdf", "submitted …".
