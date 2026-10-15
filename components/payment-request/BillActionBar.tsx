@@ -3,12 +3,14 @@
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { buttonClass } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { BillDraftSubmitButton } from "./BillDraftSubmitButton";
 
 const ROW_MENU_MIN_WIDTH_PX = 160;
 
 const rowMenuButtonClass =
-  "box-border inline-flex h-9 min-h-9 w-9 min-w-9 cursor-pointer items-center justify-center rounded-lg text-primary transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:text-primary/35 disabled:hover:bg-transparent sm:h-10 sm:min-h-10 sm:w-10 sm:min-w-10";
+  "box-border inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border-default bg-surface-card text-text-secondary transition-colors hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent";
 
 type BillActionBarProps = {
   onDeleteBill?: () => void;
@@ -103,7 +105,7 @@ export function BillActionBar({
             id={menuId}
             role="menu"
             aria-label="Payment actions"
-            className="fixed z-[400] rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+            className="fixed z-[400] rounded-lg border border-border-default bg-surface-raised py-1 shadow-overlay"
             style={{ top: pos.top, left: pos.left, minWidth: ROW_MENU_MIN_WIDTH_PX }}
           >
             {overflowShowPublish || overflowShowRepublish ? (
@@ -111,7 +113,7 @@ export function BillActionBar({
                 type="button"
                 role="menuitem"
                 disabled={publishItemDisabled}
-                className="block w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-primary transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="block min-h-11 w-full cursor-pointer px-3 py-2 text-left text-body-m text-text-primary transition-colors hover:bg-state-hover disabled:cursor-not-allowed disabled:text-text-disabled"
                 onClick={() => {
                   if (publishItemDisabled) return;
                   setMenuOpen(false);
@@ -131,7 +133,7 @@ export function BillActionBar({
               type="button"
               role="menuitem"
               disabled={overflowVoidDisabled}
-              className="block w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="block min-h-11 w-full cursor-pointer px-3 py-2 text-left text-body-m text-action-danger transition-colors hover:bg-status-danger-bg disabled:cursor-not-allowed disabled:text-text-disabled"
               onClick={() => {
                 if (overflowVoidDisabled) return;
                 setMenuOpen(false);
@@ -147,16 +149,8 @@ export function BillActionBar({
 
   const voidBillButton =
     showVoidBill !== false ? (
-      <button
-        type="button"
-        onClick={onDeleteBill}
-        disabled={deleteDisabled}
-        className="inline-flex h-10 min-h-[44px] w-auto shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md bg-rose-50 px-3 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-400 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
-      >
+      <button type="button" onClick={onDeleteBill} disabled={deleteDisabled} className={buttonClass("danger")}>
         {removePrimaryLabel}
-        <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>
-          block
-        </span>
       </button>
     ) : null;
 
@@ -175,9 +169,9 @@ export function BillActionBar({
             <span
               role="status"
               aria-live="polite"
-              className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-primary/60"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap text-body-m text-text-secondary"
             >
-              <span className="material-symbols-outlined animate-spin text-secondary text-[20px] leading-none" aria-hidden>
+              <span className="material-symbols-rounded animate-spin text-[20px]! leading-none text-text-link motion-reduce:animate-none" aria-hidden>
                 progress_activity
               </span>
               {overflowShowRepublish ? "Republishing…" : "Publishing…"}
@@ -199,7 +193,7 @@ export function BillActionBar({
               toggleMenu();
             }}
           >
-            <span className="material-symbols-outlined text-[22px] leading-none" aria-hidden>
+            <span className="material-symbols-rounded text-[22px] leading-none" aria-hidden>
               more_vert
             </span>
           </button>
@@ -212,21 +206,14 @@ export function BillActionBar({
           disabled={isPublished || publishPending || publishDisabled}
           title={publishDisabled ? "This payment's been voided, so there's nothing to publish." : undefined}
           className={
-            "inline-flex h-10 min-h-[44px] w-auto max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full px-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-2 sm:px-4 " +
-            (isPublished
-              ? "border-2 border-emerald-500 bg-emerald-50 text-emerald-700 cursor-default"
-              : publishDisabled
-                ? "border border-primary/20 bg-[#F5F5F5] text-primary/40 cursor-not-allowed"
-                : publishPending
-                  ? "border border-primary/25 bg-white text-primary/50 cursor-wait"
-                  : "border border-primary/25 bg-white text-primary cursor-pointer hover:bg-primary/5 focus-visible:outline-secondary")
+            isPublished
+              ? "inline-flex h-11 max-w-full shrink-0 cursor-default items-center gap-2 rounded-lg bg-status-success-bg px-4 text-button text-status-success-ink"
+              : buttonClass("secondary")
           }
         >
           {isPublished ? (
             <>
-              <span className="material-symbols-outlined text-[20px] leading-none text-emerald-500" aria-hidden>
-                check_circle
-              </span>
+              <Icon name="check_circle" size="md" />
               Published to Xero
             </>
           ) : publishPending ? (

@@ -36,14 +36,14 @@ export function RowDeleteConfirmModal({
       {isDraft ? (
         trimmed ? (
           <>
-            Are you sure you want to delete <span className="font-semibold text-primary">&quot;{trimmed}&quot;</span>? This draft will be removed and cannot be recovered.
+            Are you sure you want to delete <span className="font-semibold text-text-secondary">&quot;{trimmed}&quot;</span>? This draft will be removed and cannot be recovered.
           </>
         ) : (
           <>Are you sure you want to delete this draft? It will be removed and cannot be recovered.</>
         )
       ) : trimmed ? (
         <>
-          Are you sure you want to void <span className="font-semibold text-primary">&quot;{trimmed}&quot;</span>? The payment will be marked as voided and can no longer be edited.
+          Are you sure you want to void <span className="font-semibold text-text-secondary">&quot;{trimmed}&quot;</span>? The payment will be marked as voided and can no longer be edited.
         </>
       ) : (
         <>Are you sure you want to void this payment? It will be marked as voided and can no longer be edited.</>

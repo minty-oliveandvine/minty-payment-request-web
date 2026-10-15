@@ -5,7 +5,11 @@
    minty-logo.svg the packaged SideMenu renders), so --font-brand falls through to Inter here.
    Adding a text lockup means adding the next/font call in app/layout.tsx too, not just a class. */
 @import "@minty/shared/theme.css";
-@import "material-symbols/outlined.css";
+/* The Part 13 design tokens (Minty/docs/design/part-13-visual-design-system.md): semantic colour
+   roles, the radius scale, type styles, elevation - the packaged sidebar draws in them. */
+@import "@minty/shared/tokens.css";
+/* Part 13 D-20: Material Symbols ROUNDED (components/ui/Icon.tsx). */
+@import "material-symbols/rounded.css";
 @import "./styles/checkbox/checkbox-secondary-white-tick.css";
 /* Tailwind v4 NEVER scans node_modules, so without this every utility class inside a packaged
    component (the sidebar) is dropped from the generated CSS - unstyled, with no error anywhere.
@@ -25,9 +29,6 @@
   --avatar-fg: #6b3a12;
   --teal-strong: #18c4c7;
   --accent: #f15a24;
-  /* The "Leave without saving?" dialog copied from minty-web (features/subscription/components/
-     ConfirmDialog.tsx, 2026-10-01): its sentences' grey, minty-web's value. */
-  --ink-soft: #757575;
 }
 
 @theme {
@@ -37,12 +38,8 @@
   --color-accent: var(--accent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* No prefers-color-scheme block: Light is the theme at launch (Part 13 D-24). The dark values
+   live in @minty/shared/tokens.css under [data-theme="dark"], and nothing switches them on yet. */
 
 html {
   background: var(--background);

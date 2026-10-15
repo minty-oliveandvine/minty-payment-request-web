@@ -83,7 +83,9 @@ describe("links", () => {
 
   it("send Subscriptions straight to the handoff when no company is in the cookie", () => {
     setAuth(TOKEN, "", "");
-    expect(links.subscriptions()).toBe(`${env.PETTY_CASH_URL}/handoff/minty-web?next=%2Fsubscription`);
+    expect(links.subscriptions()).toBe(
+      `${env.PETTY_CASH_URL}/handoff/minty-web?next=%2Fsubscription&return_origin=${encodeURIComponent(window.location.origin)}`,
+    );
   });
 
   it("keep Payment Requests and Settings inside this app", () => {

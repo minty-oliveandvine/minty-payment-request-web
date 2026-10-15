@@ -40,4 +40,4 @@ export {
   type BankSlipFileEntry,
   type BankSlipFileRef,
 } from "./BankSlipDetailsModal";
-export { RecordPaymentModal, type RecordPaymentModalProps } from "./RecordPaymentModal";
+export { RecordPaymentDrawer, type RecordPaymentDrawerProps } from "./RecordPaymentDrawer";

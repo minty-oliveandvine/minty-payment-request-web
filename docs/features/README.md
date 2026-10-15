@@ -8,11 +8,11 @@ is minty-web's). Nothing is decided here that a backend does not re-check.
 | Feature | Document |
 |---|---|
 | Arriving with Minty's token, the cookies, the company addresses (`/entity/<shortid>/<name>/...`), refresh, what the role changes on screen, the module gate | [authentication.md](authentication.md) — the system-wide picture is `Minty/docs/features/authentication.md` |
-| The list (tabs, filters, table / easy view), the Add Payment dialog, the detail page (attachments, payments, publish, activity) | [payment-requests.md](payment-requests.md) |
+| The design system as applied here (Parts 13–15: tokens, `components/ui/` primitives, status tones, the status × action matrix), the list (status chips, filters, Easy / Table view), the Add page, the Record payment drawer, the detail page (attachments, payments, publish, history) | [payment-requests.md](payment-requests.md) |
 | Payment Request Settings (`/entity/<shortid>/<name>/settings/payment-request`), the maintenance page | [settings.md](settings.md) |
 | The old payer portal (`/profile/*`) — moved to minty-web on 2026-10-01; its addresses forward there | [payer-portal.md](payer-portal.md) |
 | The sidebar on every page - the menu and My Profile, copied from minty-web for `@minty/shared` | [sidebar.md](sidebar.md) |
-| Toasts - `components/Toast.tsx`, minty-web's card (white, a bold label, no colour or icon) | `Minty/docs/features/toasts.md` - the system-wide rule and the look, value for value |
+| Toasts - `components/Toast.tsx`, Part 14's toast since 2026-10-13 (bottom-left on a computer, bottom-centre on a phone; success only - errors are inline). In this app Part 14 wins over minty-web's card | `Minty/docs/design/` (Part 14) - `Minty/docs/features/toasts.md` still describes minty-web's look |
 | User-facing error copy | [../ERROR_COPY.md](../ERROR_COPY.md) |
 | Manual QA checklist to run by hand before a release | [qa-checklist.md](qa-checklist.md) |
 

@@ -45,7 +45,8 @@ const show = (props: Partial<Parameters<typeof BillContactPicker>[0]> = {}) =>
     </ToastProvider>,
   );
 
-const field = () => screen.getByPlaceholderText("Select a supplier");
+/** Part 14 Supplier picker: an ARIA combobox. */
+const field = () => screen.getByRole("combobox");
 const options = () => within(screen.getByRole("listbox")).getAllByRole("option");
 
 beforeEach(() => {

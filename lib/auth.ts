@@ -1,3 +1,5 @@
+import { withReturnOrigin } from "@minty/shared/previewSibling";
+
 import { resolveMintyModuleUrl } from "./mintyEnv";
 import { API_BASE } from "./apiBase";
 
@@ -205,7 +207,7 @@ export function redirectToLogin() {
   redirecting = true;
 
   clearAuth();
-  window.location.href = `${resolveMintyModuleUrl().replace(/\/$/, "")}/`;
+  window.location.href = withReturnOrigin(`${resolveMintyModuleUrl().replace(/\/$/, "")}/`);
 }
 
 /**

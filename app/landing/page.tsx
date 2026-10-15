@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { setAuth } from "@/lib/auth";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
+import { withReturnOrigin } from "@minty/shared/previewSibling";
 import { safeNextPath } from "@minty/shared/safeNext";
 
 function LandingContent() {
@@ -19,7 +20,7 @@ function LandingContent() {
 
     if (!token) {
       // Nothing to land with: back into Minty (its /entity - the entity list, or sign-in).
-      window.location.replace(`${MINTY_MODULE_URL}/entity`);
+      window.location.replace(withReturnOrigin(`${MINTY_MODULE_URL}/entity`));
       return;
     }
 
@@ -28,8 +29,8 @@ function LandingContent() {
   }, [router, searchParams]);
 
   return (
-    <div className="flex min-h-dvh min-h-screen items-center justify-center bg-white">
-      <span className="text-sm text-gray-400">Loading…</span>
+    <div className="flex min-h-dvh min-h-screen items-center justify-center bg-surface-card">
+      <span className="text-sm text-text-muted">Loading…</span>
     </div>
   );
 }

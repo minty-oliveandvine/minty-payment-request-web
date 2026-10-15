@@ -1,12 +1,14 @@
-/* Secondary fill + white checkmark — use class `checkbox-secondary-white-tick` on inputs (expects --secondary on :root). */
+/* Part 14 "Checkbox" - use class `checkbox-secondary-white-tick` on inputs. A 20px box with a
+   border/input outline; checked = border/selected fill with a white tick (D14-02); the Part 13
+   2px focus ring outside it. Colours are the Part 13 semantic tokens (@minty/shared/tokens.css). */
 
 .checkbox-secondary-white-tick {
   appearance: none;
   -webkit-appearance: none;
   box-sizing: border-box;
   cursor: pointer;
-  /* Unchecked fill — do not add Tailwind bg-white on the input; it can override :checked */
-  background-color: #ffffff;
+  /* Unchecked fill — do not add a Tailwind bg utility on the input; it can override :checked */
+  background-color: var(--color-surface-card);
   background-image: none;
   background-repeat: no-repeat;
   background-position: center;
@@ -14,8 +16,13 @@
 }
 
 .checkbox-secondary-white-tick:checked {
-  border-color: var(--secondary);
-  background: var(--secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") no-repeat center / 0.875rem 0.875rem;
+  border-color: var(--color-border-selected);
+  background: var(--color-border-selected) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") no-repeat center / 0.875rem 0.875rem;
+}
+
+.checkbox-secondary-white-tick:indeterminate {
+  border-color: var(--color-border-selected);
+  background: var(--color-border-selected) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M5 11h14v2H5z'/%3E%3C/svg%3E") no-repeat center / 0.875rem 0.875rem;
 }
 
 .checkbox-secondary-white-tick:focus {
@@ -23,5 +30,6 @@
 }
 
 .checkbox-secondary-white-tick:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--secondary) 50%, transparent);
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }

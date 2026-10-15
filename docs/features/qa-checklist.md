@@ -42,22 +42,33 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
 
 ## The payment-request list ([payment-requests.md](payment-requests.md))
 
-- [ ] All seven tabs (All, Payment Requested, Partially Paid, Returned, Paid, Draft, Voided)
-      filter correctly; several can be stacked on desktop, only one at a time on mobile.
+- [ ] All seven status chips (All, Payment Requested, Partially Paid, Returned, Paid, Draft,
+      Voided) filter correctly, each shows its count, and several can be stacked; on a phone the
+      chip row scrolls sideways rather than wrapping.
 - [ ] Search (supplier, reference, description), the amount range, the invoice/due date range,
       and the Xero publish-state filter each narrow the rows as expected, and compose together.
-- [ ] Table and Easy View show the same rows and totals; the toggle persists the choice.
+- [ ] Table and Easy View show the same rows and totals; the Easy view | Table view control
+      persists the choice, and is not shown below 768px (a phone always gets Easy view).
+- [ ] Each row offers only its ONE next action (Record payment, View payments, Continue or
+      View - `lib/requestActions.ts`); a cashier or a view-only visitor sees no Record payment at
+      all, and Table view's Payment and Bankslip cells show "-" rather than a dead button.
 - [ ] The totals banner reflects only the rows currently shown (after filtering), not the whole
       list.
 - [ ] Every amount displays in the entity's own currency, never a bill's stored currency code.
-- [ ] Add Payment Request for a company with no currency: the box shows "—", the message under
-      Amount links to Entity & Integration, and Confirm / Save as Draft are disabled.
+- [ ] The Add page for a company with no currency: the alert under Invoice amount links to
+      Entity & Integration, and Submit for payment / Save as draft are disabled with that
+      reason as their title.
 - [ ] Block `/payments` in devtools: the Bank Slip cell shows **Retry**, never **Upload**;
       unblock and press Retry → the real count appears.
 - [ ] Bulk-deleting drafts from the table removes exactly the selected rows.
-- [ ] Pagination keeps filters and the active tab when moving between pages.
+- [ ] Pagination keeps filters and the active chips when moving between pages; it reads
+      "Showing 1–10 of N" and offers 10/25/50/100 rows per page.
 
-## Add Payment dialog ([payment-requests.md](payment-requests.md))
+## The Add page (`<list>/new`, [payment-requests.md](payment-requests.md))
+
+- [ ] **Add payment request** on the list opens the Add page (a page, not a dialog), fields in
+      invoice order: Invoice, Supplier, Invoice amount, the two dates, Description, Account code,
+      then More details (Payment No.).
 
 - [ ] Supplier picker searches the entity's synced Xero contacts; "create new" adds the
       contact in Xero itself.
@@ -66,18 +77,22 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       name is edited (not a silent no-op).
 - [ ] The account-code combobox only offers `entity_bill_account_xero` codes already ticked on
       in Payment Request Settings.
-- [ ] Bill number field pre-fills a suggested reference; it can still be overridden by hand.
-- [ ] **Save as draft** succeeds with nothing filled in (no validation at all).
-- [ ] **Confirm** validates amount, supplier, account code, both dates, and at least one
-      attachment — each missing field shows its own inline alert (`role="alert"`), not one
-      generic error.
-- [ ] Attachments accept pdf, jpg, png, html, xls(x); an added image is visibly compressed
-      before upload.
-- [ ] Confirm uploads attachments only after the bill itself exists, then opens the new
+- [ ] Payment No. (under More details) pre-fills a suggested reference; it can still be
+      overridden by hand.
+- [ ] **Save as draft** succeeds with nothing filled in (no validation at all), returns to the
+      list and says so in a toast.
+- [ ] **Submit for payment** validates amount, supplier, account code, both dates, and at least
+      one attachment. Two or more problems: an error summary at the top takes focus and links
+      to each field; one problem: focus goes straight to that field. Each field also shows its
+      own message (`role="alert"`) in Part 11 wording ("The amount is still empty. Add the
+      invoice amount to continue.").
+- [ ] Attachments accept pdf, jpg, png, html (no spreadsheets since 2026-10-09); an added image
+      is visibly compressed before upload.
+- [ ] Submit uploads attachments only after the bill itself exists, then opens the new
       request's detail page.
 - [ ] **DB:** `SELECT status, contact_name, amount, xero_account_code FROM pettycashv3.bill
       WHERE id = '<id>';` plus `SELECT * FROM pettycashv3.bill_line WHERE bill_id = '<id>';`
-      — Save as draft inserts `status = 'draft'`; Confirm inserts `status = 'submitted'`
+      — Save as draft inserts `status = 'draft'`; Submit inserts `status = 'submitted'`
       directly (no separate draft row first); either way a matching
       `pettycashv3.bill_audit` row is appended (`action = 'created'`/`'submitted'`).
 - [ ] **DB:** an attachment upload inserts into both `pettycashv3.attachment` and
@@ -92,39 +107,49 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       Payment No. shows "I couldn't find that payment request" rather than a blank/crashed page.
 - [ ] Editing a field that changes the Payment No. moves the address bar with it, and Back
       still works normally afterward.
-- [ ] Edit → Save / Cancel on the details card works for a submitted request; a draft shows the
-      draft-specific body (`EasyViewDraftDetailBody`) with its own Submit button instead.
+- [ ] The header reads "‹ Payment Requests" (768px up), the supplier, the Status pill and one
+      line "Payment No. X · Submitted d"; actions are [Secondary] [Primary] [More] from 1024px,
+      and on a phone the Primary is full width first with the rest on the row below.
+- [ ] Edit → Save Changes / Cancel works for a submitted request (with the "already submitted"
+      banner); a draft or a returned request offers **Submit for payment** as its Primary.
 - [ ] **Publish** shows a disabled, "Publishing…" state while in flight, and a failure surfaces
-      as an error toast (not a silently stuck button).
+      as an inline danger alert under the header (not a toast, not a silently stuck button).
 - [ ] Once published, the same menu item reads **Republish** — including after a full page
       reload (not just in the current tab's memory).
 - [ ] Publish / Republish / Void / Return / record-a-payment are available only to elevated
       roles (accountant / admin / super_admin) on screen — confirm a cashier/shop-manager
       session doesn't even render the controls (separately: hitting the API directly as a
       non-elevated role must still be refused server-side).
+- [ ] **Record payment** opens the drawer (480px; full screen on a phone): Pay in full | Part
+      payment, the amount with "Unpaid: …" under it, "Unpaid after this payment" updating as you
+      type, and **Record HKD …**. More than the unpaid amount says "Enter HKD X or less - that is
+      what is unpaid." while typing; a double press records once; success is a toast and the
+      drawer stays; Escape with an amount typed asks before discarding.
 - [ ] Recording a payment that would exceed the bill's outstanding amount shows the
       overpayment warning before it goes through.
 - [ ] A bank-slip upload on a payment can also be pushed to the Xero invoice from the same
       modal.
 - [ ] The attachment preview renders PDFs (pdf.js) and images inline, and upload/delete on an
       attachment works from the same card.
-- [ ] **No file ever leaves the app.** On every preview surface — Add Payment Request, the
-      upload-invoice modal, a bank slip (staged and saved), the detail page and easy view —
+- [ ] **No file ever leaves the app.** On every preview surface — the Add page, the
+      upload-invoice modal, a bank slip (staged and saved), the detail page —
       **View full** opens a full-screen preview *in the same tab*: no new tab opens and
       nothing downloads. Check at 360, 768 and 1440 px. Try a PNG, a PDF and an HTML file.
 - [ ] In the full-screen viewer: pinch-zoom and **Reset zoom** work, **Close** is at least
       44x44, Tab never escapes the overlay, and **one Escape** closes the viewer and leaves
-      the modal underneath open (a second Escape closes the modal).
+      whatever is underneath (a modal, or the Add page) as it was.
 - [ ] After closing the viewer, focus is back on the **View full** button that opened it.
 - [ ] Removing the file being viewed closes the viewer rather than leaving a broken image.
-- [ ] **Mandatory fields say so up front.** Open Add Payment Request: Amount, Supplier,
-      Account Code, Invoice Date, Due Date **and Uploaded files** each show a red `*`, and
-      **nothing is red yet**. Press Confirm on an empty form: each refused field turns red
-      with its own message, including the attachments drop zone. Attach a file - the red and
-      the message clear together.
-- [ ] A screen reader says "Amount, required", not "Amount star" (the asterisk is
-      `aria-hidden`; the control carries `aria-required`).
-- [ ] Add Payment Request does **not** offer spreadsheets: the picker filters `.xlsx` out,
+- [ ] **Mandatory fields say so up front.** Open the Add page: Invoice, Supplier, Invoice
+      amount, Invoice date, Due date and Account code each show a red `*`, and **nothing is red
+      yet**. Press Submit for payment on an empty form: each refused field turns red with its
+      own message, including the invoice drop zone. Attach a file - the red and the message
+      clear together.
+- [ ] A screen reader says "Invoice amount (HKD) (required)", not "star" (the asterisk is
+      `aria-hidden`; the label carries a hidden "(required)" and the control `aria-required`).
+- [ ] Typing an over-limit or malformed value says so at once and clears the moment it is
+      fixed; a half-typed date waits until the field is left (the owner's 2026-10-13 rule).
+- [ ] The Add page does **not** offer spreadsheets: the picker filters `.xlsx` out,
       and a dropped one is refused with a message that does not mention Excel.
 - [ ] Activity history starts collapsed; opening it scrolls it into view, closing it scrolls
       back to where the page was.
@@ -159,12 +184,13 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
 - [ ] The save order is enforced: codes turning ON are sent before codes turning OFF, so the
       entity is never briefly left with zero active codes mid-save.
 - [ ] Trying to untick an entity's last remaining active code is refused server-side with 409
-      "Keep at least one account code ticked." and the toast shows that exact sentence.
+      "Keep at least one account code ticked." and the inline alert above Save shows that exact
+      sentence (errors are never a toast).
 - [ ] A save where some rows succeed and some fail (`Promise.allSettled`) updates the saved
-      baseline only for the rows that actually went through, and the toast says some changes
-      didn't save.
-- [ ] With no live Xero connection, the card shows only "Xero isn't connected. Connect it in
-      Entity & Integration to set these up." — no search box, no codes, no Save control, and no
+      baseline only for the rows that actually went through, and the inline alert says some
+      changes didn't save.
+- [ ] With no live Xero connection, the card shows only "Xero isn't connected yet." and the link
+      **Connect it in Entity & Integration** — no search box, no codes, no Save control, and no
       attempt to read the codes (confirm no chart re-sync call fires to Minty in this state).
 - [ ] A failed codes read (Xero connected) shows "I couldn't load your account codes. Mind
       refreshing the page?" — never "No account codes yet" for an actual read failure.
@@ -266,7 +292,7 @@ including the ones browsers normally let through silently:
 ## See also
 
 - [authentication.md](authentication.md) — token handoff, cookies, company-address resolution.
-- [payment-requests.md](payment-requests.md) — the list, Add Payment dialog, detail page.
+- [payment-requests.md](payment-requests.md) — the list, the Add page, the Record payment drawer, the detail page.
 - [settings.md](settings.md) — Payment Request Settings, the leave-guard, Xero-disconnected state.
 - [payer-portal.md](payer-portal.md) — the old `/profile/*` redirects to minty-web.
 - [sidebar.md](sidebar.md) — the menu, My Profile, the Subscriptions Overview.

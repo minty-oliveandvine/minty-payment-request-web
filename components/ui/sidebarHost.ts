@@ -24,6 +24,7 @@ import {
   type Viewer,
 } from "@minty/shared/sidebar";
 import { guardLeave } from "@minty/shared/leaveGuard";
+import { withReturnOrigin } from "@minty/shared/previewSibling";
 
 import { ApiError, logoutSession } from "@/lib/api";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
@@ -68,7 +69,7 @@ function handoff(next: string): string {
   const path = `/handoff/minty-web?${new URLSearchParams({ next }).toString()}`;
   return getAuth()?.entityId
     ? buildMintyEnterUrl(path)
-    : `${MINTY_MODULE_URL}${path}`;
+    : withReturnOrigin(`${MINTY_MODULE_URL}${path}`);
 }
 
 /** The company in this app's cookie ("" when none). */

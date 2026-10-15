@@ -34,7 +34,7 @@ export function PaymentDeleteConfirmModal({
       {trimmed ? (
         <>
           {" "}
-          (<span className="font-semibold text-primary">{trimmed}</span>)
+          (<span className="font-semibold text-text-secondary">{trimmed}</span>)
         </>
       ) : null}
       ? This action cannot be undone.

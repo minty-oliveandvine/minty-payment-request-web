@@ -21,7 +21,11 @@ const onConfirm = vi.fn();
 
 const dialog = () => screen.getByRole("alertdialog");
 const title = () => screen.getByRole("heading", { level: 2 }).textContent;
-const body = () => dialog().querySelector("p")?.textContent ?? "";
+/** The dialog's accessible description - what happens, and whether it can be undone. */
+const body = () => {
+  const id = dialog().getAttribute("aria-describedby");
+  return (id && document.getElementById(id)?.textContent) || "";
+};
 
 describe("the scaffold", () => {
   const show = (props: Partial<Parameters<typeof ConfirmDialog>[0]> = {}) =>

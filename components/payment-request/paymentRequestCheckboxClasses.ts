@@ -1,2 +1,3 @@
-/** Row + header checkbox styling shared by the table and easy view. */
-export const HEADER_CHECKBOX_CLASS = "checkbox-secondary-white-tick h-4 w-4 rounded border border-primary/40";
+/** Row + header checkbox styling shared by the table and easy view (Part 14 Checkbox, 20px). */
+export const HEADER_CHECKBOX_CLASS =
+  "checkbox-secondary-white-tick size-5 shrink-0 rounded-sm border border-border-input";

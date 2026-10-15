@@ -10,12 +10,13 @@
 // and nothing else. The behaviour under test is entirely in the browser: a staged file never
 // reaches a server, so a five-service stack would prove nothing extra.
 //
-// At a PHONE viewport throughout - the overlay stacks over a modal that is itself full-width
-// there, which is where clipping and trapped scroll would show up first.
+// At a PHONE viewport throughout - the overlay stacks over the Add page, which is where
+// clipping and trapped scroll would show up first.
 
 import { expect, test, type Page } from '@playwright/test';
 
 import {
+  addRequestLink,
   expectNoSideScroll,
   handoff,
   pagesOf,
@@ -69,16 +70,16 @@ function watchForEscapes(page: Page) {
   };
 }
 
-async function openAddDialog(page: Page) {
+/** The Add page (`<list>/new`, since 2026-10-13 - it was a dialog): its one form. */
+async function openAddPage(page: Page) {
   await stubFlaskHub(page);
   await stubApi(page, {
     extra: { '/bills/suggested-reference/': { body: { reference: 'PR-E2E-14' } } },
   });
   await handoff(page, creds(), pagesOf(creds()).list);
-  await page.getByRole('button', { name: /Add Payment/ }).click();
-  const dialog = page.getByRole('dialog').first();
-  await expect(dialog).toBeVisible();
-  return dialog;
+  await addRequestLink(page).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'New payment request' })).toBeVisible();
+  return page.locator('form');
 }
 
 test.beforeEach(async ({ page }) => {
@@ -88,15 +89,15 @@ test.beforeEach(async ({ page }) => {
 
 test('a staged image enlarges full screen, with no new tab and no download', async ({ page }) => {
   const escapes = watchForEscapes(page);
-  const dialog = await openAddDialog(page);
+  const form = await openAddPage(page);
 
-  await dialog.locator('input[type="file"]').first().setInputFiles(JPG);
-  await dialog.getByRole('button', { name: 'View full — receipt.jpg' }).click();
+  await form.locator('input[type="file"]').first().setInputFiles(JPG);
+  await form.getByRole('button', { name: 'View full — receipt.jpg' }).click();
 
   const viewer = page.getByRole('dialog', { name: 'receipt.jpg' });
   await expect(viewer).toBeVisible();
   await expect(viewer.getByAltText('receipt.jpg')).toBeVisible();
-  // It fills the window rather than sitting inside the modal's 520px card.
+  // It fills the window rather than sitting inside the form's 720px column.
   const box = await viewer.boundingBox();
   expect(box?.width).toBeGreaterThanOrEqual(PHONE.width - 1);
   await expect(viewer.getByRole('link')).toHaveCount(0);
@@ -114,52 +115,43 @@ test('a staged image enlarges full screen, with no new tab and no download', asy
 
 test('a staged PDF is drawn by pdf.js inside the overlay, not handed to the browser', async ({ page }) => {
   const escapes = watchForEscapes(page);
-  const dialog = await openAddDialog(page);
+  const form = await openAddPage(page);
 
-  await dialog.locator('input[type="file"]').first().setInputFiles(PDF);
-  await dialog.getByRole('button', { name: 'View full — invoice.pdf' }).click();
+  await form.locator('input[type="file"]').first().setInputFiles(PDF);
+  await form.getByRole('button', { name: 'View full — invoice.pdf' }).click();
 
   const viewer = page.getByRole('dialog', { name: 'invoice.pdf' });
   await expect(viewer.locator('canvas').first()).toBeVisible({ timeout: 30_000 });
   escapes.expectNone();
 });
 
-test('Close is a real tap target, and one Escape leaves the modal open', async ({ page }) => {
-  const dialog = await openAddDialog(page);
-  await dialog.locator('input[type="file"]').first().setInputFiles(JPG);
-  await dialog.getByRole('button', { name: 'View full — receipt.jpg' }).click();
+test('Close is a real tap target, and one Escape closes the viewer and nothing else', async ({ page }) => {
+  const form = await openAddPage(page);
+  await form.locator('input[type="file"]').first().setInputFiles(JPG);
+  await form.getByRole('button', { name: 'View full — receipt.jpg' }).click();
 
   const close = page.getByRole('button', { name: 'Close preview' });
   const box = await close.boundingBox();
   expect(box?.width).toBeGreaterThanOrEqual(44);
   expect(box?.height).toBeGreaterThanOrEqual(44);
 
-  // One Escape, one layer. The viewer goes first - it listens in the capture phase, which is
-  // what stops the modal's own handler seeing the same keystroke - and the file stays staged.
+  // One Escape, one layer: the viewer goes, and the page and its staged file stay.
   await page.keyboard.press('Escape');
 
   await expect(close).toBeHidden();
-  await expect(page.getByRole('heading', { name: 'Add Payment Request' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'New payment request' })).toBeVisible();
   await expect(stagedRow(page, 'receipt.jpg')).toBeVisible();
-
-  // then the modal's own ladder: the preview selection, then the dialog
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('heading', { name: 'Add Payment Request' })).toBeVisible();
-
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('heading', { name: 'Add Payment Request' })).toBeHidden();
+  await expect(page).toHaveURL(/\/payment-request\/new$/);
 });
 
 test('the page still scrolls after the viewer has been opened and closed', async ({ page }) => {
   // The scroll lock is reference counted; a stacked overlay used to be able to leave
   // `overflow: hidden` behind for good.
-  const dialog = await openAddDialog(page);
-  await dialog.locator('input[type="file"]').first().setInputFiles(JPG);
-  await dialog.getByRole('button', { name: 'View full — receipt.jpg' }).click();
+  const form = await openAddPage(page);
+  await form.locator('input[type="file"]').first().setInputFiles(JPG);
+  await form.getByRole('button', { name: 'View full — receipt.jpg' }).click();
   await page.getByRole('button', { name: 'Close preview' }).click();
-  await page.keyboard.press('Escape'); // clears the preview selection
-  await page.keyboard.press('Escape'); // closes the dialog
-  await expect(page.getByRole('heading', { name: 'Add Payment Request' })).toBeHidden();
+  await expect(page.getByRole('dialog', { name: 'receipt.jpg' })).toBeHidden();
 
   const overflow = await page.evaluate(
     () => getComputedStyle(document.getElementById('app-scroll-root') ?? document.body).overflow,
@@ -168,8 +160,8 @@ test('the page still scrolls after the viewer has been opened and closed', async
 });
 
 test('a spreadsheet is not offered, and is refused if forced past the picker', async ({ page }) => {
-  const dialog = await openAddDialog(page);
-  const input = dialog.locator('input[type="file"]').first();
+  const form = await openAddPage(page);
+  const input = form.locator('input[type="file"]').first();
 
   expect(await input.getAttribute('accept')).not.toContain('xls');
 
@@ -179,20 +171,21 @@ test('a spreadsheet is not offered, and is refused if forced past the picker', a
     buffer: Buffer.from('PK'),
   });
 
-  // The refusal names the file, so "is it staged?" is a question for the list, not the text.
-  await expect(dialog.getByText(/I can't open this one/)).toBeVisible();
-  await expect(dialog.getByText(/Excel/)).toHaveCount(0);
+  // The refusal names the file and what to use instead (Part 11), so "is it staged?" is a
+  // question for the list, not the text.
+  await expect(form.getByText(/books\.xlsx can't be added\. Use a PDF, JPEG, PNG or HTML file\./)).toBeVisible();
+  await expect(form.getByText(/Excel/)).toHaveCount(0);
   await expect(stagedRow(page, 'books.xlsx')).toHaveCount(0);
 });
 
-test('the modal keeps the staged list usable behind the viewer', async ({ page }) => {
-  const dialog = await openAddDialog(page);
-  const input = dialog.locator('input[type="file"]').first();
+test('the page keeps the staged list usable behind the viewer', async ({ page }) => {
+  const form = await openAddPage(page);
+  const input = form.locator('input[type="file"]').first();
   await input.setInputFiles(JPG);
   await input.setInputFiles(PDF);
 
   // The newest file is the one previewed, and both stay in the list.
-  await dialog.getByRole('button', { name: 'View full — invoice.pdf' }).click();
+  await form.getByRole('button', { name: 'View full — invoice.pdf' }).click();
   await expect(page.getByRole('dialog', { name: 'invoice.pdf' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Close preview' }).click();
@@ -201,31 +194,30 @@ test('the modal keeps the staged list usable behind the viewer', async ({ page }
   await expect(stagedRow(page, 'invoice.pdf')).toBeVisible();
 });
 
-// The upload is mandatory. It used to say nothing until Confirm; now it says so up front with
-// a red asterisk, and red-lines the drop zone once Confirm has actually been refused.
-test('the upload says it is mandatory, and red-lines only after a failed Confirm', async ({ page }) => {
-  const dialog = await openAddDialog(page);
+// The upload is mandatory: a red asterisk from the start, and the drop zone red-lined only once
+// a submit has actually been refused (the 2026-10-09 rule).
+test('the upload says it is mandatory, and red-lines only after a refused submit', async ({ page }) => {
+  const form = await openAddPage(page);
 
-  await expect(dialog.getByText(/Uploaded files/)).toContainText('*');
-  const input = dialog.locator('input[type="file"]').first();
+  await expect(form.getByRole('heading', { name: /Invoice/ })).toContainText('*');
+  const input = form.locator('input[type="file"]').first();
   await expect(input).toHaveAttribute('aria-required', 'true');
 
-  // Not `.first()`: the empty-preview placeholder above is also a grey dashed box.
-  const zone = dialog
-    .locator('.border-dashed')
-    .filter({ hasText: 'Click or drag files here to upload' });
+  // The drawn zone under the (invisible) file input; its words change once a file is in.
+  const zone = form.locator('input[aria-label="Choose files to attach"] + div');
   const before = await zone.evaluate((el) => getComputedStyle(el).borderColor);
+  const note = form.locator('#pr-attachments-note');
 
-  await dialog.getByRole('button', { name: /^Confirm/ }).click();
+  await form.getByRole('button', { name: 'Submit for payment' }).click();
 
-  await expect(dialog.getByText("We'll need at least one attachment.")).toBeVisible();
+  await expect(note).toHaveText('The invoice is still missing. Add a photo or PDF of it to continue.');
   await expect(input).toHaveAttribute('aria-invalid', 'true');
   const after = await zone.evaluate((el) => getComputedStyle(el).borderColor);
   expect(after).not.toBe(before);
 
   // and it clears itself the moment a file arrives
   await input.setInputFiles(JPG);
-  await expect(dialog.getByText("We'll need at least one attachment.")).toHaveCount(0);
+  await expect(note).not.toContainText('The invoice is still missing.');
   await expect(input).not.toHaveAttribute('aria-invalid', 'true');
   expect(await zone.evaluate((el) => getComputedStyle(el).borderColor)).toBe(before);
 });

@@ -32,9 +32,22 @@ function run(path: string, jar: Jar = {}) {
   if (jar.entityId !== undefined) request.cookies.set(ENTITY_ID_COOKIE_NAME, jar.entityId);
   if (jar.entityName !== undefined) request.cookies.set(ENTITY_NAME_COOKIE_NAME, jar.entityName);
   const response = middleware(request);
+  // Every trip to Flask names this app's origin (`return_origin`, for branch preview sets -
+  // Minty blueprints/shared/preview_origin.py). Lifted off here so the tables below read as the
+  // addresses they are; "names its origin" is pinned once, below.
+  const raw = response.headers.get("location");
+  let location = raw;
+  let returnOrigin: string | null = null;
+  if (raw?.startsWith(MINTY)) {
+    const url = new URL(raw);
+    returnOrigin = url.searchParams.get("return_origin");
+    url.searchParams.delete("return_origin");
+    location = url.toString().replace(/\/(\?|$)/, (m, q) => (url.pathname === "/" ? m : q));
+  }
   return {
     status: response.status,
-    location: response.headers.get("location"),
+    location,
+    returnOrigin,
     /** What NextResponse.next() sets, so "the page renders" is assertable rather than implied. */
     rewritten: response.headers.get("x-middleware-next") === "1",
   };
@@ -102,6 +115,7 @@ describe("a company's own page", () => {
   it.each([
     ["the list", `${BASE}/payment-request`],
     ["one request", `${BASE}/payment-request/PR-0001`],
+    ["the Add page", `${BASE}/payment-request/new`],
     ["the settings page", `${BASE}/settings/payment-request`],
   ])("renders %s when the cookie holds that company", (_label, path) => {
     expect(run(path, SIGNED_IN)).toMatchObject({ rewritten: true, location: null });
@@ -132,6 +146,12 @@ describe("a company's own page", () => {
 
   it("hands it to Flask when the token is gone but the company cookie is not", () => {
     expect(run(`${BASE}/payment-request`, { entityId: ENTITY_ID, entityName: ENTITY_NAME }).location).toBe(
+      `${MINTY}/entity/360812e1/olive-and-vine/payment-request`,
+    );
+  });
+
+  it("hands another company's Add page to that company's LIST - 'new' is not a request", () => {
+    expect(run(`${BASE}/payment-request/new`, {}).location).toBe(
       `${MINTY}/entity/360812e1/olive-and-vine/payment-request`,
     );
   });
@@ -224,5 +244,32 @@ describe("the status code", () => {
     ["/whatever", {}],
   ])("is 307 for %s, never 308", (path, jar) => {
     expect(run(path, jar as Jar).status).toBe(307);
+  });
+});
+
+describe("every trip to Flask names this app's origin", () => {
+  it.each([
+    ["an old profile address", "/profile/billing", {}],
+    ["/profile", "/profile", {}],
+    ["a company page without a cookie", `${BASE}/payment-request`, {}],
+    ["another company's page", `${BASE}/payment-request`, { ...SIGNED_IN, entityId: "99999999-0000-0000-0000-000000000000" }],
+    ["a legacy page without a cookie", "/", {}],
+    ["anything else without a token", "/whatever", {}],
+  ])("%s", (_label, path, jar) => {
+    expect(run(path, jar as Jar).returnOrigin).toBe(APP);
+  });
+
+  // On a preview-set host the trip must START on a page of this host, or the browser calls it
+  // cross-site (a link from GitHub or an email) and Flask - which names a set only on a
+  // same-site navigation - hands back to the configured hosts instead of the set (2026-10-13).
+  it("on a preview-set host, forwards from a page of its own naming the set's origin", async () => {
+    const response = middleware(new NextRequest(new URL("/whatever", "https://pr-feat-x-payment-request.dailyminty.com")));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const html = await response.text();
+    const target = new URL(/url=([^"]+)"/.exec(html)![1].replaceAll("&amp;", "&"));
+    expect(target.pathname).toBe("/entity");
+    expect(target.searchParams.get("return_origin")).toBe("https://pr-feat-x-payment-request.dailyminty.com");
   });
 });

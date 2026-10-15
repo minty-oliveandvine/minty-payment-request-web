@@ -1,8 +1,15 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import type { CSSProperties } from "react";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { ErrorSummary, type SummaryItem } from "@/components/ui/ErrorSummary";
+import { Icon } from "@/components/ui/Icon";
+import { InlineAlert, PageBanner } from "@/components/ui/InlineAlert";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { StatusPill } from "@/components/ui/StatusPill";
 import { useUserRole } from "@/lib/useUserRole";
 import {
   ApiError,
@@ -52,17 +59,12 @@ import { InvoiceAttachmentPreview, type InvoiceAttachmentPreviewItem } from "./I
 import { InvoiceAttachmentToolbar } from "./InvoiceAttachmentToolbar";
 import { OverpaymentWarningModal } from "./OverpaymentWarningModal";
 import { PaymentHistoryListPanel, type PaymentHistoryRow } from "./PaymentHistoryCard";
-import { RecordPaymentModal } from "./RecordPaymentModal";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { RecordPaymentDrawer } from "./RecordPaymentDrawer";
 import { RowDeleteConfirmModal } from "./RowDeleteConfirmModal";
 import { AttachmentDeleteConfirmModal } from "./AttachmentDeleteConfirmModal";
 import { UploadInvoiceAttachmentModal } from "./UploadInvoiceAttachmentModal";
-import {
-  PaymentRequestDetailedInfo,
-  paymentRequestDetailCancelButtonClass,
-  paymentRequestDetailSaveButtonClass,
-  type PaymentRequestDetailedInfoData,
-} from "./PaymentRequestDetailedInfo";
-import { recordPaymentDetailButtonClass, returnPaymentRequestButtonClass } from "./paymentRequestButtonClasses";
+import { PaymentRequestDetailedInfo, type PaymentRequestDetailedInfoData } from "./PaymentRequestDetailedInfo";
 import { useToast } from "@/components/Toast";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 import { rememberRequest, useRequestId } from "@/lib/useRequestId";
@@ -75,83 +77,51 @@ type DetailSubmitFieldErrors = Partial<
   Record<"invoiceDate" | "dueDate" | "amount" | "contact" | "accountCode", string>
 >;
 
+/**
+ * What a submit needs. Part 11 §11.18 wording: the issue, then the action - never "Invalid" or
+ * "Mandatory". These are the EMPTY-field messages, so (CLAUDE.md "Validation while typing") they
+ * appear only after a refused submit; nothing paints an untouched field red.
+ */
 function validateDetailRequiredForSubmit(d: PaymentRequestDetailedInfoData): DetailSubmitFieldErrors | null {
   const errors: DetailSubmitFieldErrors = {};
-  if (!d.accountCode.trim()) errors.accountCode = "We'll need an account code here.";
-  if (!d.contact.trim()) errors.contact = "We'll need a supplier here.";
-  if (!d.invoiceDate.trim()) errors.invoiceDate = "We'll need an invoice date here.";
-  if (!d.dueDate.trim()) errors.dueDate = "We'll need a due date here.";
+  if (!d.contact.trim()) errors.contact = "The supplier is still empty. Choose one to continue.";
   const amt = parseAmount(d.amount);
   if (amt === null || amt <= 0) {
-    errors.amount = "That amount doesn't look quite right.";
+    errors.amount = "The amount is still empty. Add the invoice amount to continue.";
   } else if (!isWithinAmountLimits(d.amount ?? "")) {
-    errors.amount = `That's a few too many digits - up to ${MAX_AMOUNT_INT_DIGITS} before the decimal point.`;
+    errors.amount = `Use up to ${MAX_AMOUNT_INT_DIGITS} digits before the decimal point.`;
   }
+  if (!d.invoiceDate.trim()) errors.invoiceDate = "The invoice date is still empty. Add it to continue.";
+  if (!d.dueDate.trim()) errors.dueDate = "The due date is still empty. Add it to continue.";
+  if (!d.accountCode.trim()) errors.accountCode = "The account code is still empty. Choose one to continue.";
   return Object.keys(errors).length ? errors : null;
 }
 
-/** Mirrors `PaymentRequestDetailedInfo` layout (labels + Bill No → date grid → amount row → description → contact + action → account). */
+/** The detail fields' ids, so the error summary can link to each one (Part 15.3). */
+const DETAIL_FIELD_IDS = {
+  contact: "detail-contact",
+  amount: "detail-amount",
+  invoiceDate: "detail-invoice-date",
+  dueDate: "detail-due-date",
+  accountCode: "detail-account-code",
+  billNo: "detail-bill-no",
+} as const;
+
+/** Part 14 skeleton for the description rows while the request loads. */
 function PaymentRequestDetailCardSkeleton() {
   return (
     <section
-      className="rounded-xl border border-gray-200/90 bg-white p-4 sm:p-5 md:p-6"
+      className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-card p-4"
       role="status"
       aria-busy="true"
-      aria-label="Loading detailed information"
+      aria-label="Loading the payment request"
     >
-      <div className="mb-4 sm:mb-5">
-        <div className="h-6 w-48 max-w-[85%] animate-pulse rounded-md bg-gray-200" aria-hidden />
-      </div>
-
-      <div className="flex flex-col gap-5">
-        <div>
-          <div className="mb-1.5 h-3 w-14 animate-pulse rounded bg-gray-200" aria-hidden />
-          <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+      {Array.from({ length: 7 }, (_, i) => (
+        <div key={i} className="grid grid-cols-[160px_1fr] gap-4" aria-hidden>
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-48 max-w-full" />
         </div>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
-          <div>
-            <div className="mb-1.5 h-3 w-24 animate-pulse rounded bg-gray-200" aria-hidden />
-            <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
-          </div>
-          <div>
-            <div className="mb-1.5 h-3 w-20 animate-pulse rounded bg-gray-200" aria-hidden />
-            <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-1.5 h-3 w-16 animate-pulse rounded bg-gray-200" aria-hidden />
-          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-0">
-            <div
-              className="h-11 min-h-[44px] w-full shrink-0 animate-pulse rounded-2xl bg-gray-100 sm:w-24 sm:rounded-r-none"
-              aria-hidden
-            />
-            <div
-              className="h-11 min-h-[44px] w-full flex-1 animate-pulse rounded-2xl bg-gray-100 sm:rounded-l-none sm:rounded-r-2xl"
-              aria-hidden
-            />
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-1.5 h-3 w-24 animate-pulse rounded bg-gray-200" aria-hidden />
-          <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
-        </div>
-
-        <div>
-          <div className="mb-1.5 h-3 w-16 animate-pulse rounded bg-gray-200" aria-hidden />
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="h-11 min-h-[44px] min-w-0 flex-1 animate-pulse rounded-lg bg-gray-100" aria-hidden />
-            <div className="h-9 w-[8.5rem] shrink-0 animate-pulse rounded-lg bg-gray-200 sm:h-10 sm:w-[9.75rem]" aria-hidden />
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-1.5 h-3 w-28 animate-pulse rounded bg-gray-200" aria-hidden />
-          <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
-        </div>
-      </div>
+      ))}
     </section>
   );
 }
@@ -162,41 +132,6 @@ function serverBillAttachmentsFingerprint(rows: BillAttachment[]): string {
     .map((ba) => `${ba.id}:${ba.attachment.download_url}`)
     .sort()
     .join("\0");
-}
-
-function computePaymentHistoryPanelStyle(anchorRoot: HTMLDivElement | null): CSSProperties | null {
-  if (typeof window === "undefined" || !anchorRoot) return null;
-  const btn = anchorRoot.querySelector("button");
-  if (!btn) return null;
-  const pad = 12;
-  const gap = 6;
-  const rect = btn.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const remPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  const maxPreferredW = 48 * remPx;
-  const maxByViewport = vw - 2 * pad;
-  const maxByAlignRight = Math.max(0, rect.right - pad);
-  let width = Math.min(maxPreferredW, maxByViewport, maxByAlignRight);
-  let left = rect.right - width;
-  if (width < 1 || left < pad) {
-    width = Math.min(maxPreferredW, maxByViewport);
-    left = rect.right - width;
-    if (left < pad) {
-      left = pad;
-      width = maxByViewport;
-    }
-  }
-  const top = rect.bottom + gap;
-  const maxHeight = Math.max(160, vh - top - pad);
-  return {
-    position: "fixed",
-    left,
-    top,
-    width,
-    maxHeight,
-    zIndex: 300,
-  };
 }
 
 export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetailBodyProps) {
@@ -230,42 +165,11 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const [overpaymentWarningOpen, setOverpaymentWarningOpen] = useState(false);
   const [auditRefresh, setAuditRefresh] = useState(0);
   const bumpAudit = useCallback(() => setAuditRefresh((n) => n + 1), []);
-  const [paymentHistoryMenuOpen, setPaymentHistoryMenuOpen] = useState(false);
-  const [paymentHistoryPanelStyle, setPaymentHistoryPanelStyle] = useState<CSSProperties | null>(null);
-  const paymentHistoryDropdownRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!paymentHistoryMenuOpen) {
-      setPaymentHistoryPanelStyle(null);
-      return;
-    }
-    const run = () => {
-      const next = computePaymentHistoryPanelStyle(paymentHistoryDropdownRef.current);
-      if (next) setPaymentHistoryPanelStyle(next);
-    };
-    run();
-    window.addEventListener("resize", run);
-    window.addEventListener("scroll", run);
-    const appScrollRoot = document.getElementById("app-scroll-root");
-    if (appScrollRoot) appScrollRoot.addEventListener("scroll", run, { passive: true });
-    const vv = window.visualViewport;
-    if (vv) {
-      vv.addEventListener("resize", run);
-      vv.addEventListener("scroll", run);
-    }
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(run) : null;
-    if (ro && paymentHistoryDropdownRef.current) ro.observe(paymentHistoryDropdownRef.current);
-    return () => {
-      window.removeEventListener("resize", run);
-      window.removeEventListener("scroll", run);
-      if (appScrollRoot) appScrollRoot.removeEventListener("scroll", run);
-      if (vv) {
-        vv.removeEventListener("resize", run);
-        vv.removeEventListener("scroll", run);
-      }
-      ro?.disconnect();
-    };
-  }, [paymentHistoryMenuOpen]);
+  /** A failed action (submit, publish, return, void), shown on the page - never a toast (Part 14). */
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
+  /** Bumped on every refused save/submit so the error summary takes focus again (Part 15.3). */
+  const [submitAttempt, setSubmitAttempt] = useState(0);
 
   const [accountOptions, setAccountOptions] = useState<ThemedSelectOption[]>([]);
   const [entityBillContacts, setEntityBillContacts] = useState<EntityBillContact[]>([]);
@@ -435,7 +339,6 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     if (typeof window === "undefined" || loadingBill || loadError) return;
     const scrollToPaymentHistory = () => {
       if (window.location.hash !== "#payment-history") return;
-      setPaymentHistoryMenuOpen(true);
       window.requestAnimationFrame(() => {
         document.getElementById("payment-history")?.scrollIntoView({
           behavior: "smooth",
@@ -453,22 +356,10 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   }, [loadingBill, loadError, requestId]);
 
   useEffect(() => {
-    if (!paymentHistoryMenuOpen) return;
-    const onDocMouseDown = (e: MouseEvent) => {
-      const el = paymentHistoryDropdownRef.current;
-      if (!el || el.contains(e.target as Node)) return;
-      setPaymentHistoryMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
-  }, [paymentHistoryMenuOpen]);
-
-  useEffect(() => {
     if (!isEditing) {
       setSelectedAttachmentIndices([]);
       setDeleteAttachmentConfirmOpen(false);
     } else {
-      setPaymentHistoryMenuOpen(false);
       lastSyncedServerAttachmentsKeyRef.current = null;
     }
   }, [isEditing]);
@@ -771,10 +662,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         if (isDuplicateBillReferenceError(e)) {
           setBillNoError(e.message);
         } else {
-          showToast(
-            e instanceof ApiError ? e.message : "That didn't quite save. Mind trying again?",
-            "error",
-          );
+          setActionError(e instanceof ApiError ? e.message : "Your changes didn't save. Try saving again.");
         }
       } finally {
         setIsSaving(false);
@@ -802,7 +690,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
 
     const detailErrors = validateDetailRequiredForSubmit(draft);
     if (detailErrors) {
-      setSubmitAttemptFieldErrors(detailErrors);
+      setSubmitAttemptFieldErrors(detailErrors); setSubmitAttempt((n) => n + 1);
       return;
     }
     setSubmitAttemptFieldErrors(null);
@@ -863,14 +751,11 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       await loadPayments();
       bumpAudit();
     } catch (e) {
-      showToast(
-        e instanceof ApiError ? e.message : "This payment's being a bit stubborn. Mind trying again?",
-        "error",
-      );
+      setActionError(e instanceof ApiError ? e.message : "This payment request wasn't voided. Try again.");
     } finally {
       setIsDeleting(false);
     }
-  }, [requestId, bill, reloadBill, bumpAudit, loadPayments, showToast]);
+  }, [requestId, bill, reloadBill, bumpAudit, loadPayments]);
 
   const handleSubmitDraft = useCallback(async () => {
     if (!requestId || !bill) return;
@@ -881,7 +766,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
 
     const detailErrors = validateDetailRequiredForSubmit(info);
     if (detailErrors) {
-      setSubmitAttemptFieldErrors(detailErrors);
+      setSubmitAttemptFieldErrors(detailErrors); setSubmitAttempt((n) => n + 1);
       if (!isEditing && viewData) {
         setDraft({
           ...viewData,
@@ -981,9 +866,8 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         setBillNoError(e.message);
         setSubmitAttemptFieldErrors(null);
       } else {
-        showToast(
-          e instanceof ApiError ? e.message : "This payment didn't quite make it through. Mind trying again?",
-          "error",
+        setActionError(
+          e instanceof ApiError ? e.message : "This payment request wasn't submitted. Try submitting it again.",
         );
       }
     } finally {
@@ -1012,19 +896,20 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const handlePublishToXero = useCallback(async () => {
     if (!requestId || !bill || isPublishing) return;
     setIsPublishing(true);
+    setActionError(null);
     try {
       const updated = await publishBill(requestId);
       setBill(updated);
       onBillUpdated?.();
       bumpAudit();
+      showToast("Published to Xero.", "success");
     } catch (e) {
-      showToast(
+      setActionError(
         isXeroAuthError(e)
           ? XERO_RECONNECT_MESSAGE
           : e instanceof ApiError
             ? e.message
-            : "This payment didn't quite make it over to Xero. Mind trying again?",
-        "error",
+            : "This payment request didn't reach Xero. Try publishing again.",
       );
     } finally {
       setIsPublishing(false);
@@ -1034,16 +919,17 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const handleReturn = useCallback(async () => {
     if (!requestId || !bill || isReturning) return;
     setIsReturning(true);
+    setActionError(null);
     try {
       const updated = await returnBillApi(requestId, "payment_requested");
       setBill(updated);
       onBillUpdated?.();
       bumpAudit();
+      setReturnConfirmOpen(false);
+      showToast(`Returned to the requester${bill.contact ? ` - ${bill.contact}` : ""}.`, "success");
     } catch (e) {
-      showToast(
-        e instanceof ApiError ? e.message : "I couldn't send that back. Mind trying again?",
-        "error",
-      );
+      setReturnConfirmOpen(false);
+      setActionError(e instanceof ApiError ? e.message : "This payment request wasn't returned. Try again.");
     } finally {
       setIsReturning(false);
     }
@@ -1190,10 +1076,158 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     idsToStage.forEach((id) => pendingBillAttachmentDeletesRef.current.add(id));
   }, [attachments, selectedAttachmentIndices, bill]);
 
+  // ---- Part 15.17 Record page: the header's actions, from the status × action matrix ----
+  const canPay = isElevated && !isViewOnly;
+  const statusNow = billDisplayStatus;
+  const submittedOn = bill?.created_at ? formatIsoDateForDisplay(bill.created_at.slice(0, 10)) : "";
+  const summaryItems: SummaryItem[] = submitAttemptFieldErrors
+    ? (Object.keys(DETAIL_FIELD_IDS) as (keyof typeof DETAIL_FIELD_IDS)[])
+        .filter((k) => k !== "billNo" && submitAttemptFieldErrors[k as keyof DetailSubmitFieldErrors])
+        .map((k) => ({
+          fieldId: DETAIL_FIELD_IDS[k],
+          message: submitAttemptFieldErrors[k as keyof DetailSubmitFieldErrors] as string,
+        }))
+    : [];
+
+  let primary: ReactNode = null;
+  if (bill && !loadingBill) {
+    if (isEditing) {
+      primary = (
+        <Button kind="primary" onClick={() => void handleSave()} processing={isSaving} processingLabel="Saving…" disabled={detailToolbarActionsDisabled}>
+          Save Changes
+        </Button>
+      );
+    } else if (billIsDraft || billIsReturned) {
+      primary = !isViewOnly ? (
+        <BillDraftSubmitButton
+          onClick={() => void handleSubmitDraft()}
+          disabled={loadingBill || isSaving || isDeleting}
+          pending={isSubmittingDraft}
+        />
+      ) : null;
+    } else if (statusNow === "Payment Requested" || statusNow === "Partially Paid") {
+      primary = canPay ? (
+        <Button
+          kind="primary"
+          onClick={() => {
+            setRecordPaymentReadOnly(false);
+            setRecordPaymentOpen(true);
+          }}
+          aria-label="Record payment"
+        >
+          Record payment
+        </Button>
+      ) : null;
+    }
+  }
+
+  const headerActions =
+    bill && !loadingBill ? (
+      <>
+        {isEditing ? (
+          <Button kind="secondary" onClick={handleCancel} disabled={isSaving}>
+            Cancel
+          </Button>
+        ) : (
+          <>
+            {!detailToolbarActionsDisabled ? (
+              <Button kind="secondary" onClick={handleEdit} icon={<Icon name="edit" size="md" />}>
+                Edit
+              </Button>
+            ) : null}
+            {statusNow === "Payment Requested" && canPay ? (
+              <Button
+                kind="secondary"
+                onClick={() => setReturnConfirmOpen(true)}
+                disabled={isReturning}
+                aria-label="Return payment request"
+              >
+                Return to requester
+              </Button>
+            ) : null}
+            {(statusNow === "Paid" || statusNow === "Partially Paid") && isElevated ? (
+              <Button
+                kind="secondary"
+                onClick={() => {
+                  setRecordPaymentReadOnly(true);
+                  setRecordPaymentOpen(true);
+                }}
+              >
+                View payments
+              </Button>
+            ) : null}
+          </>
+        )}
+      </>
+    ) : null;
+
+  // More: Publish / Republish and Void - destructive only here, never beside the Primary.
+  const headerMore =
+    bill && !loadingBill && !isEditing ? (
+      <BillActionBar
+        onDeleteBill={handleRequestDeleteBill}
+        onPublishToXero={handlePublishToXero}
+        publishStatus={(bill?.published as "draft" | "published" | "failed") ?? "draft"}
+        publishPending={isPublishing}
+        showVoidBill={false}
+        useActionsOverflowMenu
+        overflowShowPublish={actionOverflowShowPublish}
+        overflowShowRepublish={actionOverflowShowRepublish}
+        overflowMenuTriggerDisabled={actionOverflowTriggerDisabled}
+        overflowVoidDisabled={actionOverflowVoidDisabled}
+        isDraftBill={billIsDraft}
+      />
+    ) : null;
+
   return (
     <>
-      <div className="mx-auto grid w-full min-w-0 max-w-[1920px] grid-cols-1 gap-4 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-1 sm:gap-5 sm:px-6 lg:grid-cols-2 lg:grid-rows-[auto_minmax(20rem,1fr)] lg:gap-x-6 lg:gap-y-4 lg:px-8 xl:gap-x-8 2xl:gap-x-10">
-        <div className="min-w-0 max-lg:order-2 lg:order-none lg:col-start-1 lg:row-start-1">
+      <PageHeader
+        back={{ href: pages.list, label: "Payment Requests" }}
+        title={bill?.contact?.trim() || (loadingBill ? "Loading…" : "Payment request")}
+        status={statusNow && !loadingBill ? <StatusPill label={statusNow} /> : null}
+        meta={
+          bill ? (
+            <span translate="no">
+              {bill.reference ? `Payment No. ${bill.reference}` : null}
+              {bill.reference && submittedOn ? " · " : null}
+              {submittedOn ? `Submitted ${submittedOn}` : null}
+            </span>
+          ) : null
+        }
+        actions={headerActions}
+        primary={primary}
+        more={headerMore}
+        below={
+          <div className="flex flex-col gap-3 empty:hidden">
+            {billIsReturned && !isEditing ? (
+              <PageBanner
+                tone="warning"
+                title="This request was returned to the requester."
+                action={
+                  !isViewOnly ? (
+                    <Button kind="link" onClick={handleEdit}>
+                      Edit and resubmit
+                    </Button>
+                  ) : undefined
+                }
+              >
+                Change what needs changing, then submit it for payment again.
+              </PageBanner>
+            ) : null}
+            {isEditing && statusNow && !billIsDraft && !billIsReturned ? (
+              <PageBanner tone="info" title="This request has already been submitted.">
+                Saving changes updates it for Treasury - and in Xero once it is published.
+              </PageBanner>
+            ) : null}
+            {actionError ? <InlineAlert tone="danger">{actionError}</InlineAlert> : null}
+            <ErrorSummary items={summaryItems} attempt={submitAttempt} />
+          </div>
+        }
+      />
+
+      {/* Document-and-record, 1:1 on a computer (max 1440); stacked below lg (Part 15.17). */}
+      <div className="mx-auto grid w-full min-w-0 max-w-[1440px] grid-cols-1 gap-6 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:grid-cols-2 lg:px-8">
+        <section aria-label="Invoice" className="flex min-h-0 min-w-0 flex-col gap-3">
           <InvoiceAttachmentToolbar
             onDelete={isEditing ? handleConfirmDeleteAttachments : undefined}
             deleteReadOnly={selectedAttachmentIndices.length === 0 || deleteAttachmentPending}
@@ -1201,6 +1235,15 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
             uploadReadOnly={false}
             showUpload={isEditing && attachmentsReady && attachments.length === 0}
             showAddMore={isEditing && attachmentsReady && attachments.length > 0}
+          />
+          <InvoiceAttachmentPreview
+            attachments={attachments}
+            isLoadingAttachments={!loadError && (loadingBill || !attachmentsReady)}
+            editMode={isEditing}
+            selectedIndices={selectedAttachmentIndices}
+            onSelectedIndicesChange={setSelectedAttachmentIndices}
+            showViewFullButton
+            className="min-h-[min(45dvh,22rem)] sm:min-h-[min(55dvh,30rem)] lg:min-h-[min(70vh,40rem)]"
           />
           <AttachmentDeleteConfirmModal
             open={deleteAttachmentConfirmOpen}
@@ -1253,73 +1296,13 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
               setAttachmentsReady(true);
             }}
           />
-        </div>
-        <div className="min-w-0 w-full max-w-full max-lg:order-1 lg:order-none lg:col-start-2 lg:row-start-1 lg:self-center">
-          <BillActionBar
-            onDeleteBill={handleRequestDeleteBill}
-            onPublishToXero={handlePublishToXero}
-            deleteDisabled={loadingBill || !bill || isDeleting || isPublishing || isViewOnly || bill?.status === "void" || ((bill?.status === "paid" || bill?.status === "authorised") && !isElevated)}
-            publishDisabled={loadingBill || !bill || isViewOnly || bill?.status === "void" || !isElevated}
-            publishStatus={(bill?.published as "draft" | "published" | "failed") ?? "draft"}
-            publishPending={isPublishing}
-            showVoidBill={false}
-            endRowPrefix={
-              !isEditing ? (
-                <button
-                  type="button"
-                  onClick={handleEdit}
-                  disabled={detailToolbarActionsDisabled}
-                  className="inline-flex h-10 min-h-[44px] w-auto max-w-full shrink-0 cursor-pointer items-center justify-center rounded-full border border-primary/25 bg-white px-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
-                >
-                  Edit
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    disabled={detailToolbarActionsDisabled || isSaving}
-                    className={paymentRequestDetailCancelButtonClass}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleSave()}
-                    disabled={detailToolbarActionsDisabled || isSaving}
-                    className={paymentRequestDetailSaveButtonClass}
-                  >
-                    {isSaving ? "Saving…" : "Save Changes"}
-                  </button>
-                </>
-              )
-            }
-            useActionsOverflowMenu
-            overflowShowPublish={actionOverflowShowPublish}
-            overflowShowRepublish={actionOverflowShowRepublish}
-            overflowMenuTriggerDisabled={actionOverflowTriggerDisabled}
-            overflowVoidDisabled={actionOverflowVoidDisabled}
-            isDraftBill={billIsDraft}
-          />
-        </div>
-        <div className="flex h-full min-h-0 min-w-0 max-lg:order-3 flex-col lg:order-none lg:col-start-1 lg:row-start-2">
-          <InvoiceAttachmentPreview
-            attachments={attachments}
-            isLoadingAttachments={!loadError && (loadingBill || !attachmentsReady)}
-            editMode={isEditing}
-            selectedIndices={selectedAttachmentIndices}
-            onSelectedIndicesChange={setSelectedAttachmentIndices}
-            showViewFullButton
-            className="h-full min-h-[min(45dvh,22rem)] sm:min-h-[min(55dvh,30rem)] lg:min-h-[min(70vh,40rem)]"
-          />
-        </div>
-        <div className="flex min-w-0 max-lg:order-4 flex-col gap-4 sm:gap-5 lg:order-none lg:col-start-2 lg:row-start-2">
+        </section>
+
+        <div className="flex min-w-0 flex-col gap-6">
           {loadingBill ? (
             <PaymentRequestDetailCardSkeleton />
           ) : loadError ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-800">
-              {loadError}
-            </div>
+            <InlineAlert tone="danger">{loadError}</InlineAlert>
           ) : formData ? (
             <PaymentRequestDetailedInfo
               data={formData}
@@ -1328,9 +1311,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
               unpaidAmount={unpaidAmountDisplay}
               disabled={!bill || bill?.status === "void" || ((bill?.status === "paid" || bill?.status === "authorised") && !isElevated)}
               billNoError={isEditing ? billNoError : null}
-              accountCodeError={
-                isEditing ? (accountCodeError ?? submitAttemptFieldErrors?.accountCode ?? null) : null
-              }
+              accountCodeError={isEditing ? (accountCodeError ?? submitAttemptFieldErrors?.accountCode ?? null) : null}
               invoiceDateError={submitAttemptFieldErrors?.invoiceDate ?? null}
               dueDateError={submitAttemptFieldErrors?.dueDate ?? null}
               amountError={submitAttemptFieldErrors?.amount ?? null}
@@ -1339,149 +1320,19 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
               entityBillContacts={entityBillContacts}
               onRefetchEntityBillContacts={refetchEntityBillContacts}
               onPatchChange={isEditing ? handlePatch : undefined}
-              onEdit={handleEdit}
-              onCancel={handleCancel}
-              onSave={handleSave}
-              editInCardHeader={false}
-              contactHeaderEnd={
-                !isEditing ? (
-                  <div id="payment-history" ref={paymentHistoryDropdownRef} className="relative shrink-0 scroll-mt-4">
-                    <button
-                      type="button"
-                      aria-expanded={paymentHistoryMenuOpen}
-                      aria-controls="payment-history-dropdown-panel"
-                      className="inline-flex h-9 max-w-full min-w-0 shrink-0 cursor-pointer items-center gap-1 rounded-lg border-0 bg-secondary/15 px-2.5 py-1.5 text-xs font-semibold text-secondary transition-colors hover:bg-secondary/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:h-10 sm:gap-1.5 sm:px-3 sm:text-sm"
-                      onClick={() => setPaymentHistoryMenuOpen((v) => !v)}
-                    >
-                      <span className="whitespace-nowrap">View Payment History</span>
-                      <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>
-                        {paymentHistoryMenuOpen ? "expand_less" : "expand_more"}
-                      </span>
-                    </button>
-                    {paymentHistoryMenuOpen && paymentHistoryPanelStyle ? (
-                      <div
-                        id="payment-history-dropdown-panel"
-                        role="dialog"
-                        aria-labelledby="payment-history-dropdown-heading"
-                        style={paymentHistoryPanelStyle}
-                        className="overflow-y-auto overscroll-y-contain rounded-lg border border-gray-200 bg-white shadow-lg"
-                      >
-                        <div className="border-b border-gray-100 px-4 py-3 sm:px-5 sm:py-3.5">
-                          <h2 id="payment-history-dropdown-heading" className="text-base font-semibold text-primary sm:text-lg">
-                            Payment History
-                          </h2>
-                        </div>
-                        <PaymentHistoryListPanel rows={paymentHistoryRows} />
-                      </div>
-                    ) : null}
-                  </div>
-                ) : undefined
-              }
+              fieldIds={DETAIL_FIELD_IDS}
             />
           ) : null}
 
-          <div className="flex w-full items-center justify-end gap-2">
-            {bill?.status === "submitted" && isElevated && !isViewOnly && (
-              <div
-                className={isEditing ? "invisible pointer-events-none" : undefined}
-                aria-hidden={isEditing || undefined}
-              >
-                <button
-                  type="button"
-                  aria-label="Return payment request"
-                  disabled={isReturning || loadingBill || isEditing}
-                  onClick={() => void handleReturn()}
-                  className={returnPaymentRequestButtonClass}
-                >
-                  <span className="material-symbols-outlined shrink-0 text-[18px] leading-none" aria-hidden>
-                    undo
-                  </span>
-                  {isReturning ? "Returning…" : "Return"}
-                </button>
-              </div>
-            )}
-            {loadingBill || !bill ? null : billIsDraft || billIsReturned ? (
-              <div
-                className={`sm:self-start${isEditing ? " invisible pointer-events-none" : ""}`}
-                aria-hidden={isEditing || undefined}
-              >
-                <BillDraftSubmitButton
-                  onClick={() => void handleSubmitDraft()}
-                  disabled={
-                    loadingBill ||
-                    !bill ||
-                    isViewOnly ||
-                    isSubmittingDraft ||
-                    isSaving ||
-                    isDeleting ||
-                    isEditing
-                  }
-                  pending={isSubmittingDraft}
-                />
-              </div>
-            ) : bill?.status === "void" ? (
-              <div
-                className={isEditing ? "invisible pointer-events-none sm:self-start" : "sm:self-start"}
-                aria-hidden={isEditing || undefined}
-              >
-                <button
-                  type="button"
-                  disabled
-                  aria-label="Voided — record payment not available"
-                  className={recordPaymentDetailButtonClass}
-                >
-                  <span className="whitespace-nowrap">Record Payment</span>
-                  <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>
-                    add
-                  </span>
-                </button>
-              </div>
-            ) : bill?.status === "paid" || bill?.status === "authorised" ? (
-              <div
-                className={isEditing ? "invisible pointer-events-none sm:self-start" : "sm:self-start"}
-                aria-hidden={isEditing || undefined}
-              >
-                <button
-                  type="button"
-                  disabled={!isElevated || isEditing}
-                  onClick={() => {
-                    setRecordPaymentReadOnly(true);
-                    setRecordPaymentOpen(true);
-                  }}
-                  aria-label={
-                    isElevated ? "View payments" : "Insufficient permissions — view payments not available"
-                  }
-                  className="box-border inline-flex h-12 w-fit max-w-full min-w-0 shrink-0 cursor-pointer items-center justify-start gap-1.5 rounded-lg border-0 bg-secondary/15 px-3 text-left text-base font-medium text-secondary transition-colors hover:bg-secondary/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:bg-[#F5F5F5] disabled:text-primary/40 disabled:hover:bg-[#F5F5F5] sm:h-[46px] sm:px-3.5"
-                >
-                  View payments
-                </button>
-              </div>
-            ) : (
-              <div
-                className={isEditing ? "invisible pointer-events-none sm:self-start" : "sm:self-start"}
-                aria-hidden={isEditing || undefined}
-              >
-                <button
-                  type="button"
-                  disabled={!isElevated || isViewOnly || isEditing}
-                  title={isViewOnly ? "Hmm, I can't let you in there. You have view-only access." : undefined}
-                  onClick={() => {
-                    if (!isViewOnly) {
-                      setRecordPaymentReadOnly(false);
-                      setRecordPaymentOpen(true);
-                    }
-                  }}
-                  aria-label={isViewOnly ? "Record payment - unavailable with view-only access" : "Record payment"}
-                  className={recordPaymentDetailButtonClass}
-                >
-                  <span className="whitespace-nowrap">Record Payment</span>
-                  <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>
-                    add
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
+          {!isEditing && !loadingBill && bill ? (
+            <section id="payment-history" aria-labelledby="detail-payments" className="flex scroll-mt-4 flex-col gap-3">
+              <h2 id="detail-payments" className="text-title-l text-text-primary">
+                Payments
+              </h2>
+              <PaymentHistoryListPanel rows={paymentHistoryRows} />
+            </section>
+          ) : null}
+
           <ActivityHistoryAccordion
             billId={requestId}
             billRef={bill?.reference ? `#${bill.reference}` : undefined}
@@ -1499,7 +1350,21 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         }}
         onConfirm={executeDeleteBill}
       />
-      <RecordPaymentModal
+      <ConfirmDialog
+        open={returnConfirmOpen}
+        zIndex={310}
+        title="Return this request to the requester?"
+        confirmLabel="Return to requester"
+        confirmVariant="primary"
+        pending={isReturning}
+        onClose={() => {
+          if (!isReturning) setReturnConfirmOpen(false);
+        }}
+        onConfirm={() => void handleReturn()}
+      >
+        It goes back to whoever submitted it, to change and submit again. Nothing is paid or voided.
+      </ConfirmDialog>
+      <RecordPaymentDrawer
         open={recordPaymentOpen}
         onClose={() => {
           setRecordPaymentOpen(false);
@@ -1508,7 +1373,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         billId={requestId}
         billStatus={bill?.status}
         contactTitle={bill?.contact ?? ""}
-        readOnly={recordPaymentReadOnly}
+        readOnly={recordPaymentReadOnly || !canPay}
         invoiceAmount={invoiceTotalMajor}
         description={bill?.description}
         onPaymentSaved={async () => {

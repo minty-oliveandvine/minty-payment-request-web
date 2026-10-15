@@ -10,8 +10,12 @@ type LoadingScreenProps = {
 export function LoadingScreen({ message = "Loading…", showMessage = false, embedded = false, children }: LoadingScreenProps) {
   const content = (
     <>
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#54D3DA]" />
-      {showMessage && message ? <p className="mt-6 text-sm text-gray-600">{message}</p> : null}
+      {/* Part 13: brand/primary marks progress; no spin under reduced motion. */}
+      <div
+        className="h-10 w-10 animate-spin rounded-full border-4 border-border-default border-t-brand-primary motion-reduce:animate-none"
+        aria-hidden
+      />
+      {showMessage && message ? <p className="mt-6 text-body-m text-text-secondary">{message}</p> : null}
     </>
   );
 
@@ -27,7 +31,7 @@ export function LoadingScreen({ message = "Loading…", showMessage = false, emb
   }
 
   return (
-    <div className="flex min-h-dvh min-h-screen flex-col items-center justify-center bg-white" role="status" aria-live="polite" aria-busy="true">
+    <div className="flex min-h-dvh min-h-screen flex-col items-center justify-center bg-surface-card" role="status" aria-live="polite" aria-busy="true">
       {content}
     </div>
   );

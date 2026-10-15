@@ -12,6 +12,8 @@ export type DateTextFieldProps = {
   invalid?: boolean;
   /** Mandatory: announced here, since the label's red asterisk is aria-hidden. */
   required?: boolean;
+  /** The Field's note (helper or error), so the date input is described by it. */
+  ariaDescribedBy?: string;
   calendarAriaLabel: string;
   textInputClassName: string;
   calendarButtonClassName: string;
@@ -24,6 +26,7 @@ export function DateTextField({
   disabled = false,
   invalid = false,
   required = false,
+  ariaDescribedBy,
   calendarAriaLabel,
   textInputClassName,
   // Note: calendarButtonClassName remains in DateTextFieldProps for call-site
@@ -64,7 +67,7 @@ export function DateTextField({
           made transparent so it doesn't clash with the formatted overlay below. */}
       
       {/*  Fix Visual Overshadowing text bug in date input
-        * Wrapped the core elements in an `overflow-hidden` container to guarantee the `rounded-2xl` borders never clip away during any active state.
+        * Wrapped the core elements in an `overflow-hidden` container to guarantee the `rounded-lg` borders never clip away during any active state.
 * Utilized Tailwind CSS `peer` state handling to automatically switch the custom `<span>` text layout to `peer-focus:opacity-0`, completely hiding our custom placeholder layout the exact millisecond the native element takes focus.
       */}
       <input
@@ -74,6 +77,7 @@ export function DateTextField({
         aria-label={calendarAriaLabel}
         aria-invalid={invalid || undefined}
         aria-required={required || undefined}
+        aria-describedby={ariaDescribedBy}
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
@@ -85,8 +89,8 @@ export function DateTextField({
       <span
         aria-hidden
         className={
-          "pointer-events-none absolute left-3 z-[1] select-none text-base sm:text-sm " +
-          (display ? "text-black" : "text-gray-700")
+          "pointer-events-none absolute left-3 z-[1] select-none text-body-m " +
+          (display ? "text-text-primary" : "text-text-muted")
         }
       >
         {display || DATE_TEXT_PLACEHOLDER}

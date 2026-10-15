@@ -2,19 +2,23 @@
 
 import { useId } from "react";
 import { ThemedSelect } from "@/components/ThemedSelect";
+import { Icon } from "@/components/ui/Icon";
 
-export const PAGE_SIZE_OPTIONS = [10, 50, 100] as const;
+/** Part 14 Pagination: rows per page 10 / 25 / 50 / 100. */
+export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 /** Beyond this many pages the strip collapses to `1 … p-1 p p+1 … last`. */
 const MAX_INLINE_PAGES = 7;
 
 const ELLIPSIS = "…";
 
+// Part 14 Pagination (S4-11): Size=Pointer 36px targets, Size=Touch 44px - chosen by the input,
+// not the width, so a touch laptop gets the big ones too.
 const pageButtonBase =
-  "box-border inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-sm font-medium tabular-nums transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
+  "box-border inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-body-s font-medium tabular-nums transition-colors duration-100 pointer-coarse:size-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
 
 const chevronButtonClass =
-  `${pageButtonBase} border border-gray-300 text-primary hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-primary/30 disabled:hover:bg-transparent`;
+  `${pageButtonBase} border border-border-default text-text-secondary hover:bg-state-hover disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent`;
 
 export type PaymentRequestPaginationProps = {
   /** 1-based. */
@@ -63,20 +67,20 @@ export function PaymentRequestPagination({
     <div
       className={`flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
     >
-      <p className="text-sm text-gray-500 tabular-nums">
+      <p className="text-body-s text-text-secondary tabular-nums">
         Showing {from}–{to} of {totalItems}
-        {truncated ? "+" : ""} items
+        {truncated ? "+" : ""}
       </p>
       <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-        <label htmlFor={selectId} className="shrink-0 text-sm text-gray-500">
-          Items per page
+        <label htmlFor={selectId} className="shrink-0 text-body-s text-text-secondary">
+          Rows per page
         </label>
         <ThemedSelect
           id={selectId}
           value={String(pageSize)}
           onChange={(v) => onPageSizeChange(Number(v))}
           options={PAGE_SIZE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
-          ariaLabel="Items per page"
+          ariaLabel="Rows per page"
           fullWidth={false}
           plainChevron
           centerValue
@@ -90,15 +94,14 @@ export function PaymentRequestPagination({
               onClick={() => onPageChange(page - 1)}
               aria-label="Previous page"
             >
-              <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>
-                chevron_left
-              </span>
+              <Icon name="chevron_left" size="md" />
             </button>
+            {/* A phone gets Previous / Next only (Part 14); the numbers are for pointers. */}
             {items.map((item, i) =>
               item === ELLIPSIS ? (
                 <span
                   key={`gap-${i}`}
-                  className="inline-flex size-9 items-center justify-center text-sm text-gray-400"
+                  className="hidden size-9 items-center justify-center text-body-s text-text-muted sm:inline-flex"
                   aria-hidden
                 >
                   {ELLIPSIS}
@@ -107,10 +110,10 @@ export function PaymentRequestPagination({
                 <button
                   key={item}
                   type="button"
-                  className={`${pageButtonBase} ${
+                  className={`${pageButtonBase} max-sm:hidden ${
                     item === page
-                      ? "bg-secondary text-white"
-                      : "border border-gray-300 text-primary hover:bg-gray-50"
+                      ? "border border-border-selected bg-state-selected font-semibold text-text-link"
+                      : "border border-border-default text-text-secondary hover:bg-state-hover"
                   }`}
                   aria-current={item === page ? "page" : undefined}
                   aria-label={`Page ${item}`}
@@ -127,9 +130,7 @@ export function PaymentRequestPagination({
               onClick={() => onPageChange(page + 1)}
               aria-label="Next page"
             >
-              <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>
-                chevron_right
-              </span>
+              <Icon name="chevron_right" size="md" />
             </button>
           </nav>
         ) : null}

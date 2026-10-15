@@ -40,9 +40,9 @@ type Loaded = { attempt: number; list: PortalEntity[] | null; error: string | nu
 function Figure({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
     <div className="flex flex-col items-center text-center">
-      <p className="text-[10px] leading-5 text-[#4b5563]">{label}</p>
+      <p className="text-caption leading-5 text-text-secondary">{label}</p>
       <p className={`mt-2.5 text-xl leading-5 font-bold ${tone}`}>{value}</p>
-      <p className="text-[10px] leading-5 text-[#6b7280]">{entityUnit(value)}</p>
+      <p className="text-caption leading-5 text-text-muted">{entityUnit(value)}</p>
     </div>
   );
 }
@@ -74,37 +74,37 @@ export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
 
   return (
     <section className="mt-[27px] flex flex-col" aria-labelledby="profile-subscriptions-overview">
-      <h2 id="profile-subscriptions-overview" className="pl-[9px] text-[10px] leading-5 font-bold text-[#475467]">
+      <h2 id="profile-subscriptions-overview" className="pl-[9px] text-caption leading-5 font-bold text-text-secondary">
         {PROFILE_OVERVIEW_TITLE}
       </h2>
-      <div className="mt-2.5 flex min-h-[165px] flex-col items-center justify-center rounded-xl bg-white px-4 py-[18px]">
+      <div className="mt-2.5 flex min-h-[165px] flex-col items-center justify-center rounded-lg bg-surface-card px-4 py-[18px]">
         {status === "loading" ? (
-          <div className="h-[120px] w-full animate-pulse rounded-lg bg-[#f4f5f7]" role="status" aria-label="Loading your subscriptions" />
+          <div className="h-[120px] w-full animate-pulse rounded-lg bg-surface-sunk" role="status" aria-label="Loading your subscriptions" />
         ) : null}
         {status === "error" ? (
           <div className="flex flex-col items-center gap-3 text-center" role="alert">
-            <p className="text-xs text-[#4b5563]">{loaded?.error}</p>
+            <p className="text-xs text-text-secondary">{loaded?.error}</p>
             <button
               type="button"
               onClick={retry}
-              className="cursor-pointer rounded-xl bg-[#54d3da] px-5 py-1.5 text-sm font-medium text-white hover:bg-[#54d3da]/80"
+              className="cursor-pointer rounded-lg bg-action-primary px-5 py-1.5 text-sm font-medium text-action-on-primary hover:bg-action-primary"
             >
               Try again
             </button>
           </div>
         ) : null}
         {list && list.length === 0 ? (
-          <p className="text-center text-[10px] leading-5 text-[#4b5563]">{NO_SUBSCRIPTIONS}</p>
+          <p className="text-center text-caption leading-5 text-text-secondary">{NO_SUBSCRIPTIONS}</p>
         ) : null}
         {list && list.length > 0 && figures ? (
           <>
             <div className="flex justify-center gap-[39px]">
-              <Figure label={ACTIVE_SUBSCRIPTIONS} value={figures.active} tone="text-[#737a87]" />
-              <Figure label={TRIAL_ENDING} value={figures.trialEnding} tone="text-accent" />
+              <Figure label={ACTIVE_SUBSCRIPTIONS} value={figures.active} tone="text-text-muted" />
+              <Figure label={TRIAL_ENDING} value={figures.trialEnding} tone="text-status-warning-ink" />
             </div>
             <a
               href={links.subscriptions()}
-              className="mt-[19px] flex h-[38px] w-[242px] items-center justify-center rounded-xl bg-[#54d3da] text-sm leading-[21px] font-medium text-white hover:bg-[#54d3da]/85"
+              className="mt-[19px] flex h-[38px] w-[242px] items-center justify-center rounded-lg bg-action-primary text-sm leading-[21px] font-medium text-action-on-primary hover:bg-action-primary"
             >
               {MANAGE_SUBSCRIPTION}
             </a>

@@ -70,6 +70,11 @@ const show = (easyView = false) =>
   );
 
 const table = () => within(screen.getByRole("table"));
+/** A status chip (Part 14 Filter chip: a toggle button), by its status word. */
+const statusChip = (name: string) =>
+  within(screen.getByRole("group", { name: "Filter by status" })).getByRole("button", {
+    name: new RegExp(`^${name}`),
+  });
 const bodyRows = () => screen.getByRole("table").querySelectorAll("tbody tr");
 
 /**
@@ -172,7 +177,7 @@ describe("the rows it shows", () => {
     await loaded();
     expect(table().queryByText("Cancelled Order Inc")).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("tab", { name: "Voided" }));
+    await userEvent.click(statusChip("Voided"));
 
     await waitFor(() => expect(table().getByText("Cancelled Order Inc")).toBeInTheDocument());
   });
@@ -321,7 +326,7 @@ describe("the status filter", () => {
     await loaded();
     fetchMock.mockClear();
 
-    await userEvent.click(screen.getByRole("tab", { name: "Draft" }));
+    await userEvent.click(statusChip("Draft"));
 
     await waitFor(() => {
       const asked = fetchMock.mock.calls

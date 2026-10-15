@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Header } from "@/components/layout";
 import { ModuleGate } from "@/components/ModuleGate";
 import { SettingsContent } from "@/components/settings/SettingsContent";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { getAuthSnapshot } from "@/lib/auth";
 import { useClientValue } from "@/lib/useClientValue";
 import { useCompanyPages } from "@/lib/useCompanyPages";
@@ -15,25 +16,23 @@ export default function SettingsPage() {
 
   return (
     <ModuleGate>
-    <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-white">
+    <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-surface-page">
       <Header
-        title="Settings"
-        showLogo={false}
+        title="Payment Request"
         backHref={pages.list}
-        backLabel="Payments"
+        backLabel="Payment Requests"
         companyName={auth?.entityName || "Loading…"}
-        noBorder
       />
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
         <Suspense
           fallback={
-            <div className="mx-auto w-full max-w-[1024px] px-4 py-6 sm:px-6">
+            <div className="mx-auto w-full max-w-[1024px] px-4 py-6 sm:px-6" aria-busy="true">
               <div className="flex gap-2">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-gray-200" />
+                  <Skeleton key={i} className="h-8 w-24 shrink-0 rounded-full" />
                 ))}
               </div>
-              <div className="mt-6 h-48 animate-pulse rounded-lg bg-gray-100" />
+              <Skeleton className="mt-6 h-48 rounded-lg" />
             </div>
           }
         >

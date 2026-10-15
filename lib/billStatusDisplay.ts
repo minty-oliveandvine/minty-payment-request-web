@@ -1,3 +1,5 @@
+import { statusTone, TONE_CLASS } from "./statusTone";
+
 /** Maps API bill `status` (lowercase) to list/detail display labels. */
 export function billStatusToDisplayLabel(status: string): string {
   const k = status.trim().toLowerCase().replace(/-/g, "_");
@@ -15,26 +17,11 @@ export function billStatusToDisplayLabel(status: string): string {
 }
 
 /**
- * Header badge on payment request details — aligned with list/table status tags
- * (`PaymentRequestTable` / `statusTagPaymentRequestedClass`, etc.).
+ * The Status pill's classes for a display label (Part 14 "Status pill"; tones in
+ * `lib/statusTone.ts`, Part 13 §13.4). The ONE place a status gets its colour - the detail
+ * header, the table and Easy view all read it. Prefer `<StatusPill>`; this exists for the
+ * elements that must stay a different tag.
  */
 export function statusDisplayBadgeClass(displayLabel: string): string {
-  const base =
-    "inline-flex max-w-full items-center justify-center rounded-lg px-2.5 py-1 text-center text-sm font-semibold sm:px-3 sm:py-0 sm:text-sm lg:h-[42px] lg:min-h-[42px]";
-  switch (displayLabel) {
-    case "Paid":
-      return `${base} border border-primary/25 bg-white text-[#656565]`;
-    case "Payment Requested":
-      return `${base} bg-secondary/10 text-secondary`;
-    case "Partially Paid":
-      return `${base} bg-[#70ebba]/10 font-semibold text-[#70ebba]`;
-    case "Returned":
-      return `${base} bg-[#EA9713]/15 text-[#EA9713]`;
-    case "Voided":
-      return `${base} text-[#FF6B6B]`;
-    case "Draft":
-      return `${base} bg-[#EDEDED] font-medium text-[#C0C0C0]`;
-    default:
-      return `${base} bg-[#EDEDED] font-medium text-[#C0C0C0]`;
-  }
+  return `inline-flex min-h-6 max-w-full items-center justify-center rounded-full px-3 py-1 text-label whitespace-nowrap ${TONE_CLASS[statusTone(displayLabel)]}`;
 }

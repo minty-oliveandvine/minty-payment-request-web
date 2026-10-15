@@ -1,112 +1,79 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+
+import { Icon } from "@/components/ui/Icon";
 import { NavMenu } from "@/components/ui/NavMenu";
 import { ViewerBadge } from "@/components/ui/ViewerBadge";
 
+/**
+ * Part 14 "App bar" (v1.1): back (in a drill-down) · the Minty mark · entity name · avatar · menu.
+ * The mark is minty-web's hub mark (`/minty-mark.png`, its AppHeader's `showLogo`, same size), in
+ * place of the module name as text (the user, 2026-10-13); the module name stays for screen readers.
+ * 60px on a computer, 56 on a phone; surface/card with a border/subtle rule; a `<header>`
+ * landmark. It identifies WHERE you are - the page's own title, status and actions belong to
+ * the page header (components/ui/PageHeader.tsx), and the module name here is never a heading.
+ *
+ * The entity name is spelled out, never an acronym; it truncates first, and below 360px it goes
+ * (the avatar stays). The two sidebar doors - the initials (My Profile) and the ≡ (the menu) - are
+ * the packaged @minty/shared sidebar's.
+ */
+
 type HeaderProps = {
+  /** The module, e.g. "Payment Request" (Part 14: module names consistent everywhere). */
   title?: string;
-  showLogo?: boolean;
-  brandHref?: string | null;
-  /** When set, shows a back link to the payment request dashboard (Bills table). Title is not linked to home. */
+  /** A drill-down's way back - shown as "‹ <backLabel>". */
   backHref?: string;
   backLabel?: string;
-  statusBadge?: ReactNode;
-  titleActions?: ReactNode;
   companyName?: string;
-  /** When true, tints the company icon green to indicate an active Xero connection. */
+  /** The page draws a Record page header with its own back link (from 768px) - hide this one there. */
+  backInPage?: boolean;
+  /** Kept for the callers that read it; the App bar draws no Xero state. */
   xeroConnected?: boolean;
-  /** Omit top safe-area padding when a row above the header already applies it. */
-  suppressTopSafeArea?: boolean;
-  /** Drop the bottom border (separator) — e.g. when a sticky pills row sits directly below. */
-  noBorder?: boolean;
 };
 
 export function Header({
   title = "Payment Request",
-  showLogo = false,
-  brandHref,
   backHref,
-  backLabel = "Payments",
-  statusBadge,
-  titleActions,
+  backLabel = "Payment Requests",
   companyName = "Insert Company Here",
-  xeroConnected,
-  suppressTopSafeArea = false,
-  noBorder = false,
+  backInPage = false,
 }: HeaderProps) {
-  const homeHref = brandHref === undefined ? "/" : brandHref;
-  const showBack = Boolean(backHref);
-
-  const brand = (
-    <>
-      {showLogo ? (
-        <Image src="/minty-mark.png" alt="" width={40} height={40} priority className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" />
-      ) : null}
-      <span className="min-w-0 cursor-default truncate text-base font-semibold text-black sm:text-lg">{title}</span>
-    </>
-  );
-
-  const leftSection = showBack && backHref ? (
-    <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-3">
-      <Link href={backHref} className="inline-flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary transition-colors hover:text-secondary sm:text-base">
-        <span className="material-symbols-outlined text-[22px] leading-none sm:text-[24px]" aria-hidden>
-          chevron_left
-        </span>
-        {backLabel}
-      </Link>
-      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-        {showLogo ? (
-          <Image src="/minty-mark.png" alt="" width={40} height={40} priority className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" />
-        ) : null}
-        <span className="min-w-0 cursor-default truncate text-base font-semibold text-black sm:text-lg">{title}</span>
-        {titleActions ? <div className="flex shrink-0 items-center">{titleActions}</div> : null}
-      </div>
-    </div>
-  ) : homeHref ? (
-    <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-      {showLogo ? (
-        <Link href={homeHref} className="shrink-0">
-          <Image src="/minty-mark.png" alt="" width={40} height={40} priority className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" />
-        </Link>
-      ) : null}
-      <span className="min-w-0 cursor-default truncate text-base font-semibold text-black sm:text-lg">{title}</span>
-      {titleActions ? <div className="flex shrink-0 items-center">{titleActions}</div> : null}
-    </div>
-  ) : (
-    <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">{brand}</div>
-  );
-
   return (
-    <header
-      className={`bg-white ${noBorder ? "" : "border-b border-gray-200"} ${suppressTopSafeArea ? "" : "pt-[env(safe-area-inset-top,0px)]"}`}
-    >
-      <div className="mx-auto flex w-full max-w-[1920px] flex-row flex-wrap items-center justify-between gap-2 px-4 py-3 sm:flex-nowrap sm:gap-3 sm:px-6 sm:py-4">
-        <div className={`flex min-w-0 min-h-10 items-center sm:min-h-0 ${statusBadge ? "flex-1 sm:flex-initial" : "flex-1"}`}>{leftSection}</div>
-        {/* Rendered once (it reads the bill): on a phone the row has no room for it beside the
-            way back, so it takes its own line under the row; from sm it sits after the title. */}
-        {statusBadge ? <div className="order-last flex w-full sm:order-none sm:w-auto sm:shrink-0">{statusBadge}</div> : null}
-        <div className={`flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-3 ${statusBadge ? "ml-auto" : ""}`}>
-          <span className="relative inline-flex shrink-0">
-            <span
-              className="material-symbols-outlined text-[22px] leading-none text-primary sm:text-[26px]"
-              aria-hidden
-            >
-              corporate_fare
+    <header className="border-b border-border-subtle bg-surface-card pt-[env(safe-area-inset-top,0px)]">
+      <div className="mx-auto flex h-14 w-full max-w-[1920px] items-center gap-2 px-4 sm:h-15 sm:gap-3 sm:px-6 lg:px-8">
+        {/* Part 15.1: on a phone the App bar holds the way back; from 768px the page header's
+            Record back link does, so the two never show together. */}
+        {backHref ? (
+          <Link
+            href={backHref}
+            className={`-ml-2 inline-flex min-h-11 min-w-11 shrink-0 items-center gap-1 rounded-lg px-2 text-body-m font-medium text-text-link hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus ${backInPage ? "md:hidden" : ""}`}
+            aria-label={`Back to ${backLabel}`}
+          >
+            <Icon name="chevron_left" size="lg" />
+            {backInPage ? null : <span className="hidden sm:inline">{backLabel}</span>}
+          </Link>
+        ) : null}
+        <Image
+          src="/minty-mark.png"
+          alt="Minty"
+          width={40}
+          height={40}
+          priority
+          unoptimized
+          className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
+        />
+        <span className="sr-only">{title}</span>
+        <div className="ml-auto flex min-w-0 shrink items-center gap-1 sm:gap-2">
+          <span className="hidden min-w-0 items-center gap-1.5 text-body-m text-text-secondary min-[360px]:flex">
+            <Icon name="corporate_fare" size="md" />
+            {/* A plain cap, not min(100%,…): a percentage counts as no cap while the shrink-0
+                block around it is sized, and a long name covered the way back on a phone. */}
+            <span className="min-w-0 max-w-[7rem] truncate sm:max-w-[12rem] lg:max-w-[20rem]">
+              {companyName}
             </span>
           </span>
-          {/* A plain 6.5rem, not min(100%,6.5rem): a percentage cap counts as no cap while the
-              shrink-0 block around it is sized, so on a phone a long name made it cover the way
-              back (fixed in minty-web's AppHeader and Flask's port too). */}
-          <span className="min-w-0 max-w-[6.5rem] truncate text-sm font-medium text-primary sm:max-w-[9rem] sm:text-base md:max-w-[14rem] lg:max-w-md">
-            {companyName}
-          </span>
-          {/* The sidebar's two doors (components/ui/Sidebar.tsx, copied from minty-web): the
-              initials open My Profile, the ≡ the menu. The menu's Logout is the app's. */}
-          <div className="flex shrink-0 items-center gap-1.5 pl-0.5 sm:gap-2 sm:pl-2">
-            <ViewerBadge />
-            <NavMenu />
-          </div>
+          <ViewerBadge />
+          <NavMenu />
         </div>
       </div>
     </header>

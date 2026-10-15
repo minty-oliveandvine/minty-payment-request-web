@@ -5,7 +5,7 @@
 // sends only what CHANGED (buildBillUpdatePayload), and view-only access takes every write
 // control away rather than leaving one that 403s.
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -95,9 +95,9 @@ const show = () =>
     </ToastProvider>,
   );
 
-/** The fields are in by the time this heading is up and the request has arrived. */
+/** The request has arrived once its Payment No. is in the header's metadata line. */
 const loaded = () =>
-  waitFor(() => expect(screen.getByText("PR-0001")).toBeInTheDocument());
+  waitFor(() => expect(screen.getByText(/Payment No\. PR-0001/)).toBeInTheDocument());
 
 beforeEach(() => {
   params.ref = "360812e1";
@@ -130,12 +130,43 @@ describe("the request on screen", () => {
     show();
 
     await loaded();
-    expect(screen.getByText("PR-0001")).toBeInTheDocument();
-    expect(screen.getByText("03 Mar 2026")).toBeInTheDocument();
-    expect(screen.getByText("31 Mar 2026")).toBeInTheDocument();
-    expect(screen.getByText("Young Bros Transport")).toBeInTheDocument();
-    expect(screen.getByText("429 - General Expenses")).toBeInTheDocument();
-    expect(screen.getByText("Corporate stationery and printer supplies")).toBeInTheDocument();
+    // Part 15.17: the supplier names the page; the fields are Description rows, not inputs.
+    expect(screen.getByRole("heading", { level: 1, name: "Young Bros Transport" })).toBeInTheDocument();
+    const rows = within(screen.getByRole("region", { name: "Payment request details" }));
+    expect(rows.getByText("PR-0001")).toBeInTheDocument();
+    expect(rows.getByText("03 Mar 2026")).toBeInTheDocument();
+    expect(rows.getByText("31 Mar 2026")).toBeInTheDocument();
+    expect(rows.getByText("Young Bros Transport")).toBeInTheDocument();
+    expect(rows.getByText("429 - General Expenses")).toBeInTheDocument();
+    expect(rows.getByText("Corporate stationery and printer supplies")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("says 'Not set yet' for an empty account code, not a blank row", async () => {
+    serve({
+      detail: bill({
+        id: BILL_ID,
+        status: "draft",
+        contact: "Young Bros Transport",
+        reference: "PR-0001",
+        xero_account_code: "",
+        attachments: [billAttachment()],
+      }),
+    });
+
+    show();
+
+    await loaded();
+    const rows = within(screen.getByRole("region", { name: "Payment request details" }));
+    expect(rows.getByText("Account code").nextElementSibling).toHaveTextContent("Not set yet");
+  });
+
+  it("says its status as a pill beside its name, and its Payment No. once", async () => {
+    serve();
+    show();
+    await loaded();
+    expect(screen.getByText("Payment Requested")).toHaveAttribute("data-tone", "info");
+    expect(screen.getByText(/Payment No\. PR-0001/)).toBeInTheDocument();
   });
 
   it("shows the amount in the COMPANY's currency", async () => {
@@ -293,11 +324,37 @@ describe("editing it", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
+    // Said on the page, not in a toast (Part 14), and the edits stay where they are.
     await waitFor(() =>
-      expect(document.querySelector("[data-toast-type='error']")).toHaveTextContent(
+      expect(document.querySelector("[role='alert'][data-tone='danger']")).toHaveTextContent(
         "Someone else changed that first.",
       ),
     );
+    expect(screen.getByDisplayValue("A new description")).toBeInTheDocument();
+  });
+
+  it("lists every missing field at the top when a save is refused (Part 15.3)", async () => {
+    serve({
+      detail: bill({
+        id: BILL_ID,
+        status: "draft",
+        contact: "",
+        reference: "PR-0001",
+        due_date: null,
+        attachments: [billAttachment()],
+      }),
+    });
+    show();
+    await loaded();
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByDisplayValue("Corporate stationery and printer supplies");
+
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    const summary = await screen.findByText(/details need a look/);
+    expect(summary.closest("[role='alert']")).toHaveFocus();
+    expect(screen.getByRole("link", { name: "The supplier is still empty. Choose one to continue." })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "The due date is still empty. Add it to continue." })).toBeInTheDocument();
   });
 });
 
@@ -312,12 +369,15 @@ describe("the actions its status allows", () => {
     expect(screen.getByRole("button", { name: "Record payment" })).toBeInTheDocument();
   });
 
-  it("sends it back when Return is confirmed", async () => {
+  it("asks first, then sends it back when Return is confirmed", async () => {
     const { calls } = serve();
     show();
     await loaded();
 
     await userEvent.click(screen.getByRole("button", { name: "Return payment request" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Return this request to the requester?" });
+    expect(calls.some((c) => c.path.endsWith("/return/"))).toBe(false);
+    await userEvent.click(within(confirm).getByRole("button", { name: "Return to requester" }));
 
     await waitFor(() =>
       expect(calls.some((c) => c.method === "POST" && c.path.endsWith("/return/"))).toBe(true),
@@ -339,7 +399,8 @@ describe("the actions its status allows", () => {
 });
 
 describe("view-only access", () => {
-  it("leaves every write control dead, with the reason on it", async () => {
+  // Part 15.1: header actions are role-aware - what the person cannot do is not offered at all.
+  it("offers no write control at all", async () => {
     setAuth(
       unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }),
       ENTITY_ID,
@@ -350,10 +411,9 @@ describe("view-only access", () => {
     show();
 
     await loaded();
-    const edit = screen.getByRole("button", { name: "Edit" });
-    await waitFor(() => expect(edit).toBeDisabled());
-    // Record Payment carries the reason; Edit is simply dead.
-    expect(screen.getByRole("button", { name: /Record payment/i })).toBeDisabled();
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Record payment/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Return payment request" })).not.toBeInTheDocument();
   });
 
   it("leaves the request itself perfectly readable", async () => {
@@ -367,7 +427,8 @@ describe("view-only access", () => {
     show();
 
     await loaded();
-    expect(screen.getByText("Young Bros Transport")).toBeInTheDocument();
-    expect(screen.getByText("429 - General Expenses")).toBeInTheDocument();
+    const rows = within(screen.getByRole("region", { name: "Payment request details" }));
+    expect(rows.getByText("Young Bros Transport")).toBeInTheDocument();
+    expect(rows.getByText("429 - General Expenses")).toBeInTheDocument();
   });
 });

@@ -8,6 +8,7 @@ import { expect, test } from '@playwright/test';
 
 import { billListItem } from '../lib/__fixtures__/bills';
 import {
+  addRequestLink,
   handoff,
   pagesOf,
   requireNextOnly,
@@ -77,7 +78,7 @@ test('it is never in the way of the list', async ({ page }) => {
   await dialog(page).getByRole('button', { name: 'Dismiss' }).click();
 
   await expect(dialog(page)).toBeHidden();
-  await expect(page.getByRole('button', { name: /Add Payment/ })).toBeEnabled();
+  await expect(addRequestLink(page)).toBeVisible();
 });
 
 test('a reload in the same sign-in does NOT show it again', async ({ page }) => {
@@ -86,8 +87,7 @@ test('a reload in the same sign-in does NOT show it again', async ({ page }) => 
   await dialog(page).getByRole('button', { name: 'Dismiss' }).click();
 
   await page.reload();
-  // The search box, not the "All" tab: the status filter exists twice over (a tablist on a
-  // desktop, a menu on a phone), so "All" is ambiguous.
+  // The search box: the one control that is there in both views and at every width.
   await expect(page.getByRole('searchbox')).toBeVisible();
 
   await expect(dialog(page)).toBeHidden();
@@ -112,7 +112,7 @@ test('a notice that failed to load shows nothing and blocks nothing', async ({ p
   await handoff(page, creds(), pagesOf(creds()).list);
 
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Add Payment/ })).toBeEnabled();
+  await expect(addRequestLink(page)).toBeVisible();
 });
 
 test('a company with nothing to report is not interrupted', async ({ page }) => {

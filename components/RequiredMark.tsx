@@ -10,7 +10,7 @@
  */
 export function RequiredMark() {
   return (
-    <span className="text-red-500" aria-hidden>
+    <span className="text-status-danger-ink" aria-hidden>
       {" *"}
     </span>
   );

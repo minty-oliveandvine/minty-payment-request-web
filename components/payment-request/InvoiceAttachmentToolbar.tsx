@@ -20,7 +20,7 @@ export function InvoiceAttachmentToolbar({
   showAddMore = false,
 }: InvoiceAttachmentToolbarProps) {
   const btnClass =
-    "inline-flex h-9 min-h-[44px] shrink-0 items-center gap-1.5 rounded-md border border-primary/25 bg-white px-2.5 text-xs font-medium text-primary transition-colors hover:bg-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:h-10 sm:min-h-0 sm:px-3.5 sm:text-sm";
+    "inline-flex h-9 min-h-[44px] shrink-0 items-center gap-1.5 rounded-md border border-border-default bg-surface-card px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-state-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus sm:h-10 sm:min-h-0 sm:px-3.5 sm:text-sm";
 
   return (
     <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2 sm:flex-nowrap">
@@ -28,7 +28,7 @@ export function InvoiceAttachmentToolbar({
         {onDelete ? (
           <button
             type="button"
-            className={`${btnClass} ${deleteReadOnly ? "cursor-not-allowed opacity-50 hover:bg-white" : "cursor-pointer"}`}
+            className={`${btnClass} ${deleteReadOnly ? "cursor-not-allowed opacity-50 hover:bg-surface-card" : "cursor-pointer"}`}
             onClick={onDelete}
             aria-label="Delete attachment"
             disabled={deleteReadOnly}
@@ -36,7 +36,7 @@ export function InvoiceAttachmentToolbar({
             title={deleteReadOnly ? "Select attachment(s) to delete" : undefined}
           >
             Delete
-            <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>
+            <span className="material-symbols-rounded text-[20px] leading-none" aria-hidden>
               delete
             </span>
           </button>
@@ -44,7 +44,7 @@ export function InvoiceAttachmentToolbar({
         {showUpload && onUpload ? (
           <button
             type="button"
-            className={`${btnClass} ${uploadReadOnly ? "cursor-not-allowed opacity-50 hover:bg-white" : "cursor-pointer"}`}
+            className={`${btnClass} ${uploadReadOnly ? "cursor-not-allowed opacity-50 hover:bg-surface-card" : "cursor-pointer"}`}
             onClick={onUpload}
             aria-label="Upload attachment"
             disabled={uploadReadOnly}
@@ -52,7 +52,7 @@ export function InvoiceAttachmentToolbar({
             title={uploadReadOnly ? "Enable Edit to upload attachments" : undefined}
           >
             Upload
-            <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>
+            <span className="material-symbols-rounded text-[20px] leading-none" aria-hidden>
               upload
             </span>
           </button>
@@ -60,7 +60,7 @@ export function InvoiceAttachmentToolbar({
         {showAddMore && onUpload ? (
           <button
             type="button"
-            className={`${btnClass} ${uploadReadOnly ? "cursor-not-allowed opacity-50 hover:bg-white" : "cursor-pointer"}`}
+            className={`${btnClass} ${uploadReadOnly ? "cursor-not-allowed opacity-50 hover:bg-surface-card" : "cursor-pointer"}`}
             onClick={onUpload}
             aria-label="Add more attachments"
             disabled={uploadReadOnly}
@@ -68,7 +68,7 @@ export function InvoiceAttachmentToolbar({
             title={uploadReadOnly ? "Enable Edit to add attachments" : undefined}
           >
             Add More
-            <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>
+            <span className="material-symbols-rounded text-[20px] leading-none" aria-hidden>
               attach_file
             </span>
           </button>

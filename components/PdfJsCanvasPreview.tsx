@@ -224,8 +224,8 @@ function PdfJsProxyFetcher({
 
   if (fetchError) {
     return (
-      <div className={`${className} flex flex-col items-center gap-2 py-8 text-center text-sm text-primary/70`}>
-        <span className="material-symbols-outlined text-[28px] text-primary/40" aria-hidden>
+      <div className={`${className} flex flex-col items-center gap-2 py-8 text-center text-sm text-text-secondary`}>
+        <span className="material-symbols-rounded text-[28px] text-text-disabled" aria-hidden>
           description
         </span>
         <p>The PDF couldn&apos;t be loaded. Please check your connection and try again.</p>
@@ -235,9 +235,9 @@ function PdfJsProxyFetcher({
 
   if (!blobUrl) {
     return (
-      <div className={`${className} flex min-h-[200px] items-center justify-center py-8 text-sm text-primary/60`}>
+      <div className={`${className} flex min-h-[200px] items-center justify-center py-8 text-sm text-text-muted`}>
         <span className="inline-flex items-center gap-2">
-          <span className="material-symbols-outlined animate-spin text-secondary text-[22px]" aria-hidden>
+          <span className="material-symbols-rounded animate-spin text-text-link text-[22px]" aria-hidden>
             progress_activity
           </span>
           Loading PDF…
@@ -316,7 +316,7 @@ function PdfJsCanvasRenderer({
           canvas.style.width = "100%";
           canvas.style.height = "auto";
           canvas.className =
-            "mx-auto block rounded border border-gray-200 bg-white shadow-sm";
+            "mx-auto block rounded border border-border-default bg-surface-card shadow-sm";
           const ctx = canvas.getContext("2d");
           if (!ctx) throw new Error("2D context unavailable");
           ctx.scale(dpr, dpr);
@@ -328,7 +328,7 @@ function PdfJsCanvasRenderer({
 
         if (!cancelled && pageLimit < pdfDoc.numPages) {
           const note = document.createElement("p");
-          note.className = "mt-2 text-center text-xs text-primary/55";
+          note.className = "mt-2 text-center text-xs text-text-muted";
           note.textContent = `Showing first ${pageLimit} of ${pdfDoc.numPages} pages.`;
           host.appendChild(note);
         }
@@ -367,9 +367,9 @@ function PdfJsCanvasRenderer({
   return (
     <div className={className}>
       {status === "loading" ? (
-        <div className="flex min-h-[200px] items-center justify-center py-8 text-sm text-primary/60">
+        <div className="flex min-h-[200px] items-center justify-center py-8 text-sm text-text-muted">
           <span className="inline-flex items-center gap-2">
-            <span className="material-symbols-outlined animate-spin text-secondary text-[22px]" aria-hidden>
+            <span className="material-symbols-rounded animate-spin text-text-link text-[22px]" aria-hidden>
               progress_activity
             </span>
             Loading PDF…
@@ -386,13 +386,13 @@ function PdfJsCanvasRenderer({
             e.preventDefault();
             e.stopPropagation();
           }}
-          className="mx-auto flex w-full max-w-sm flex-col items-center gap-3 py-8 text-center text-sm text-primary/80"
+          className="mx-auto flex w-full max-w-sm flex-col items-center gap-3 py-8 text-center text-sm text-text-secondary"
         >
-          <span className="material-symbols-outlined text-[28px] text-secondary" aria-hidden>
+          <span className="material-symbols-rounded text-[28px] text-text-link" aria-hidden>
             lock
           </span>
-          <p className="font-medium text-black">This PDF is password-protected</p>
-          <p className="text-primary/60">Enter the password to preview it.</p>
+          <p className="font-medium text-text-primary">This PDF is password-protected</p>
+          <p className="text-text-muted">Enter the password to preview it.</p>
           <input
             ref={passwordInputRef}
             type="password"
@@ -400,12 +400,12 @@ function PdfJsCanvasRenderer({
             autoFocus
             aria-label="PDF password"
             aria-invalid={passwordError}
-            className={`w-full rounded-lg border px-3 py-2 text-sm text-black outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
-              passwordError ? "border-red-400" : "border-gray-300"
+            className={`w-full rounded-lg border px-3 py-2 text-sm text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-border-focus ${
+              passwordError ? "border-action-danger" : "border-border-input"
             }`}
           />
           {passwordError ? (
-            <p role="alert" className="text-xs font-medium text-red-500">
+            <p role="alert" className="text-xs font-medium text-status-danger-ink">
               That wasn&apos;t the right password! Let&apos;s try again?
             </p>
           ) : null}
@@ -416,15 +416,15 @@ function PdfJsCanvasRenderer({
               e.stopPropagation();
               submitPassword(passwordInputRef.current?.value ?? "");
             }}
-            className="w-full rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            className="w-full rounded-lg bg-action-primary px-4 py-2 text-sm font-semibold text-action-on-primary transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
           >
             Unlock preview
           </button>
         </form>
       ) : null}
       {status === "error" ? (
-        <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-primary/70">
-          <span className="material-symbols-outlined text-[28px] text-primary/40" aria-hidden>
+        <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-text-secondary">
+          <span className="material-symbols-rounded text-[28px] text-text-disabled" aria-hidden>
             description
           </span>
           <p>{errorMessage}</p>
