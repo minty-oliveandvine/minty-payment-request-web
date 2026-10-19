@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 
+import { companyRef } from "@minty/shared/companyRef";
+import { withReturnOrigin } from "@minty/shared/previewSibling";
+
+import { getAuth } from "@/lib/auth";
 import { useEntitlements } from "@/lib/moduleClaims";
+import { useClientValue } from "@/lib/useClientValue";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export const SETTINGS_TAB_IDS = ["users", "xero", "entity", "bill", "modules"] as const;
@@ -29,14 +34,29 @@ export function getSettingsTabFromSearchParams(tab: string | null): SettingsTabI
   return "bill";
 }
 
-// Part 14 Filter chip geometry (M-01: Minty has no Tabs component). These change PAGE, so they
-// stay links (`aria-current` on the one shown) - selected = state/selected + link ink.
+// The settings pills every app shows (the owner, 2026-10-19): minty-web's look - 44px rounded-lg
+// pills that wrap, as in minty-web's SettingsTabs and the Petty Cash app's - in Part 13 tokens.
+// These change PAGE, so they stay links (`aria-current` on the one shown).
 const pillClass = (isActive: boolean) =>
-  `inline-flex h-8 shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-full border px-3 text-body-s font-medium transition-colors duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus ${
+  `flex min-h-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border px-4 py-2 text-center text-body-m font-semibold transition-colors duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus ${
     isActive
-      ? "border-border-selected bg-state-selected font-semibold text-text-link"
+      ? "border-border-selected bg-state-selected text-text-link"
       : "border-border-default bg-surface-card text-text-secondary hover:bg-state-hover"
   }`;
+
+/**
+ * Petty Cash Settings: the Petty Cash app's settings page (minty-petty-cash-web), through Flask's
+ * login-gated `/handoff/petty-cash-web`, which mints that app's token for this company and lands
+ * on `next` - as minty-web's pill does. Never Flask's own (retired) settings page. No token in
+ * the address: the Flask session is the credential, as for the other pills.
+ */
+export const pettyCashSettingsUrl = (module1Url: string, entityId: string, entityName: string) => {
+  const qs = new URLSearchParams({
+    entity_id: entityId,
+    next: `/entity/${companyRef(entityId, entityName)}/settings/petty-cash`,
+  });
+  return withReturnOrigin(`${module1Url}/handoff/petty-cash-web?${qs.toString()}`);
+};
 
 /** Entity & Integration (where Xero is connected) - also the way there from a Xero-less card. */
 export const integrationTabUrl = (module1Url: string, entityId: string) =>
@@ -54,8 +74,6 @@ const FLASK_REDIRECT_TABS: Partial<
   users: (module1Url, entityId) =>
     `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/users`,
   xero: integrationTabUrl,
-  entity: (module1Url, entityId) =>
-    `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/petty-cash`,
   modules: (module1Url, entityId) =>
     `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/modules`,
 };
@@ -72,21 +90,24 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
   // would land them on a screen they can't use. Filter it out when disabled.
   const { pettyCashEnabled } = useEntitlements();
   const pages = useCompanyPages();
+  const entityName = useClientValue(() => getAuth()?.entityName ?? "", "");
   const visibleTabs = TABS.filter((t) => t.id !== "entity" || pettyCashEnabled);
 
   return (
-    <nav className="w-full" aria-label="Settings">
-      {/* Part 14 Filter chip: a phone scrolls the row sideways rather than wrapping it. */}
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
+    <nav className="w-full min-w-0" aria-label="Settings sections">
+      {/* As every app's settings pills: one row that wraps, never a sideways scroll. */}
+      <div className="flex min-w-0 flex-wrap gap-2">
         {visibleTabs.map(({ id, label }) => {
           const isActive = activeTab === id;
           const flaskUrl = FLASK_REDIRECT_TABS[id];
+          const away =
+            id === "entity" ? pettyCashSettingsUrl(module1Url, entityId, entityName) : flaskUrl?.(module1Url, entityId);
 
           // A real link (no token in it), so Payment Settings' "Leave without saving?"
           // (lib/leaveGuard.ts) holds it like any other way out of the page.
-          if (flaskUrl) {
+          if (away) {
             return (
-              <a key={id} href={flaskUrl(module1Url, entityId)} className={pillClass(isActive)}>
+              <a key={id} href={away} className={pillClass(isActive)}>
                 {label}
               </a>
             );

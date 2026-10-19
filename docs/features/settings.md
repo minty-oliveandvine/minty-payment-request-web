@@ -13,9 +13,19 @@ Settings, Payment Request Settings ("Payment Settings" until 2026-10-05), Module
 the account-code picker (`AccountCodeSettings.tsx` — which of the entity's bill account
 codes are offered, default and order; elevated roles, backed by
 `/api/entity-bill-accounts/*`). The other four are plain links (`<a href>`, no token in
-them) to Minty's settings pages for the entity (`lib/mintyUrls.ts`; Users, Entity & Integration
-and Module hand over to minty-web, whose tabs they are since phase 2 - 2026-10-05), with a
-placeholder while unresolved. The sidebar's **Settings** opens this page
+them):
+- Users, Entity & Integration and Modules go to Flask's `/entity/<id>/settings/...`, which hands
+  over to minty-web, whose tabs they are since phase 2 (2026-10-05).
+- **Petty Cash Settings** goes to the Petty Cash app (minty-petty-cash-web) through Flask's
+  login-gated `/handoff/petty-cash-web` (`pettyCashSettingsUrl`, since 2026-10-19). It never goes
+  to Flask's own, retired settings page.
+
+A placeholder shows while these are unresolved.
+
+The pills look as they do in every app (the owner, 2026-10-19):
+- minty-web's 44px `rounded-lg` pills, wrapping rather than scrolling sideways;
+- `nav` "Settings sections";
+- the same order as minty-web's `SettingsTabs` and the Petty Cash app's. The sidebar's **Settings** opens this page
 ([sidebar.md](sidebar.md)).
 
 ### "Leave without saving?" (2026-10-01)

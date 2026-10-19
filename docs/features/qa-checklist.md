@@ -195,7 +195,9 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
 - [ ] A failed codes read (Xero connected) shows "I couldn't load your account codes. Mind
       refreshing the page?" — never "No account codes yet" for an actual read failure.
 - [ ] The four other settings pills (Users, Entity & Integration, Petty Cash Settings, Modules)
-      are plain links out to Minty/minty-web, not functionality duplicated here.
+      are plain links out to minty-web and the Petty Cash app, not functionality duplicated
+      here. Petty Cash Settings lands on the Petty Cash app's settings, never Flask's own page.
+      They are 44px pills that wrap at 360px, the same look as minty-web's.
 - [ ] **DB:** `SELECT account_type, is_active, is_default, sort_order FROM
       pettycashv3.entity_bill_account_xero WHERE entity_id = '<id>';` — a save updates only
       the rows that changed (`is_active`/`is_default`/`sort_order`); this table is entirely
