@@ -49,9 +49,23 @@ nested under a request ("Invoice INV-… · 2 bank slips").
 
 ## The list (`/entity/<shortid>/<name>/payment-request`, `components/payment-request/PaymentRequestView.tsx`)
 
-- **Page header:** "Payment Requests", a purpose line, and the Primary link **Add payment
+- **Page header:** the Payment Request module art (`public/menu/payment-request.svg`, the
+  sidebar's module chip, 40px on `module-payment-wash`; `PageHeader`'s `art` slot - identity, not
+  a character), "Payment Requests", a purpose line, and the Primary link **Add payment
   request** (to the Add page). Without the role it is a disabled button with its reason; a
   view-only visitor gets a note instead.
+- **Needs attention** (`PaymentRequestAttentionStrip.tsx`, 2026-10-19), straight under the header:
+  three toggle tiles (`aria-pressed`) - **Overdue** (count + unpaid total, Warning surface with an
+  icon), **Due in 7 days** (due today to 7 days ahead; count + unpaid total) and **Returned**
+  (count). Paid, Voided and Draft are never overdue or due; unpaid = the row's unpaid amount, per
+  currency (at most two, then "+N more"). Overdue / Due in 7 days apply a client-side due filter
+  (cleared by Clear filters); Returned presses the Returned chip. "Today" is the Hong Kong date
+  (`lib/paymentRequestAttention.ts`). The figures come from the last whole-list load, like the
+  chip counts, never from a single-chip server load. With nothing to show it is one line,
+  "Nothing is overdue or due this week." The **totals banner** now sits under the strip, once
+  for both views (same visibility rule; a due tile alone does not open it - the tile already
+  shows that total). Both views' row meta add "Overdue N days" / "Due today" / "Due in N days"
+  (`PaymentRequestDueMeta.tsx`) for unpaid requests due within a week.
 - **Toolbar** (`PaymentRequestToolbar.tsx`): search in a `role="search"` box ("Search supplier,
   description or amount"), the **Easy view | Table view** segmented control (radios; from 768px
   only — a phone always gets Easy view), Filter, Bulk Actions, and the status **chips** — a

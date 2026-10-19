@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Header } from "@/components/layout";
@@ -97,6 +98,15 @@ export default function Home() {
       <div className="mx-auto w-full max-w-[1200px]">
         <PageHeader
           title="Payment Requests"
+          art={
+            // Part 13 §13.10 module art on the Payment Request wash - the sidebar's module chip, at 40px.
+            <span
+              className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-module-payment-wash"
+              aria-hidden
+            >
+              <Image src="/menu/payment-request.svg" alt="" width={40} height={40} unoptimized />
+            </span>
+          }
           purpose="Supplier bills waiting to be paid, and what has been paid."
           primary={createButton}
           below={

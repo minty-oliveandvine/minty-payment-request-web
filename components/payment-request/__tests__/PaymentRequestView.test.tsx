@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ToastProvider } from "@/components/Toast";
 import { PaymentRequestView } from "@/components/payment-request/PaymentRequestView";
-import { ALL_STATUSES, billList, billListItem } from "@/lib/__fixtures__/bills";
+import { ALL_STATUSES, billList, billListItem, inDays } from "@/lib/__fixtures__/bills";
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
 
@@ -334,6 +334,101 @@ describe("the status filter", () => {
         .filter((u) => u.pathname.endsWith("/bills/"));
       expect(asked.some((u) => u.searchParams.get("status") === "draft")).toBe(true);
     });
+  });
+});
+
+describe("what needs attention", () => {
+  // Due dates relative to now, so the fixture never drifts: the strip reckons "today" in Hong
+  // Kong, and moving an instant by whole days moves its Hong Kong date by the same days.
+  const ATTENTION = [
+    billListItem({ id: "a-late", contact: "Late Supplier", status: "submitted", amount_due: "6000.00", due_date: inDays(-3) }),
+    billListItem({ id: "a-part", contact: "Part Paid Late", status: "partially_paid", amount: "13000.50", amount_due: "1500.00", due_date: inDays(-1) }),
+    billListItem({ id: "a-soon", contact: "Soon Supplier", status: "submitted", amount_due: "300.00", due_date: inDays(2) }),
+    billListItem({ id: "a-later", contact: "Later Supplier", status: "submitted", amount_due: "50.00", due_date: inDays(20) }),
+    billListItem({ id: "a-returned", contact: "Returned Supplier", status: "returned", amount_due: "80.00", due_date: inDays(20) }),
+    billListItem({ id: "a-paid", contact: "Paid Supplier", status: "paid", amount_due: "0.00", due_date: inDays(-9) }),
+  ];
+  const strip = () => within(screen.getByRole("region", { name: "Needs attention" }));
+  const tile = (name: string) => strip().getByRole("button", { name: new RegExp(`^${name}`) });
+
+  it("counts the overdue and due-this-week requests with what is still unpaid, and the returned ones", async () => {
+    serve({ pages: [ATTENTION] });
+    show();
+    await loaded();
+
+    // Overdue: 6,000.00 + the 1,500.00 still owed on the part-paid one. Paid is never overdue.
+    await waitFor(() => expect(tile("Overdue")).toHaveTextContent("2 requests"));
+    expect(tile("Overdue")).toHaveTextContent("HKD 7,500.00 unpaid");
+    expect(tile("Due in 7 days")).toHaveTextContent("1 request");
+    expect(tile("Due in 7 days")).toHaveTextContent("HKD 300.00 unpaid");
+    expect(tile("Returned")).toHaveTextContent("1 request");
+    expect(tile("Overdue")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("collapses to one calm line when nothing is overdue, due this week or returned", async () => {
+    serve({ pages: [[billListItem({ id: "calm", contact: "Calm Supplier", due_date: inDays(30) })]] });
+    show();
+    await loaded();
+
+    expect(await screen.findByText("Nothing is overdue or due this week.")).toBeInTheDocument();
+    expect(strip().queryAllByRole("button")).toHaveLength(0);
+  });
+
+  it("narrows the list to the overdue requests when Overdue is pressed, and back again", async () => {
+    serve({ pages: [ATTENTION] });
+    show();
+    await loaded();
+    await waitFor(() => expect(tile("Overdue")).toHaveTextContent("2 requests"));
+    fetchMock.mockClear();
+
+    await userEvent.click(tile("Overdue"));
+
+    expect(tile("Overdue")).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(bodyRows()).toHaveLength(2));
+    expect(table().getByText("Late Supplier")).toBeInTheDocument();
+    expect(table().getByText("Overdue 3 days")).toBeInTheDocument();
+    expect(table().queryByText("Soon Supplier")).not.toBeInTheDocument();
+
+    await userEvent.click(tile("Overdue"));
+
+    expect(tile("Overdue")).toHaveAttribute("aria-pressed", "false");
+    await waitFor(() => expect(bodyRows()).toHaveLength(ATTENTION.length));
+    // A client-side filter: the list already in memory is narrowed, never fetched again.
+    expect(fetchMock.mock.calls.some(([u]) => new URL(String(u)).pathname.endsWith("/bills/"))).toBe(false);
+  });
+
+  it("presses the Returned chip for the Returned tile, and keeps its figures from the whole list", async () => {
+    serve({ pages: [ATTENTION] });
+    show();
+    await loaded();
+    await waitFor(() => expect(tile("Returned")).toHaveTextContent("1 request"));
+    fetchMock.mockClear();
+
+    await userEvent.click(tile("Returned"));
+
+    expect(statusChip("Returned")).toHaveAttribute("aria-pressed", "true");
+    expect(tile("Returned")).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => {
+      const asked = fetchMock.mock.calls
+        .map(([u]) => new URL(String(u)))
+        .filter((u) => u.pathname.endsWith("/bills/"));
+      expect(asked.some((u) => u.searchParams.get("status") === "returned")).toBe(true);
+    });
+    await loaded();
+    // The single-status load answered with every row again here, but the strip does not re-count
+    // from a filtered load: its numbers stay those of the last whole-list load.
+    expect(tile("Overdue")).toHaveTextContent("2 requests");
+  });
+
+  it("draws the totals once, under the strip, rather than once per view", async () => {
+    serve({ pages: [ATTENTION] });
+    show();
+    await loaded();
+
+    await userEvent.click(table().getByRole("checkbox", { name: "Select row Late Supplier" }));
+
+    expect(screen.getAllByText("Selected total unpaid amount")).toHaveLength(1);
+    expect(strip().getByText("Selected total unpaid amount")).toBeInTheDocument();
   });
 });
 

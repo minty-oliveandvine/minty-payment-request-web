@@ -180,6 +180,21 @@ describe("the rows", () => {
     expect(table().getAllByRole("link", { name: "Open Young Bros Transport" }).length).toBeGreaterThan(0);
   });
 
+  it("say under the supplier when an unpaid request is overdue or due today", () => {
+    show({
+      todayIso: "2026-10-19",
+      rows: [
+        billRow({ id: "late", contactTitle: "Late Co", status: "Returned", dueDateIso: "2026-10-18" }),
+        billRow({ id: "today", contactTitle: "Today Co", status: "Payment Requested", dueDateIso: "2026-10-19" }),
+        billRow({ id: "later", contactTitle: "Later Co", status: "Payment Requested", dueDateIso: "2026-10-27" }),
+      ],
+    });
+
+    expect(bodyRows()[0]).toHaveTextContent("Overdue 1 day");
+    expect(bodyRows()[1]).toHaveTextContent("Due today");
+    expect(bodyRows()[2]).not.toHaveTextContent(/Overdue|Due /);
+  });
+
   it("say they are loading rather than showing an empty table", () => {
     show({ loading: true, rows: [] });
 

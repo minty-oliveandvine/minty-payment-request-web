@@ -376,8 +376,10 @@ export function PaymentRequestToolbar({
                     data-filter-menu-panel
                     role="dialog"
                     aria-label="Filters"
-                    className="fixed z-[400] overflow-hidden rounded-lg border border-border-default bg-surface-raised shadow-overlay"
-                    style={{ top: filterMenu.top, left: filterMenu.left, width: filterMenu.width }}
+                    className="fixed z-[400] overflow-y-auto overscroll-contain rounded-lg border border-border-default bg-surface-raised shadow-overlay"
+                    // Fixed under its button: capped to the space left below it so Apply stays reachable
+                    // when the button sits low (e.g. under the Needs attention strip) or the window is short.
+                    style={{ top: filterMenu.top, left: filterMenu.left, width: filterMenu.width, maxHeight: `calc(100dvh - ${filterMenu.top + 8}px)` }}
                   >
                     <div className="border-b border-border-subtle px-4 py-3">
                       <h3 className="text-title-m text-text-primary">Filters</h3>

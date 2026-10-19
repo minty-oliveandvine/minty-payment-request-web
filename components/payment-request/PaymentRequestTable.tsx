@@ -1,11 +1,12 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { PaymentRequestStatusFilter } from "./PaymentRequestToolbar";
 import { BankSlipDetailsModal, type BankSlipDetails } from "./BankSlipDetailsModal";
 import { BankSlipLoadState } from "./BankSlipLoadState";
 import { RowDeleteConfirmModal } from "./RowDeleteConfirmModal";
+import { PaymentRequestDueMeta } from "./PaymentRequestDueMeta";
 import { useUserRole } from "@/lib/useUserRole";
 import { useEntityCurrency } from "@/lib/entityCurrency";
 import { recordPaymentButtonClass } from "./paymentRequestButtonClasses";
@@ -40,6 +41,8 @@ export type PaymentRequestRow = {
   invoiceDateIso?: string;
   /** Hong Kong calendar date (`yyyy-mm-dd`) behind `submittedDate`, for date filtering. */
   submittedDateIso?: string;
+  /** Calendar date (`yyyy-mm-dd`) the request is due, for the overdue / due-soon figures. */
+  dueDateIso?: string;
   status: string;
   submittedDate: string;
   unpaidAmount: string;
@@ -272,8 +275,8 @@ type PaymentRequestTableProps = {
   selectedIds?: ReadonlySet<string>;
   onToggleRow?: (rowId: string) => void;
   onToggleAll?: (rowIds: string[], next: boolean) => void;
-  /** Rendered top-right above the table (the totals banner). */
-  headerSlot?: ReactNode;
+  /** Today in the billing timezone, for each row's "Overdue N days" / "Due in N days". */
+  todayIso?: string;
   /** After bank slip files are uploaded via API for a bill. */
   onBankSlipUploaded?: () => void;
   /** Reloads the bank slip counts after a lookup failed. */
@@ -464,7 +467,7 @@ export function PaymentRequestTable({
   selectedIds = EMPTY_SELECTION,
   onToggleRow,
   onToggleAll,
-  headerSlot,
+  todayIso,
   onBankSlipUploaded,
   onRetryBankSlips,
 }: PaymentRequestTableProps) {
@@ -664,7 +667,6 @@ export function PaymentRequestTable({
 
   return (
     <div className="w-full min-w-0 px-4 pb-6 sm:px-6">
-      {headerSlot ? <div className="mb-3 flex justify-end">{headerSlot}</div> : null}
       {/* Part 15.17: Table view is a real table at every width it is offered (from 768px; a
           phone gets the Easy view rows instead), scrolling inside its own frame - never the page. */}
       <div className="rounded-lg border border-border-default">
@@ -775,6 +777,7 @@ export function PaymentRequestTable({
                               <div className="flex min-w-0 flex-col gap-0.5">
                                 <span className="text-body-m font-semibold text-text-primary">{row.contactTitle}</span>
                                 {row.contactCaption ? <span className="text-body-s text-text-secondary">{row.contactCaption}</span> : null}
+                                {todayIso ? <PaymentRequestDueMeta row={row} todayIso={todayIso} /> : null}
                               </div>
                             </td>
                           );

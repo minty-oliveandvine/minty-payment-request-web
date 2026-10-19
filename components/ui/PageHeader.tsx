@@ -10,6 +10,9 @@
  * Primary. On a phone the Primary becomes full width under the title, and the Secondaries share
  * the row below it with More at its end - which is why `actions`, `primary` and `more` are separate.
  * Header actions are role-aware: the caller leaves out what the person cannot do.
+ *
+ * `art` is the module's identity (Part 13 §13.10 Module art, 28-56px, on the module wash) beside
+ * the title - identity, never a character (Part 15.4 retired the mascot beside lists).
  */
 
 import Link from "next/link";
@@ -19,6 +22,7 @@ import { Icon } from "./Icon";
 
 export function PageHeader({
   title,
+  art,
   purpose,
   back,
   status,
@@ -29,6 +33,8 @@ export function PageHeader({
   below,
 }: {
   title: ReactNode;
+  /** Module art drawn left of the title; decorative, so the caller hides it from assistive tech. */
+  art?: ReactNode;
   purpose?: ReactNode;
   /** Record type only: the parent list. */
   back?: { href: string; label: string };
@@ -58,6 +64,7 @@ export function PageHeader({
       <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            {art}
             <h1 className="min-w-0 break-words text-display-m text-text-primary">
               {title}
             </h1>

@@ -16,6 +16,7 @@ import {
 } from "./PaymentRequestToolbar";
 import { PaymentRequestPagination, PAGE_SIZE_OPTIONS } from "./PaymentRequestPagination";
 import { PaymentRequestTotalsBanner } from "./PaymentRequestTotalsBanner";
+import { PaymentRequestAttentionStrip, type AttentionTile } from "./PaymentRequestAttentionStrip";
 import { BulkDeleteConfirmModal } from "./BulkDeleteConfirmModal";
 import { RecordPaymentDrawer } from "./RecordPaymentDrawer";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
@@ -37,6 +38,13 @@ import { BILLING_TIME_ZONE, formatIsoDateForDisplay, isoDateInTimeZone } from "@
 import { getAuth } from "@/lib/auth";
 import { compareRows, type SortKey } from "@/lib/paymentRequestRowSort";
 import { rowMatchesSearch, type SearchMode } from "@/lib/paymentRequestSearch";
+import {
+  billingToday,
+  computeAttention,
+  rowMatchesDueFilter,
+  type DueFilter,
+  type PaymentRequestAttention,
+} from "@/lib/paymentRequestAttention";
 import { useUserRole } from "@/lib/useUserRole";
 import { useToast } from "@/components/Toast";
 import { useCompanyPages } from "@/lib/useCompanyPages";
@@ -94,6 +102,7 @@ function mapBillToRow(bill: BillListItem, entityCurrency = ""): PaymentRequestRo
     currencyCode: iso,
     invoiceDate: bill.invoice_date ? formatDate(bill.invoice_date) : "",
     invoiceDateIso: bill.invoice_date ? toBillingIsoDate(bill.invoice_date) : "",
+    dueDateIso: bill.due_date ? toBillingIsoDate(bill.due_date) : "",
     status,
     submittedDate: formatDate(bill.created_at),
     submittedDateIso: toBillingIsoDate(bill.created_at),
@@ -154,6 +163,8 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [xeroStatus, setXeroStatus] = useState("");
+  /** The Overdue / Due in 7 days tiles' filter - client-side, like search and dates. */
+  const [dueFilter, setDueFilter] = useState<DueFilter | null>(null);
   const [rawBills, setRawBills] = useState<BillListItem[]>([]);
   const [bills, setBills] = useState<PaymentRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,6 +196,8 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   const retryBankSlips = useCallback(() => setEnrichEpoch((e) => e + 1), []);
 
   const statusFilterKey = statusFilters.join("|");
+  /** Today in the billing timezone, re-read with every load so a page left open rolls over. */
+  const [todayIso, setTodayIso] = useState(billingToday);
 
   /** Bank-slip counts merged onto the rows, so every consumer sees enriched data. */
   const enrichedBills = useMemo(
@@ -221,6 +234,7 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
     else if (xeroStatus === "draft") result = result.filter((r) => r.xeroActive !== true);
     if (statusFilters.length > 0) result = result.filter((r) => statusFilters.some((s) => s === r.status));
     if (debouncedSearch) result = result.filter((r) => rowMatchesSearch(r, debouncedSearch, searchMode));
+    if (dueFilter) result = result.filter((r) => rowMatchesDueFilter(r, dueFilter, todayIso));
     // Dates are matched here rather than server-side so the comparison uses the same
     // Hong Kong calendar date the column shows. The API compares `created_at` (a UTC
     // timestamp) against a date coerced to midnight, which drops the whole end day —
@@ -236,7 +250,7 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
       });
     }
     return result;
-  }, [enrichedBills, xeroStatus, statusFilters, debouncedSearch, searchMode, dateType, startDate, endDate]);
+  }, [enrichedBills, xeroStatus, statusFilters, debouncedSearch, searchMode, dueFilter, todayIso, dateType, startDate, endDate]);
 
   const totalItems = filteredBills.length;
   const pageCount = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -357,6 +371,7 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
     setLoading(true);
     setLoadError(null);
     setDatasetComplete(false);
+    setTodayIso(billingToday());
     // Invalidate cached bank-slip counts without clearing them, so the Bank Slip
     // column keeps showing stale-but-correct values while the list reloads.
     setEnrichEpoch((e) => e + 1);
@@ -546,7 +561,7 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   /** Any change to what the list contains sends the user back to page 1. */
   useEffect(() => {
     setPage(1);
-  }, [statusFilterKey, debouncedSearch, searchMode, minAmount, maxAmount, dateType, startDate, endDate, xeroStatus]);
+  }, [statusFilterKey, debouncedSearch, searchMode, dueFilter, minAmount, maxAmount, dateType, startDate, endDate, xeroStatus]);
 
   useEffect(() => {
     if (page !== safePage) setPage(safePage);
@@ -620,12 +635,46 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
     }
     return counts;
   }, [enrichedBills]);
+  /** What needs attention (the strip above the list), from the same rows as the chip counts. */
+  const liveAttention = useMemo(() => computeAttention(bills, todayIso), [bills, todayIso]);
   // One chip on its own is fetched server-side (only that status comes back), so its counts would
-  // read 0 for every other chip: keep the counts from the last whole-list load instead.
+  // read 0 for every other chip: keep the counts from the last whole-list load instead. The
+  // attention figures follow the same rule.
   const [chipCounts, setChipCounts] = useState<Partial<Record<string, number>> | null>(null);
+  const [attention, setAttention] = useState<PaymentRequestAttention | null>(null);
   useEffect(() => {
-    if (statusFilters.length !== 1 && datasetComplete) setChipCounts(statusCounts);
-  }, [statusFilters.length, datasetComplete, statusCounts]);
+    if (statusFilters.length !== 1 && datasetComplete) {
+      setChipCounts(statusCounts);
+      setAttention(liveAttention);
+    }
+  }, [statusFilters.length, datasetComplete, statusCounts, liveAttention]);
+
+  /** The tile whose filter is on: a due filter, or Returned as the only status chip. */
+  const activeTile: AttentionTile | null = dueFilter
+    ? dueFilter
+    : statusFilters.length === 1 && statusFilters[0] === "Returned"
+      ? "returned"
+      : null;
+
+  /** A tile toggles its own filter, replacing the other tiles' (the chips stay usable as ever). */
+  const onAttentionSelect = useCallback(
+    (tile: AttentionTile) => {
+      if (tile === activeTile) {
+        if (tile === "returned") setStatusFilters([]);
+        else setDueFilter(null);
+        return;
+      }
+      if (tile === "returned") {
+        setDueFilter(null);
+        setStatusFilters(["Returned"]);
+      } else {
+        setDueFilter(tile);
+        // Keep the same array when no chip is on: a new one would refetch the whole list.
+        setStatusFilters((prev) => (prev.length > 0 ? [] : prev));
+      }
+    },
+    [activeTile],
+  );
 
   const clearFilters = useCallback(() => {
     setStatusFilters([]);
@@ -638,6 +687,7 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
     setStartDate("");
     setEndDate("");
     setXeroStatus("");
+    setDueFilter(null);
   }, []);
 
   /** A deliberate narrowing of the list: search or the filter panel. */
@@ -657,8 +707,8 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   const statusWorthTotalling = statusFilters.some((s) => s !== "Draft");
 
   // Hidden on a plain, unfiltered list — it only earns its space once the user has
-  // narrowed the list or picked rows. Built once and handed to both branches so the
-  // two copies can never disagree.
+  // narrowed the list or picked rows. It sits under the attention strip, once for both views.
+  // A due tile on its own does not open it: the tile already shows that unpaid total.
   const totalsBanner =
     activeSelectedRows.length > 0 || hasActiveFilters || statusWorthTotalling ? (
       <PaymentRequestTotalsBanner
@@ -687,6 +737,16 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
 
   return (
     <>
+      {loadError ? null : (
+        <div className="mx-auto mb-4 w-full min-w-0 max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <PaymentRequestAttentionStrip
+            attention={attention}
+            active={activeTile}
+            onSelect={onAttentionSelect}
+            supporting={totalsBanner}
+          />
+        </div>
+      )}
       <PaymentRequestToolbar
         activeStatuses={statusFilters}
         onActiveStatusesChange={setStatusFilters}
@@ -756,14 +816,14 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
                 selectedIds={selectedIds}
                 onToggleRow={onToggleRow}
                 onToggleAll={onToggleAll}
-                totalsBanner={totalsBanner}
+                todayIso={todayIso}
                 pagination={pagination}
                 onRecordPayment={recordPayment}
                 onOpenBankSlipUpload={(rowId) => setEasyViewBankSlipRowId(rowId)}
                 onRetryBankSlips={retryBankSlips}
                 isElevated={isElevated}
                 isViewOnly={isViewOnly}
-                filtered={hasActiveFilters || statusFilters.length > 0}
+                filtered={hasActiveFilters || statusFilters.length > 0 || dueFilter !== null}
                 onClearFilters={clearFilters}
                 createAction={createAction}
               />
@@ -778,7 +838,7 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
                 selectedIds={selectedIds}
                 onToggleRow={onToggleRow}
                 onToggleAll={onToggleAll}
-                headerSlot={totalsBanner}
+                todayIso={todayIso}
                 onRecordPayment={recordPayment}
                 onRowClick={(rowId, reference) => router.push(pages.request(rowId, reference))}
                 onRowDelete={async (rowId) => {

@@ -211,10 +211,26 @@ describe("states (Part 15.11 / 15.17)", () => {
     expect(onClearFilters).toHaveBeenCalled();
   });
 
-  it("draws the totals banner and the pager it is handed", () => {
-    show({ totalsBanner: <p>The totals</p>, pagination: <p>The pager</p> });
-    expect(screen.getByText("The totals")).toBeInTheDocument();
+  // The totals banner moved out to the attention strip above the toolbar (PaymentRequestView),
+  // drawn once for both views, so the list only takes the pager now.
+  it("draws the pager it is handed", () => {
+    show({ pagination: <p>The pager</p> });
     expect(screen.getByText("The pager")).toBeInTheDocument();
+  });
+
+  it("says in the row meta when an unpaid request is overdue or due this week - and nothing for a paid one", () => {
+    show({
+      todayIso: "2026-10-19",
+      rows: [
+        billRow({ id: "late", contactTitle: "Late Co", status: "Payment Requested", dueDateIso: "2026-10-16" }),
+        billRow({ id: "soon", contactTitle: "Soon Co", status: "Partially Paid", dueDateIso: "2026-10-21" }),
+        billRow({ id: "done", contactTitle: "Done Co", status: "Paid", dueDateIso: "2026-10-01" }),
+      ],
+    });
+    const row = (id: string) => within(document.querySelector(`[data-easy-view-row="${id}"]`) as HTMLElement);
+    expect(row("late").getByText("Overdue 3 days")).toBeInTheDocument();
+    expect(row("soon").getByText("Due in 2 days")).toBeInTheDocument();
+    expect(row("done").queryByText(/Overdue|Due /)).not.toBeInTheDocument();
   });
 });
 

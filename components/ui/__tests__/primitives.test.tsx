@@ -13,6 +13,7 @@ import { ErrorSummary } from "../ErrorSummary";
 import { Field, inputClass } from "../Field";
 import { FilterChip } from "../FilterChip";
 import { InlineAlert } from "../InlineAlert";
+import { PageHeader } from "../PageHeader";
 import { Drawer, Modal } from "../Overlay";
 import { SegmentedControl } from "../SegmentedControl";
 import { StatusPill } from "../StatusPill";
@@ -147,6 +148,15 @@ describe("FilterChip and SegmentedControl", () => {
     await userEvent.keyboard("{ArrowRight}");
     expect(screen.getByRole("radio", { name: "Table view" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: "Table view" })).toHaveFocus();
+  });
+});
+
+describe("PageHeader", () => {
+  it("draws the module art beside the one h1, out of the accessible name", () => {
+    render(<PageHeader title="Payment Requests" art={<span aria-hidden data-testid="art" />} />);
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1).toHaveAccessibleName("Payment Requests");
+    expect(screen.getByTestId("art").nextElementSibling).toBe(h1);
   });
 });
 

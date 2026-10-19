@@ -29,6 +29,7 @@ import { ACTION_LABEL, rowNextAction } from "@/lib/requestActions";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 import { BankSlipLoadState } from "./BankSlipLoadState";
+import { PaymentRequestDueMeta } from "./PaymentRequestDueMeta";
 import { HEADER_CHECKBOX_CLASS } from "./paymentRequestCheckboxClasses";
 import type { PaymentRequestRow } from "./PaymentRequestTable";
 
@@ -53,8 +54,8 @@ export type PaymentRequestEasyViewProps = {
   selectedIds: ReadonlySet<string>;
   onToggleRow: (rowId: string) => void;
   onToggleAll: (rowIds: string[], next: boolean) => void;
-  /** Rendered above the list (the totals banner). */
-  totalsBanner?: ReactNode;
+  /** Today in the billing timezone, for each row's "Overdue N days" / "Due in N days". */
+  todayIso?: string;
   /** Rendered below the list. */
   pagination?: ReactNode;
   /** Opens the Record payment Drawer; `readOnly` for View payments. */
@@ -139,7 +140,7 @@ export function PaymentRequestEasyView({
   selectedIds,
   onToggleRow,
   onToggleAll,
-  totalsBanner,
+  todayIso,
   pagination,
   onRecordPayment,
   onOpenBankSlipUpload,
@@ -160,8 +161,6 @@ export function PaymentRequestEasyView({
   return (
     // The page's 1200px frame (aligned with the toolbar above), the rows capped at 960 inside it.
     <div className="mx-auto flex w-full max-w-[1200px] min-w-0 flex-col gap-5 px-4 pb-8 sm:px-6 lg:px-8 [&>*]:max-w-[960px]">
-      {totalsBanner ? <div className="flex justify-end">{totalsBanner}</div> : null}
-
       {/* The column header: select-all and the four sorts. */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border-subtle pb-2">
         <label className="relative inline-flex size-11 shrink-0 cursor-pointer items-center justify-center">
@@ -272,6 +271,7 @@ export function PaymentRequestEasyView({
                           {row.contactCaption?.trim() ? "· " : ""}Submitted {row.submittedDate}
                         </span>
                       ) : null}
+                      {todayIso ? <PaymentRequestDueMeta row={row} todayIso={todayIso} /> : null}
                       <BankSlipMeta row={row} onOpen={onOpenBankSlipUpload} onRetry={onRetryBankSlips} />
                     </div>
                   </div>

@@ -7,7 +7,7 @@ import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
 import { parseRowAmount } from "@/lib/paymentRequestRowSort";
 
 /** Currency groups rendered in full before the rest collapse into a "+N more" line. */
-const MAX_CURRENCY_GROUPS = 2;
+export const MAX_CURRENCY_GROUPS = 2;
 
 export type PaymentRequestTotalsBannerProps = {
   /** Every row matching the current filters + search — NOT just the current page. */
@@ -22,7 +22,7 @@ export type PaymentRequestTotalsBannerProps = {
 
 type CurrencyTotals = { code: string; invoice: number; unpaid: number };
 
-function formatTotal(n: number): string {
+export function formatTotal(n: number): string {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
