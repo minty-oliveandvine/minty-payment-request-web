@@ -719,7 +719,7 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
         canPublish={isElevated}
       />
       <main
-        className="mx-auto flex min-h-0 min-w-0 w-full max-w-[1920px] flex-1 flex-col overflow-x-hidden pt-4"
+        className="mx-auto flex min-h-0 min-w-0 w-full max-w-[1200px] flex-1 flex-col overflow-x-hidden pt-4"
         data-easy-view={easyView ? "true" : undefined}
       >
         {showReadOnlyBanner || actionError ? (

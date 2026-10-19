@@ -2,7 +2,7 @@
 export function PaymentRequestDetailSkeleton() {
   return (
     <div
-      className="mx-auto w-full min-w-0 max-w-[1920px] animate-pulse px-4 py-4 sm:px-6 lg:px-8"
+      className="mx-auto w-full min-w-0 max-w-[1440px] animate-pulse px-4 py-4 sm:px-6 lg:px-8"
       aria-hidden
     >
       <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 lg:grid-rows-[auto_minmax(12rem,1fr)] lg:gap-x-6 lg:gap-y-4">

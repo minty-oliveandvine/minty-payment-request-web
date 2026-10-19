@@ -69,6 +69,13 @@ nested under a request ("Invoice INV-… · 2 bank slips").
   Clear filters.
 - **Table view** (`PaymentRequestTable.tsx`): compact cells, a 40px header naming the currency
   once ("Unpaid (HKD)"), sortable columns. It has no phone card layout any more.
+- **Widths, elevation, sizes** (fidelity pass, 2026-10-16): the list's content and the header
+  bar's inner row are capped at 1200 (Easy rows 960 inside it), the detail and its skeleton at
+  1440, the new-request form at 720. Resting surfaces (cards, rows, previews, buttons) carry a
+  border, never a shadow: `shadow-overlay` only on menus, popovers, tooltips and toasts,
+  `shadow-modal` on modals and drawers. Controls are 44px everywhere but the desktop table's
+  compact cells and the pointer-only filter chips and view switch; the small remove-file buttons
+  keep their 32px look with a 44px hit area on touch.
 - **Record payment** opens one drawer, `RecordPaymentDrawer.tsx`, from either view (below).
 - Every amount is shown in the **entity's currency** (`lib/entityCurrency.ts` from
   `GET /api/auth/entity-currency`), never the bill's stored code.

@@ -894,7 +894,7 @@ export function PaymentRequestTable({
                                   <span className="material-symbols-rounded text-[16px] cursor-pointer text-text-primary hover:text-text-primary block">
                                     info
                                   </span>
-                                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block bg-text-primary text-text-inverse text-xs rounded-md py-2 px-3 whitespace-nowrap shadow-lg z-20 pointer-events-none">
+                                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block bg-text-primary text-text-inverse text-xs rounded-md py-2 px-3 whitespace-nowrap shadow-overlay z-20 pointer-events-none">
                                     {row.contactCaption?.trim() ? row.contactCaption : "No description added"}
                                     <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-text-primary"></div>
                                   </div>
@@ -939,7 +939,7 @@ export function PaymentRequestTable({
       ) : null}
       {rowMenu
         ? createPortal(
-            <div data-row-menu-panel role="menu" aria-label="Row actions" className="fixed z-[400] rounded-lg border border-border-default bg-surface-card py-1 shadow-lg" style={{ top: rowMenu.top, left: rowMenu.left, minWidth: ROW_MENU_MIN_WIDTH_PX }}>
+            <div data-row-menu-panel role="menu" aria-label="Row actions" className="fixed z-[400] rounded-lg border border-border-default bg-surface-card py-1 shadow-overlay" style={{ top: rowMenu.top, left: rowMenu.left, minWidth: ROW_MENU_MIN_WIDTH_PX }}>
               {showRowMenuPublish ? (
                 <button type="button" role="menuitem" className="block w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-text-secondary transition-colors hover:bg-surface-sunk" onClick={() => { const id = rowMenu.rowId; setRowMenu(null); void runRowPublish(id, "publish", onRowPublish); }}>
                   Publish
@@ -955,7 +955,7 @@ export function PaymentRequestTable({
         : null}
       {columnsMenu
         ? createPortal(
-            <div data-columns-menu-panel role="dialog" aria-label="Columns selector" className="fixed z-[400] w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-lg border border-border-default bg-surface-card shadow-lg" style={{ top: columnsMenu.top, left: columnsMenu.left }}>
+            <div data-columns-menu-panel role="dialog" aria-label="Columns selector" className="fixed z-[400] w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-lg border border-border-default bg-surface-card shadow-overlay" style={{ top: columnsMenu.top, left: columnsMenu.left }}>
               <div className="border-b border-border-default px-3 py-2">
                 <h3 className="text-sm font-semibold text-text-secondary">Columns</h3>
                 <p className="mt-1 text-xs leading-snug text-text-muted">Select columns to show in the table.</p>
@@ -989,7 +989,7 @@ export function PaymentRequestTable({
                 </button>
                 <button
                   type="button"
-                  className="inline-flex h-9 min-h-[44px] w-full min-w-0 flex-1 items-center justify-center rounded-lg bg-action-primary px-4 text-sm font-semibold text-action-on-primary shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus sm:min-h-9"
+                  className="inline-flex h-9 min-h-[44px] w-full min-w-0 flex-1 items-center justify-center rounded-lg bg-action-primary px-4 text-sm font-semibold text-action-on-primary transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus sm:min-h-9"
                   onClick={() => {
                     const next = { ...columnVisibilityDraft };
                     setColumnVisibility(next);

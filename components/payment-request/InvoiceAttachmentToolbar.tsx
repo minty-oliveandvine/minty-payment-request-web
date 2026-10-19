@@ -20,7 +20,7 @@ export function InvoiceAttachmentToolbar({
   showAddMore = false,
 }: InvoiceAttachmentToolbarProps) {
   const btnClass =
-    "inline-flex h-9 min-h-[44px] shrink-0 items-center gap-1.5 rounded-md border border-border-default bg-surface-card px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-state-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus sm:h-10 sm:min-h-0 sm:px-3.5 sm:text-sm";
+    "inline-flex h-11 min-h-11 shrink-0 items-center gap-1.5 rounded-md border border-border-default bg-surface-card px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-state-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus sm:px-3.5 sm:text-sm";
 
   return (
     <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2 sm:flex-nowrap">

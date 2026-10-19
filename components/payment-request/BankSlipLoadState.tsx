@@ -29,7 +29,7 @@ export function BankSlipLoadState({
       type="button"
       title="Bank slips didn't load"
       aria-label={`Bank slips didn't load for ${contactTitle} — try again`}
-      className="inline-flex h-10 min-h-10 min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded-lg border-0 bg-transparent px-2 text-xs font-semibold text-status-danger-ink transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus sm:text-sm"
+      className="inline-flex h-11 min-h-11 min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded-lg border-0 bg-transparent px-2 text-xs font-semibold text-status-danger-ink transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus sm:text-sm"
       onClick={(e) => {
         e.stopPropagation();
         onRetry?.();

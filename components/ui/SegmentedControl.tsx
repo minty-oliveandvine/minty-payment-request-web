@@ -60,7 +60,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(o.value)}
             onKeyDown={(e) => onKey(e, i)}
             className={`h-9 min-w-0 flex-1 cursor-pointer truncate rounded-md px-3 text-body-s font-semibold transition-colors duration-100 pointer-coarse:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus disabled:cursor-not-allowed disabled:text-text-disabled ${
-              on ? "bg-surface-card text-text-primary shadow-overlay" : "text-text-secondary hover:text-text-primary"
+              on ? "bg-surface-card text-text-primary" : "text-text-secondary hover:text-text-primary"
             }`}
           >
             {o.label}

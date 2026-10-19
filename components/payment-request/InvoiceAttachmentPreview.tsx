@@ -50,7 +50,7 @@ function FillColumnInvoiceLoadingSkeleton() {
       aria-busy="true"
       aria-label="Loading invoice attachment"
     >
-      <figure className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-border-default bg-surface-card shadow-sm">
+      <figure className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-border-default bg-surface-card">
         <div className="flex min-h-[min(14rem,48dvh)] w-full flex-col gap-3 p-3 sm:min-h-[min(18rem,52dvh)] sm:gap-4 sm:p-4">
           <div className="flex items-center gap-2 border-b border-border-subtle pb-3 sm:pb-4">
             <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-border-subtle" aria-hidden />
@@ -153,7 +153,7 @@ export function InvoiceAttachmentPreview({
           <FillColumnInvoiceLoadingSkeleton />
         ) : (
           <figure
-            className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded border border-border-default bg-surface-card shadow-sm"
+            className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded border border-border-default bg-surface-card"
             role="status"
             aria-busy="true"
             aria-label="Loading invoice attachment"
@@ -179,7 +179,7 @@ export function InvoiceAttachmentPreview({
                 <span className="h-px min-w-0 flex-1 bg-border-default" aria-hidden />
               </div>
             ) : null}
-            <figure className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded border border-border-default bg-surface-card shadow-sm">
+            <figure className="relative mx-auto w-full min-w-0 max-w-full overflow-hidden rounded border border-border-default bg-surface-card">
               {item ? (
                 <>
                   {editMode ? (

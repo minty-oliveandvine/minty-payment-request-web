@@ -15,14 +15,14 @@ const overlayClass =
   "fixed inset-0 z-[460] flex items-center justify-center overflow-x-hidden overscroll-x-none bg-overlay-scrim p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4";
 
 const shellClass =
-  "relative z-[1] w-full min-w-0 max-w-[440px] rounded-lg bg-surface-card p-5 shadow-xl ring-1 ring-border-subtle sm:rounded-lg sm:p-6";
+  "relative z-[1] w-full min-w-0 max-w-[440px] rounded-lg bg-surface-card p-5 shadow-modal ring-1 ring-border-subtle sm:rounded-lg sm:p-6";
 
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
 
 const dismissClass = `box-border h-12 min-h-[48px] w-full cursor-pointer rounded-lg border border-action-secondary-border bg-surface-card px-4 text-sm font-semibold text-text-link transition-colors hover:bg-state-selected ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
 
-const primaryClass = `box-border inline-flex h-12 min-h-[48px] w-full cursor-pointer items-center justify-center rounded-lg border border-transparent bg-action-primary px-4 text-sm font-semibold text-action-on-primary shadow-sm transition-opacity duration-200 ease-out hover:opacity-80 ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
+const primaryClass = `box-border inline-flex h-12 min-h-[48px] w-full cursor-pointer items-center justify-center rounded-lg border border-transparent bg-action-primary px-4 text-sm font-semibold text-action-on-primary transition-opacity duration-200 ease-out hover:opacity-80 ${focusRing} sm:h-11 sm:min-h-[44px] sm:w-auto`;
 
 /** Per-item card colouring. Severity is the server's call, not the component's. */
 const itemToneClass: Record<NoticeSeverity, string> = {

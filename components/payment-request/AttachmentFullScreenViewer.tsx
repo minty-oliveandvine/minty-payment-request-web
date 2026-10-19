@@ -286,7 +286,7 @@ export function ViewFullButton({ name, onClick }: { name: string; onClick: () =>
   return (
     <button
       type="button"
-      className="absolute right-2 top-2 z-10 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-border-default bg-surface-card text-text-secondary shadow-sm backdrop-blur-[1px] transition-colors hover:bg-surface-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
+      className="absolute right-2 top-2 z-10 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-border-default bg-surface-card text-text-secondary backdrop-blur-[1px] transition-colors hover:bg-surface-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
       aria-label={`View full — ${name}`}
       title="View full"
       onClick={(e) => {

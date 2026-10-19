@@ -125,7 +125,7 @@ export function ModuleNotActive({
       <main className="flex flex-1 flex-col items-center justify-center px-6 pb-16">
         <div className="flex flex-col items-center gap-8 p-5">
           <div
-            className={`flex h-20 w-20 items-center justify-center rounded-full shadow-inner ${
+            className={`flex h-20 w-20 items-center justify-center rounded-full ${
               inactive
                 ? "bg-status-warning-bg text-status-warning-ink"
                 : "bg-status-danger-bg text-status-danger-ink"
@@ -163,7 +163,7 @@ export function ModuleNotActive({
             <>
               <a
                 href={subscriptionUrl}
-                className="flex w-full items-center justify-center gap-2 rounded-lg py-3 font-medium text-text-inverse shadow-md transition-opacity hover:opacity-90"
+                className="flex w-full items-center justify-center gap-2 rounded-lg py-3 font-medium text-text-inverse transition-opacity hover:opacity-90"
                 style={{ backgroundColor: TEAL }}
               >
                 <CardIcon className="h-5 w-5" />
@@ -180,7 +180,7 @@ export function ModuleNotActive({
           ) : (
             <a
               href={entityListUrl}
-              className="flex w-full items-center justify-center gap-2 rounded-lg py-3 font-medium text-text-inverse shadow-md transition-opacity hover:opacity-90"
+              className="flex w-full items-center justify-center gap-2 rounded-lg py-3 font-medium text-text-inverse transition-opacity hover:opacity-90"
               style={{ backgroundColor: TEAL }}
             >
               <ArrowLeftIcon />

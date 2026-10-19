@@ -40,7 +40,7 @@ export function Header({
 }: HeaderProps) {
   return (
     <header className="border-b border-border-subtle bg-surface-card pt-[env(safe-area-inset-top,0px)]">
-      <div className="mx-auto flex h-14 w-full max-w-[1920px] items-center gap-2 px-4 sm:h-15 sm:gap-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-2 px-4 sm:h-15 sm:gap-3 sm:px-6 lg:px-8">
         {/* Part 15.1: on a phone the App bar holds the way back; from 768px the page header's
             Record back link does, so the two never show together. */}
         {backHref ? (

@@ -119,7 +119,7 @@ function SortButton({
       aria-pressed={active}
       aria-label={`Sort by ${def.name}${active ? (sort.dir === "asc" ? ", ascending" : ", descending") : ""}`}
       title={def.title}
-      className={`inline-flex h-8 shrink-0 cursor-pointer items-center gap-0.5 rounded-md px-2 text-label transition-colors duration-100 hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus pointer-coarse:h-11 ${active ? "text-text-primary" : "text-text-muted"}`}
+      className={`inline-flex h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-md px-2 text-label transition-colors duration-100 hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus ${active ? "text-text-primary" : "text-text-muted"}`}
     >
       {def.label}
       <Icon

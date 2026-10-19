@@ -316,7 +316,7 @@ function PdfJsCanvasRenderer({
           canvas.style.width = "100%";
           canvas.style.height = "auto";
           canvas.className =
-            "mx-auto block rounded border border-border-default bg-surface-card shadow-sm";
+            "mx-auto block rounded border border-border-default bg-surface-card";
           const ctx = canvas.getContext("2d");
           if (!ctx) throw new Error("2D context unavailable");
           ctx.scale(dpr, dpr);

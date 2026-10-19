@@ -146,7 +146,7 @@ export function UploadInvoiceAttachmentModal({ open, onClose, onUpload }: Upload
   return createPortal(
     <div className="fixed inset-0 z-[300] flex items-center justify-center overflow-x-hidden overscroll-x-none p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4 md:p-6" role="presentation">
       <button type="button" aria-label="Close dialog" className={`absolute inset-0 bg-overlay-scrim backdrop-blur-[1px] ${uploading ? "cursor-not-allowed" : "cursor-pointer"}`} onClick={() => !uploading && onClose()} />
-      <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={previewFile ? previewSubtitleId : undefined} className="relative z-[1] flex max-h-[min(100dvh-1rem,760px)] w-full min-w-0 max-w-[520px] flex-col rounded-lg bg-surface-card shadow-xl ring-1 ring-border-subtle sm:max-h-[min(92dvh,760px)] sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={previewFile ? previewSubtitleId : undefined} className="relative z-[1] flex max-h-[min(100dvh-1rem,760px)] w-full min-w-0 max-w-[520px] flex-col rounded-lg bg-surface-card shadow-modal ring-1 ring-border-subtle sm:max-h-[min(92dvh,760px)] sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border-subtle px-4 pb-3 pt-4 sm:gap-4 sm:px-6 sm:pb-4 sm:pt-6">
           <div className="min-w-0 pr-2">
             <h2 id={titleId} className="text-lg font-bold leading-snug text-text-primary sm:text-xl md:text-2xl">
@@ -154,7 +154,7 @@ export function UploadInvoiceAttachmentModal({ open, onClose, onUpload }: Upload
             </h2>
             <p className="mt-1 text-sm text-text-secondary">Add invoice images or PDFs to this payment.</p>
           </div>
-          <button type="button" onClick={() => !uploading && onClose()} className={`-mr-1 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-sunk focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus ${uploading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`} aria-label="Close" disabled={uploading}>
+          <button type="button" onClick={() => !uploading && onClose()} className={`-mr-1 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-sunk focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus ${uploading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`} aria-label="Close" disabled={uploading}>
             <span className="material-symbols-rounded text-[22px] leading-none" aria-hidden>
               close
             </span>
@@ -222,7 +222,7 @@ export function UploadInvoiceAttachmentModal({ open, onClose, onUpload }: Upload
                           {file.name}
                         </span>
                       </button>
-                      <button type="button" onClick={() => removeFile(id)} className="absolute right-2 top-1/2 flex h-8 w-8 shrink-0 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-sunk hover:text-text-secondary sm:static sm:translate-y-0" aria-label={"Remove " + file.name}>
+                      <button type="button" onClick={() => removeFile(id)} className="absolute right-2 top-1/2 flex h-8 w-8 shrink-0 before:absolute before:-inset-1.5 before:hidden before:content-[''] pointer-coarse:before:block -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-sunk hover:text-text-secondary sm:relative sm:translate-y-0" aria-label={"Remove " + file.name}>
                         <span className="material-symbols-rounded text-[20px] leading-none" aria-hidden>
                           close
                         </span>
@@ -254,7 +254,7 @@ export function UploadInvoiceAttachmentModal({ open, onClose, onUpload }: Upload
           <button type="button" onClick={onClose} disabled={uploading} className="box-border h-12 min-h-[48px] w-full min-w-0 cursor-pointer rounded-lg border border-action-secondary-border bg-surface-card px-3 text-sm font-semibold text-text-link transition-colors hover:bg-state-selected focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:min-h-[44px] sm:flex-1 sm:px-4">
             Cancel
           </button>
-          <button type="button" onClick={() => void handleUploadClick()} disabled={uploading} className="box-border h-12 min-h-[48px] w-full min-w-0 cursor-pointer rounded-lg border border-transparent bg-action-primary px-4 text-sm font-semibold text-action-on-primary shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus disabled:cursor-not-allowed disabled:opacity-60 sm:h-11 sm:min-h-[44px] sm:flex-1">
+          <button type="button" onClick={() => void handleUploadClick()} disabled={uploading} className="box-border h-12 min-h-[48px] w-full min-w-0 cursor-pointer rounded-lg border border-transparent bg-action-primary px-4 text-sm font-semibold text-action-on-primary transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus disabled:cursor-not-allowed disabled:opacity-60 sm:h-11 sm:min-h-[44px] sm:flex-1">
             {uploading ? "Uploading…" : "Upload"}
           </button>
         </div>
