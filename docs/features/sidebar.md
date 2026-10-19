@@ -59,12 +59,15 @@ the last one. `next.config.ts` carries `transpilePackages: ["@minty/shared"]` (t
 `.ts` source) and `vitest.config.ts` carries `server.deps.inline`, since Vitest does not read
 `transpilePackages`. All of it is guarded by `app/__tests__/packagedStyles.test.ts`.
 
-**The Part 13/14 restyle of the sidebar is pinned here since `v0.2`** (2026-10-13): the token
-sheet (`@import "@minty/shared/tokens.css"` in `app/globals.css`; the local copy is gone), 44px
-items, Active by `aria-current`, a 280px panel, and an opt-in `rail` (fixed on the right from
-1280px, `SIDEBAR_RAIL_OFFSET`). `packagedStyles.test.ts` pins the v0.2 sidebar (280px panel, 31px
-mark, 72px logo). minty-web stays on `v0.1` until it migrates (owner, 2026-10-13): its sheet
-needs the token sheet, which also changes its radius scale.
+**The pin is `v0.5` since 2026-10-19** (the owner: every app on the latest shared sidebar),
+the same tag as minty-web. v0.5 is v0.4 plus the `pettycash` preview label and a closed sheet
+that casts no shadow onto the page's right edge. It draws minty-web's Minty v2 look: a 353px sheet, 44px rows in
+`text-title-l`, the module headings with their icons on the right, and the 99px logo. Before
+that, `v0.2` (2026-10-13) brought the token sheet (`@import "@minty/shared/tokens.css"` in
+`app/globals.css`; the local copy is gone), Active by `aria-current`, and an opt-in `rail` (fixed
+on the right from 1280px, `SIDEBAR_RAIL_OFFSET`). The rail was drawn for v0.2's compact look and
+has not been checked with v0.4's geometry; this app doesn't turn it on. `packagedStyles.test.ts`
+pins the v0.4 sidebar (353px panel, the nav's safe-area padding, the logo's offset).
 
 The menu's 15 `/menu/*` images stay in **this app's `public/`** — Next cannot serve a static file
 out of `node_modules`. `app/__tests__/packagedAssets.test.ts` asserts the package's
