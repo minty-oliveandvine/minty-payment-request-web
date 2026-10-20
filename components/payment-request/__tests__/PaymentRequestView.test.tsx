@@ -435,7 +435,7 @@ describe("what needs attention", () => {
 describe("a system superuser looking at a company they are not in", () => {
   it("is told the access is read-only", async () => {
     setAuth(
-      unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }),
+      unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }),
       ENTITY_ID,
       ENTITY_NAME,
     );

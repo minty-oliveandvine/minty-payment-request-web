@@ -225,7 +225,7 @@ export function PaymentRequestEasyView({
         <ul className="flex flex-col gap-2" aria-label="Payment requests">
           {rows.map((row) => {
             const next = rowNextAction(row.status, { isElevated, isViewOnly });
-            const href = pages.request(row.id, row.reference);
+            const href = pages.request(row.id, row.reference, row.status);
             const selected = selectedIds.has(row.id);
             return (
               <li

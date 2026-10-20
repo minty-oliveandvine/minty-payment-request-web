@@ -21,10 +21,13 @@ const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
 const ENTITY_NAME = "Olive & Vine";
 const BILL_ID = "f47ac10b-58cc-4372-a567-0e02b2c3d479";
 
+const BASE = "/entity/360812e1/olive-and-vine";
+
 const params: { ref?: string; slug?: string; id?: string } = {};
+const replace = vi.fn();
 vi.mock("next/navigation", () => ({
   useParams: () => params,
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace, back: vi.fn() }),
 }));
 
 vi.mock("@/components/PdfJsCanvasPreview", () => ({
@@ -51,11 +54,14 @@ function serve({
   billAnswer,
   payments = [],
   save,
+  upload,
 }: {
   detail?: ReturnType<typeof bill>;
   billAnswer?: () => Response;
   payments?: ReturnType<typeof payment>[];
   save?: () => Response;
+  /** `POST /bills/{id}/attachments` - one call per file. */
+  upload?: () => Response;
 } = {}) {
   const calls: Call[] = [];
   fetchMock.mockImplementation(async (input, init) => {
@@ -75,7 +81,9 @@ function serve({
     if (path.includes("/entity-bill-accounts/")) return answer(200, entityBillAccounts());
     if (path.endsWith("/audit")) return answer(200, [audit({ bill_id: BILL_ID })]);
     if (path.endsWith("/payments")) return answer(200, { paid_total: "0.00", payments });
-    if (path.includes("/attachments")) return answer(200, []);
+    if (path.includes("/attachments")) {
+      return method === "POST" ? (upload ?? (() => answer(201, [])))() : answer(200, []);
+    }
     if (path.includes("/bills/by-reference/")) {
       return (billAnswer ?? (() => answer(200, detail)))();
     }
@@ -103,6 +111,8 @@ beforeEach(() => {
   params.ref = "360812e1";
   params.slug = "olive-and-vine";
   params.id = BILL_ID;
+  replace.mockReset();
+  window.history.replaceState(null, "", `${BASE}/payment-request/${BILL_ID}`);
   vi.stubGlobal("fetch", fetchMock);
   setAuth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
   serve();
@@ -188,6 +198,138 @@ describe("the request on screen", () => {
     await loaded();
     // "View Payment History" also matches /History/, so the accordion is named exactly.
     expect(screen.getByRole("button", { name: "History" })).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+describe("the address it keeps", () => {
+  // A voided request's Payment No. can be reused by a live one, and the API's by-reference
+  // lookup prefers the live one - so a void request stays on its id address.
+  it("moves an id address to the Payment No. once a live request has loaded", async () => {
+    serve();
+    show();
+    await loaded();
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith(`${BASE}/payment-request/PR-0001`, { scroll: false }),
+    );
+  });
+
+  it("leaves a void request on its id address", async () => {
+    serve({
+      detail: bill({ id: BILL_ID, status: "void", contact: "Young Bros Transport", reference: "PR-0001", attachments: [billAttachment()] }),
+    });
+    show();
+    await loaded();
+
+    await waitFor(() => expect(screen.getByText("Voided")).toBeInTheDocument());
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("moves a void request reached by its Payment No. to its id address", async () => {
+    params.id = "PR-0001";
+    window.history.replaceState(null, "", `${BASE}/payment-request/PR-0001`);
+    serve({
+      detail: bill({ id: BILL_ID, status: "void", contact: "Young Bros Transport", reference: "PR-0001", attachments: [billAttachment()] }),
+    });
+    show();
+    await loaded();
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith(`${BASE}/payment-request/${BILL_ID}`, { scroll: false }),
+    );
+  });
+});
+
+describe("a request with no invoice attached", () => {
+  // A file that failed to upload after the request was made leaves it with none: the page says
+  // so for as long as that lasts, and offers the way to fix it.
+  const noInvoice = (status = "submitted") =>
+    bill({ id: BILL_ID, status, contact: "Young Bros Transport", reference: "PR-0001", attachments: [] });
+  const BANNER = "This request has no invoice attached.";
+
+  it("says so, with the way to add it", async () => {
+    serve({ detail: noInvoice() });
+    show();
+    await loaded();
+
+    expect(await screen.findByText(BANNER)).toBeInTheDocument();
+    expect(screen.getByText("Add the invoice photo or PDF, then save.")).toBeInTheDocument();
+  });
+
+  it("opens edit mode from the banner's action, and the banner goes", async () => {
+    serve({ detail: noInvoice() });
+    show();
+    await loaded();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Edit and add the invoice" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument());
+    expect(screen.queryByText(BANNER)).not.toBeInTheDocument();
+  });
+
+  it("is not shown to someone who can only read", async () => {
+    setAuth(
+      unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }),
+      ENTITY_ID,
+      ENTITY_NAME,
+    );
+    serve({ detail: noInvoice() });
+    show();
+    await loaded();
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument());
+    expect(screen.queryByText(BANNER)).not.toBeInTheDocument();
+  });
+
+  it("is not shown on a void request", async () => {
+    serve({ detail: noInvoice("void") });
+    show();
+    await loaded();
+
+    await waitFor(() => expect(screen.getByText("Voided")).toBeInTheDocument());
+    expect(screen.queryByText(BANNER)).not.toBeInTheDocument();
+  });
+
+  it("is not shown on a request that has one", async () => {
+    serve();
+    show();
+    await loaded();
+
+    expect(screen.queryByText(BANNER)).not.toBeInTheDocument();
+  });
+});
+
+describe("a file that does not upload during a save", () => {
+  it("says the changes are saved but the file needs adding again, and leaves edit mode", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const { calls } = serve({ upload: () => answer(500, { detail: "boom" }) });
+      show();
+      await loaded();
+      await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+      await userEvent.click(await screen.findByRole("button", { name: "Add more attachments" }));
+      const dialog = await screen.findByRole("dialog");
+      await userEvent.upload(
+        within(dialog).getByLabelText("Choose files to attach"),
+        new File(["x"], "receipt.pdf", { type: "application/pdf" }),
+      );
+      await userEvent.click(within(dialog).getByRole("button", { name: "Upload" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+      await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+      expect(
+        await screen.findByText(
+          "Your changes are saved, but receipt.pdf didn't upload. Edit the request and add it again.",
+        ),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Your changes didn't save/)).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+      expect(calls.some((c) => c.method === "PUT")).toBe(true);
+      expect(calls.some((c) => c.method === "POST" && c.path.endsWith("/attachments"))).toBe(true);
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });
 
@@ -402,7 +544,7 @@ describe("view-only access", () => {
   // Part 15.1: header actions are role-aware - what the person cannot do is not offered at all.
   it("offers no write control at all", async () => {
     setAuth(
-      unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }),
+      unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }),
       ENTITY_ID,
       ENTITY_NAME,
     );
@@ -418,7 +560,7 @@ describe("view-only access", () => {
 
   it("leaves the request itself perfectly readable", async () => {
     setAuth(
-      unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }),
+      unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }),
       ENTITY_ID,
       ENTITY_NAME,
     );

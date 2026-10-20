@@ -48,7 +48,8 @@ The company is still the cookie's - every API call sends its id - so `middleware
 address against the cookie before a page renders:
 
 - **Another company's page** (another tab switched the cookie, a bookmark, an expired cookie):
-  sent to Flask's `/entity/<shortid>/<name>/payment-request` (`?request=<id>` for one request) or
+  sent to Flask's `/entity/<shortid>/<name>/payment-request` (`?request=<id or Payment No.>` for
+  one request, decoded from the address first so it is percent-encoded once) or
   `/settings/payment-request`, which signs in, checks membership, mints a token for that company
   and lands on the same page.
 - **A misspelt name or a capital in the short id** (a renamed company's old link): moved to the
@@ -82,6 +83,12 @@ membership on every call — the database decides, not the claim
 edit; accountant / admin / super_admin (the *elevated* roles) also record payments,
 return, void and publish. The backend refuses the rest regardless
 (`minty-payment-request-api/core/permissions.py`).
+
+A **system super admin on a company they are not a member of** is view-only: no write control
+renders. The token's `is_view_only` claim decides when it is there; otherwise a super admin's
+`/profile/me` memberships do. The super admin test accepts `system_role` "superadmin" (what Flask
+mints) and the legacy "superuser", trimmed and case-insensitive (`lib/useUserRole.ts`; until
+2026-10-20 it read "superuser" only, so a Flask super admin kept every write control).
 
 ## The subscription notice talks to minty-subscription-api directly
 

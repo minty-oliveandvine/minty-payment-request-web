@@ -81,6 +81,15 @@ test('a status chip narrows the list to that status', async ({ page }) => {
   await expect(rowFor(page, 'Cancelled Order Inc')).toBeVisible();
 });
 
+test('a voided row opens by its id - its Payment No. may belong to a live request', async ({ page }) => {
+  await openList(page);
+  await statusChip(page, 'Voided').click();
+
+  await expect(
+    page.getByRole('table').getByRole('link', { name: 'Open Cancelled Order Inc' }).first(),
+  ).toHaveAttribute('href', pagesOf(creds()).request('b-void'));
+});
+
 test('typing in the search box matches part of an amount; submitting matches the whole one', async ({ page }) => {
   await openList(page);
   const search = page.getByRole('searchbox');

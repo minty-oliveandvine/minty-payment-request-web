@@ -25,7 +25,6 @@ import {
   publishBill,
   returnBill as returnBillApi,
   updateBill,
-  uploadBillAttachments,
   XERO_RECONNECT_MESSAGE,
   type BillAttachment,
   type BillDetail,
@@ -33,6 +32,7 @@ import {
   type PaymentItem,
 } from "@/lib/api";
 import type { ThemedSelectOption } from "@/components/ThemedSelect";
+import { joinFileNames, uploadEachAttachment } from "@/lib/attachmentUploads";
 import { useEntityCurrency } from "@/lib/entityCurrency";
 import {
   MAX_AMOUNT_INT_DIGITS,
@@ -67,7 +67,7 @@ import { UploadInvoiceAttachmentModal } from "./UploadInvoiceAttachmentModal";
 import { PaymentRequestDetailedInfo, type PaymentRequestDetailedInfoData } from "./PaymentRequestDetailedInfo";
 import { useToast } from "@/components/Toast";
 import { useCompanyPages } from "@/lib/useCompanyPages";
-import { rememberRequest, useRequestId } from "@/lib/useRequestId";
+import { forgetRequest, rememberRequest, useRequestId } from "@/lib/useRequestId";
 export type PaymentRequestDetailBodyProps = {
   /** Called after the bill is refreshed from the server so the header status badge can update. */
   onBillUpdated?: () => void;
@@ -167,6 +167,8 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const bumpAudit = useCallback(() => setAuditRefresh((n) => n + 1), []);
   /** A failed action (submit, publish, return, void), shown on the page - never a toast (Part 14). */
   const [actionError, setActionError] = useState<string | null>(null);
+  /** A save/submit that went through while a staged file did not upload: names it, on the page. */
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   /** Bumped on every refused save/submit so the error summary takes focus again (Part 15.3). */
   const [submitAttempt, setSubmitAttempt] = useState(0);
@@ -327,11 +329,16 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   // The address names the request by its Payment No. (2026-10-05): an id address (Flask's
   // hand-off, an old link) becomes the Payment No. one once the request has loaded, and an edit
   // that changes the Payment No. moves the address with it - replace, so Back is unchanged.
+  // A void request keeps (or moves to) its id address: its Payment No. may be a live request's
+  // too, and the by-reference lookup prefers the live one - so that pairing is forgotten.
   useEffect(() => {
     if (!bill || bill.id !== requestId) return;
-    const wanted = pages.request(bill.id, bill.reference);
+    const company = (params?.ref ?? "").toLowerCase();
+    const wanted = pages.request(bill.id, bill.reference, bill.status);
+    const byReference = wanted !== pages.request(bill.id);
+    if (!byReference && bill.reference) forgetRequest(company, bill.reference);
     if (window.location.pathname === wanted) return;
-    rememberRequest((params?.ref ?? "").toLowerCase(), bill.reference ?? "", bill.id);
+    if (byReference) rememberRequest(company, bill.reference ?? "", bill.id);
     router.replace(`${wanted}${window.location.search}${window.location.hash}`, { scroll: false });
   }, [bill, requestId, pages, params?.ref, router]);
 
@@ -500,6 +507,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     setBillNoError(null);
     setAccountCodeError(null);
     setSubmitAttemptFieldErrors(null);
+    setUploadWarning(null);
   }, [bill, accountOptions]);
 
   const handleCancel = useCallback(() => {
@@ -596,6 +604,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
           (payload as typeof payload & { status?: string }).status = "submitted";
         }
         const updated = await updateBill(requestId, payload);
+        setUploadWarning(null);
         await commitPendingAttachmentDeletes(requestId);
 
         const stagedForApi = attachments.filter(
@@ -603,12 +612,19 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
             Boolean(a.pendingUploadKey && a.pendingFile),
         );
         if (stagedForApi.length > 0) {
-          await uploadBillAttachments(
+          // The changes are saved by now: a file that does not upload is said on its own, never
+          // as "didn't save" (each file goes up on its own - the batch is not all-or-nothing).
+          const failed = await uploadEachAttachment(
             requestId,
             stagedForApi.map((a) => a.pendingFile),
           );
           for (const a of stagedForApi) {
             if (a.url.startsWith("blob:")) URL.revokeObjectURL(a.url);
+          }
+          if (failed.length > 0) {
+            setUploadWarning(
+              `Your changes are saved, but ${joinFileNames(failed)} didn't upload. Edit the request and add it again.`,
+            );
           }
         }
 
@@ -799,6 +815,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     try {
       const payload = buildBillUpdatePayload(bill, info);
       const updated = await updateBill(requestId, { ...payload, status: "submitted" });
+      setUploadWarning(null);
       await commitPendingAttachmentDeletes(requestId);
 
       const stagedForApi = attachments.filter(
@@ -806,12 +823,18 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
           Boolean(a.pendingUploadKey && a.pendingFile),
       );
       if (stagedForApi.length > 0) {
-        await uploadBillAttachments(
+        // Submitted by now: a file that does not upload is said on its own (see executeSave).
+        const failed = await uploadEachAttachment(
           requestId,
           stagedForApi.map((a) => a.pendingFile),
         );
         for (const a of stagedForApi) {
           if (a.url.startsWith("blob:")) URL.revokeObjectURL(a.url);
+        }
+        if (failed.length > 0) {
+          setUploadWarning(
+            `This payment request was submitted, but ${joinFileNames(failed)} didn't upload. Edit the request and add it again.`,
+          );
         }
       }
 
@@ -966,7 +989,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         amountLabel: `(${formatMoney(p.amount || "0", currencyLabel)})`,
         statusLabel,
         invoiceNo: ref,
-        invoiceHref: forThisBill ? "#" : pages.request(p.bill_id, p.bill_reference),
+        invoiceHref: forThisBill ? "#" : pages.request(p.bill_id, p.bill_reference, p.bill_status),
         isOtherBill: !forThisBill,
       };
     });
@@ -1031,6 +1054,17 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       ((bill.status === "paid" || bill.status === "authorised") && !isElevated),
     [loadingBill, bill, isViewOnly, isElevated],
   );
+
+  // A request left with no invoice (a file that failed to upload after it was made): said on
+  // the page for as long as it lasts, to whoever can fix it.
+  const showNoInvoiceBanner =
+    !!bill &&
+    attachmentsReady &&
+    attachments.length === 0 &&
+    !isEditing &&
+    !detailToolbarActionsDisabled &&
+    billStatusNormalized !== "void" &&
+    billStatusNormalized !== "voided";
 
   const handleOpenUploadAttachment = useCallback(() => {
     setUploadAttachmentOpen(true);
@@ -1214,11 +1248,26 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
                 Change what needs changing, then submit it for payment again.
               </PageBanner>
             ) : null}
+            {/* One banner at a time: Returned wins; a named upload failure says it better. */}
+            {showNoInvoiceBanner && !billIsReturned && !uploadWarning ? (
+              <PageBanner
+                tone="warning"
+                title="This request has no invoice attached."
+                action={
+                  <Button kind="link" onClick={handleEdit}>
+                    Edit and add the invoice
+                  </Button>
+                }
+              >
+                Add the invoice photo or PDF, then save.
+              </PageBanner>
+            ) : null}
             {isEditing && statusNow && !billIsDraft && !billIsReturned ? (
               <PageBanner tone="info" title="This request has already been submitted.">
                 Saving changes updates it for Treasury - and in Xero once it is published.
               </PageBanner>
             ) : null}
+            {uploadWarning && !isEditing ? <InlineAlert tone="warning">{uploadWarning}</InlineAlert> : null}
             {actionError ? <InlineAlert tone="danger">{actionError}</InlineAlert> : null}
             <ErrorSummary items={summaryItems} attempt={submitAttempt} />
           </div>

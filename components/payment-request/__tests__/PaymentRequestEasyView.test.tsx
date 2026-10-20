@@ -89,6 +89,14 @@ describe("a row", () => {
     );
   });
 
+  it("opens a voided request by its id - its Payment No. may be a live request's", () => {
+    show();
+    expect(screen.getByRole("link", { name: "Cancelled Order Inc" })).toHaveAttribute(
+      "href",
+      "/entity/360812e1/olive-and-vine/payment-request/r-void",
+    );
+  });
+
   it("shows the description and the amount as plain text", () => {
     show();
     const r = row("Young Bros Transport");

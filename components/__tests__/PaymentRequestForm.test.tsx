@@ -42,7 +42,15 @@ function serve({
   draft,
   currency,
   accounts,
-}: { submit?: () => Response; draft?: () => Response; currency?: () => Response; accounts?: unknown } = {}) {
+  upload,
+}: {
+  submit?: () => Response;
+  draft?: () => Response;
+  currency?: () => Response;
+  accounts?: unknown;
+  /** `POST /bills/{id}/attachments`, given the names of the files in that one upload. */
+  upload?: (names: string[]) => Response;
+} = {}) {
   const posted: Posted[] = [];
   fetchMock.mockImplementation(async (input, init) => {
     const url = new URL(String(input));
@@ -57,7 +65,14 @@ function serve({
     if (path.endsWith("/bills/suggested-reference/")) return answer(200, { reference: "MBIOVI-1" });
     if (path.endsWith("/currencies/")) return answer(200, []);
     if (init?.method === "POST") {
-      posted.push({ path, body: init.body ? JSON.parse(String(init.body)) : null });
+      // Only JSON bodies parse; an attachment upload is FormData, recorded as its file names.
+      const names =
+        init.body instanceof FormData ? init.body.getAll("files").map((f) => (f as File).name) : [];
+      posted.push({
+        path,
+        body: typeof init.body === "string" ? JSON.parse(init.body) : init.body instanceof FormData ? names : null,
+      });
+      if (/\/bills\/[^/]+\/attachments$/.test(path)) return (upload ?? (() => answer(201, [])))(names);
       if (path.endsWith("/bills/draft/")) return (draft ?? (() => answer(201, bill())))();
       if (path.endsWith("/bills/submit/") || path.endsWith("/bills/")) {
         return (submit ?? (() => answer(201, bill())))();
@@ -287,6 +302,101 @@ describe("saving a draft", () => {
       show();
       await userEvent.click(saveDraft());
       expect(await screen.findByText("That draft didn't save. Try saving it again.")).toBeInTheDocument();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+});
+
+describe("the invoice upload after the request is created", () => {
+  // The request is created first, then each file is uploaded on its own (the API's multi-file
+  // upload is not all-or-nothing). A file that did not arrive is named - never a silent success.
+  const CREATED = bill({ id: "bill-new", reference: "PR-NEW" });
+  const REQUEST_PAGE = "/entity/360812e1/olive-and-vine/payment-request/PR-NEW";
+
+  async function fillAndSubmit(...files: File[]) {
+    show();
+    await userEvent.upload(filePicker(), files);
+    await userEvent.type(screen.getByRole("combobox", { name: /Supplier/ }), SUPPLIERS[0].name);
+    await userEvent.click(await screen.findByRole("option", { name: SUPPLIERS[0].name }));
+    await userEvent.type(amountField(), "6000");
+    fireEvent.change(screen.getByLabelText("Due date"), { target: { value: "2026-11-30" } });
+    await userEvent.click(screen.getByRole("combobox", { name: /Account code/ }));
+    await userEvent.click((await screen.findAllByRole("option"))[0]);
+    await userEvent.click(submit());
+  }
+
+  const toast = (type: string) => document.querySelector(`[data-toast-type="${type}"]`);
+
+  it("uploads the invoice to the new request and says it was sent", async () => {
+    const { posted } = serve({ submit: () => answer(201, CREATED) });
+
+    await fillAndSubmit(file("invoice.pdf", "application/pdf"));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(REQUEST_PAGE));
+    expect(posted.find((p) => p.path.endsWith("/bills/bill-new/attachments"))?.body).toEqual(["invoice.pdf"]);
+    expect(toast("success")).toHaveTextContent(`Payment request for ${SUPPLIERS[0].name} sent to Treasury.`);
+    expect(toast("warning")).toBeNull();
+  });
+
+  it.each([
+    ["a server failure", () => answer(500, { detail: "boom" })],
+    ["a refusal", () => answer(422, { detail: "Files need to be under 10MB." })],
+  ])("names the file that did not upload after %s, and still opens the request", async (_label, upload) => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      serve({ submit: () => answer(201, CREATED), upload });
+
+      await fillAndSubmit(file("invoice.pdf", "application/pdf"));
+
+      await waitFor(() => expect(push).toHaveBeenCalledWith(REQUEST_PAGE));
+      expect(toast("warning")).toHaveTextContent(
+        `Payment request for ${SUPPLIERS[0].name} sent to Treasury, but invoice.pdf didn't upload. Edit the request and add it again.`,
+      );
+      expect(toast("success")).toBeNull();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("uploads each file on its own and names only the one that failed", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const { posted } = serve({
+        submit: () => answer(201, CREATED),
+        upload: (names) => (names.includes("second.pdf") ? answer(500, { detail: "boom" }) : answer(201, [])),
+      });
+
+      await fillAndSubmit(file("first.pdf", "application/pdf"), file("second.pdf", "application/pdf"));
+
+      await waitFor(() => expect(push).toHaveBeenCalledWith(REQUEST_PAGE));
+      const uploads = posted.filter((p) => p.path.endsWith("/attachments")).map((p) => p.body);
+      expect(uploads).toEqual([["first.pdf"], ["second.pdf"]]);
+      const warning = toast("warning");
+      expect(warning).toHaveTextContent("but second.pdf didn't upload");
+      expect(warning).not.toHaveTextContent("first.pdf");
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("opens a draft whose file did not upload, rather than the list, and says so", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      serve({
+        draft: () => answer(201, bill({ id: "bill-new", reference: "PR-NEW", status: "draft" })),
+        upload: () => answer(500, { detail: "boom" }),
+      });
+      show();
+      await attach(file("invoice.pdf", "application/pdf"));
+
+      await userEvent.click(saveDraft());
+
+      await waitFor(() => expect(push).toHaveBeenCalledWith(REQUEST_PAGE));
+      expect(toast("warning")).toHaveTextContent(
+        "Draft saved, but invoice.pdf didn't upload. Edit the draft and add it again.",
+      );
+      expect(toast("success")).toBeNull();
     } finally {
       consoleError.mockRestore();
     }

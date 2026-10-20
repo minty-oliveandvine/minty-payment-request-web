@@ -155,4 +155,9 @@ test('the request this spec created is voided, so the shop is left as it was fou
   await confirm.getByRole('button', { name: /Void Payment/ }).click();
 
   await expect(confirm).toBeHidden({ timeout: 20_000 });
+  // A void request is addressed by its id: its Payment No. may be reused by a live request, and
+  // the by-reference lookup prefers the live one (lib/companyPaths.ts).
+  await expect(page).toHaveURL(/\/payment-request\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  await page.reload();
+  await expect(page.getByText('Voided').first()).toBeVisible();
 });

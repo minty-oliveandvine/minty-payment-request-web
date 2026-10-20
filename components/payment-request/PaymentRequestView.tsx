@@ -840,7 +840,7 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
                 onToggleAll={onToggleAll}
                 todayIso={todayIso}
                 onRecordPayment={recordPayment}
-                onRowClick={(rowId, reference) => router.push(pages.request(rowId, reference))}
+                onRowClick={(rowId, reference, status) => router.push(pages.request(rowId, reference, status))}
                 onRowDelete={async (rowId) => {
                   setActionError(null);
                   try {

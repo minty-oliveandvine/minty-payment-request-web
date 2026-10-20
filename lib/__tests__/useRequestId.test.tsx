@@ -15,7 +15,7 @@ import { bill } from "@/lib/__fixtures__/bills";
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { rememberRequest, useRequestId } from "@/lib/useRequestId";
+import { forgetRequest, rememberRequest, useRequestId } from "@/lib/useRequestId";
 
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
 const COMPANY = "360812e1";
@@ -173,6 +173,38 @@ describe("rememberRequest", () => {
     render(<Probe />);
 
     expect(shown()).toContain("pending=true");
+  });
+});
+
+describe("forgetRequest", () => {
+  // A voided bill's Payment No. can belong to a live bill too: the page that finds itself showing
+  // the void one forgets the pairing, so the next visit to the Payment No. asks the API again.
+  it("drops a remembered Payment No., so the next mount looks it up afresh", async () => {
+    rememberRequest(COMPANY, "PR-FORGET", "bill-void");
+    forgetRequest(COMPANY, "pr-forget");
+    params.id = "PR-FORGET";
+    fetchMock.mockResolvedValueOnce(answer(200, bill({ id: "bill-live", reference: "PR-FORGET" })));
+
+    render(<Probe />);
+
+    expect(shown()).toContain("pending=true");
+    await waitFor(() => expect(shown()).toBe("id=bill-live pending=false error="));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops a looked-up Payment No. too", async () => {
+    params.id = "PR-FORGET-2";
+    fetchMock.mockResolvedValueOnce(answer(200, bill({ id: "bill-a" })));
+    const first = render(<Probe />);
+    await waitFor(() => expect(shown()).toContain("id=bill-a"));
+    first.unmount();
+
+    forgetRequest(COMPANY, "PR-FORGET-2");
+    fetchMock.mockResolvedValueOnce(answer(200, bill({ id: "bill-b" })));
+    render(<Probe />);
+
+    await waitFor(() => expect(shown()).toContain("id=bill-b"));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

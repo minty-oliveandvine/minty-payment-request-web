@@ -28,6 +28,16 @@ export function rememberRequest(company: string, reference: string, id: string):
   if (reference.trim()) known.set(keyOf(company, reference), id);
 }
 
+/**
+ * The page found `reference` naming a request it must not be reached by (a void one, whose
+ * Payment No. a live request may share): forget the pairing, so the next visit asks the API.
+ */
+export function forgetRequest(company: string, reference: string): void {
+  const key = keyOf(company, reference);
+  known.delete(key);
+  pending.delete(key);
+}
+
 function lookUp(key: string, reference: string): Promise<string> {
   let p = pending.get(key);
   if (!p) {

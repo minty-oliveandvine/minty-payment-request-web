@@ -310,7 +310,7 @@ describe("somebody who may not change these", () => {
 
   it("is told plainly when they are not a member of the company at all", async () => {
     setAuth(
-      unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }),
+      unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }),
       ENTITY_ID,
       ENTITY_NAME,
     );

@@ -55,9 +55,9 @@ import {
   isDuplicateBillReferenceError,
   saveBillDraft,
   submitBill,
-  uploadBillAttachments,
   type EntityBillContact,
 } from "@/lib/api";
+import { joinFileNames, uploadEachAttachment } from "@/lib/attachmentUploads";
 import { getEntityIdSnapshot } from "@/lib/auth";
 import { useEntityCurrencyState } from "@/lib/entityCurrency";
 import { ATTACHMENT_ACCEPT, formatFileSize, isAllowedAttachment } from "@/lib/fileAttachmentPreview";
@@ -286,19 +286,15 @@ export function PaymentRequestForm() {
     setContactsList(merged);
   };
 
-  const storeAttachments = async (billId: string) => {
-    if (uploadedFiles.length > 0) {
-      try {
-        await uploadBillAttachments(billId, uploadedFiles.map((x) => x.file));
-      } catch (err) {
-        console.error("[add payment request] the attachments did not upload", err);
-      }
-    }
+  /** Uploads the staged files to the new request; returns the names of any that did not upload. */
+  const storeAttachments = async (billId: string): Promise<string[]> => {
+    const failed = await uploadEachAttachment(billId, uploadedFiles.map((x) => x.file));
     try {
       await saveAttachmentBlobs(billId, uploadedFiles.map((x) => x.file));
     } catch (err) {
       console.error("[add payment request] the attachments were not kept for preview", err);
     }
+    return failed;
   };
 
   const failWith = (err: unknown, fallback: string) => {
@@ -345,7 +341,13 @@ export function PaymentRequestForm() {
               ]
             : undefined,
       });
-      await storeAttachments(bill.id);
+      const failed = await storeAttachments(bill.id);
+      if (failed.length > 0) {
+        // The draft exists but a file does not: open it, where the file can be added again.
+        showToast(`Draft saved, but ${joinFileNames(failed)} didn't upload. Edit the draft and add it again.`, "warning");
+        router.push(pages.request(bill.id, bill.reference, bill.status));
+        return;
+      }
       showToast("Draft saved. Continue it from the list whenever you're ready.", "success");
       router.push(pages.list);
     } catch (err) {
@@ -396,9 +398,16 @@ export function PaymentRequestForm() {
           { description, quantity: 1, unit_amount: amountStr, line_amount: amountStr, account_code: acctCode },
         ],
       });
-      await storeAttachments(bill.id);
-      showToast(`Payment request for ${contactName} sent to Treasury.`, "success");
-      router.push(pages.request(bill.id, bill.reference));
+      const failed = await storeAttachments(bill.id);
+      if (failed.length > 0) {
+        showToast(
+          `Payment request for ${contactName} sent to Treasury, but ${joinFileNames(failed)} didn't upload. Edit the request and add it again.`,
+          "warning",
+        );
+      } else {
+        showToast(`Payment request for ${contactName} sent to Treasury.`, "success");
+      }
+      router.push(pages.request(bill.id, bill.reference, bill.status));
     } catch (err) {
       console.error("[add payment request] the request did not submit", err);
       failWith(err, "That payment request didn't go through. Try submitting it again.");

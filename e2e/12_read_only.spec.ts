@@ -1,7 +1,7 @@
 // A system superuser looking at a company they are not a member of: everything readable,
 // nothing writable.
 //
-// STUBBED - Next alone. The token carries `system_role: 'superuser'` and `is_view_only: true`,
+// STUBBED - Next alone. The token carries `system_role: 'superadmin'` and `is_view_only: true`,
 // which is what Minty stamps for a superuser with no `user_entity` row, and `/profile/me`
 // answers with no memberships. Nothing here is a security claim: the API re-checks every call.
 // What it proves is that the screen does not OFFER a write it would then be refused for -
@@ -23,7 +23,7 @@ import {
 
 const creds = () => stubCredentials();
 
-const VIEW_ONLY = { system_role: 'superuser', is_view_only: true, role: 'admin' };
+const VIEW_ONLY = { system_role: 'superadmin', is_view_only: true, role: 'admin' };
 
 const ROWS = [
   billListItem({ id: 'b-1', reference: 'PR-0001', contact: 'Young Bros Transport', status: 'submitted', amount_due: '6000.00' }),

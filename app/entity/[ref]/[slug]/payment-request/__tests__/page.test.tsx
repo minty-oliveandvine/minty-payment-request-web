@@ -70,7 +70,7 @@ describe("the list page's header", () => {
   });
 
   it("is dead, with the reason beside it, for a view-only superuser", async () => {
-    setAuth(unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }), ENTITY_ID, ENTITY_NAME);
+    setAuth(unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }), ENTITY_ID, ENTITY_NAME);
     show();
     const button = await screen.findByRole("button", { name: "Add payment request" });
     await waitFor(() => expect(button).toBeDisabled());

@@ -171,7 +171,28 @@ describe("the rows", () => {
 
     await userEvent.click(table().getByText("Young Bros Transport"));
 
-    expect(onRowClick).toHaveBeenCalledWith("r-requested", "PR-0001");
+    expect(onRowClick).toHaveBeenCalledWith("r-requested", "PR-0001", "Payment Requested");
+  });
+
+  it("hand a voided row's status along, so it opens by its id - its Payment No. may be a live one's", async () => {
+    show();
+
+    await userEvent.click(table().getByText("Cancelled Order Inc"));
+
+    expect(onRowClick).toHaveBeenCalledWith("r-void", "PR-0001", "Voided");
+  });
+
+  it("link a voided row to its id and a live row to its Payment No.", () => {
+    show();
+
+    expect(table().getAllByRole("link", { name: "Open Cancelled Order Inc" })[0]).toHaveAttribute(
+      "href",
+      "/entity/360812e1/olive-and-vine/payment-request/r-void",
+    );
+    expect(table().getAllByRole("link", { name: "Open Young Bros Transport" })[0]).toHaveAttribute(
+      "href",
+      "/entity/360812e1/olive-and-vine/payment-request/PR-0001",
+    );
   });
 
   it("offer each row as a link too, so it can be opened in a new tab", () => {

@@ -141,6 +141,16 @@ and **Submit for payment** (`POST /api/bills/submit/`: validates amount, supplie
 dates and at least one attachment, uploads the files once the bill exists, then opens its detail
 page).
 
+**The upload after create is never silent** (2026-10-20). The files go up ONE PER CALL
+(`lib/attachmentUploads.ts` `uploadEachAttachment` - the API's multi-file upload is not
+all-or-nothing, so only one call per file can say which arrived). If any did not, the success
+toast is replaced by a warning naming them - "Payment request for X sent to Treasury, but
+invoice.pdf didn't upload. Edit the request and add it again." / "Draft saved, but invoice.pdf
+didn't upload. Edit the draft and add it again." - and a draft then opens its own page rather
+than the list. The detail page's Save / Submit for payment do the same: the changes are saved,
+edit mode closes, and an inline warning names the file ("Your changes are saved, but … didn't
+upload …") instead of the old "Your changes didn't save".
+
 ### Validation (Part 14 + the owner's 2026-10-13 decisions)
 
 Every PRW form — Add/Edit, the Record payment drawer, bank slip, attachments, Settings' account
@@ -169,7 +179,13 @@ codes — follows these:
 ## The detail page (`/entity/<shortid>/<name>/payment-request/<Payment No.>`)
 
 Addressed by the Payment No. (the bill's `reference`) since 2026-10-05, the id when there is none
-(`lib/companyPages.ts` `pages.request(id, reference)`). `lib/useRequestId.ts` turns the address
+(`lib/companyPaths.ts` `pages.request(id, reference, status)`). **A void request is always
+addressed by its id** (status `void`/`Voided`, 2026-10-20): void requests do not hold their
+Payment No. against reuse and `GET /bills/by-reference/` prefers the live request, so the Payment
+No. would open a different one. Every link passes the status (the list's rows and links, Easy
+view, payment history, the Add page's hand-over), a void request reached by its Payment No. moves
+to its id address, and the page `forgetRequest`s the cached Payment No. → id pairing. A Payment
+No. of `new` is addressed by id too (that address is the Add page). `lib/useRequestId.ts` turns the address
 into the bill id: an id as it is, a Payment No. through `GET /bills/by-reference/...` (case-
 insensitive; once, shared by the body and the header). Once the request has loaded, an id
 address (Flask's `?request=<id>` hand-off, an old link) is replaced by the Payment No. one, and an
@@ -187,8 +203,11 @@ gone). What it holds:
   payment actions"` → `role="menu"` "Payment actions" with **Publish** / **Republish** and
   **Void** / Delete; while a publish runs a `role="status"` "Publishing…" shows and the trigger
   is disabled). Elevated roles only for publish, void, return and payments (`useUserRole`).
-  Under it: the Returned banner ("Edit and resubmit"), the already-submitted banner while
-  editing, any action error inline, and the error summary.
+  Under it: the Returned banner ("Edit and resubmit"), or - for a request with **no invoice
+  attached** that this person can edit (not void, not while editing) - a warning banner "This
+  request has no invoice attached." with "Edit and add the invoice" (one banner at a time,
+  Returned wins); the already-submitted banner while editing; a file that did not upload during a
+  save; any action error inline; and the error summary.
 - **document and record side by side** (1:1, max 1440px; stacked below 1024px):
   - the attachment preview (`InvoiceAttachmentPreview.tsx`, PDFs rendered with pdf.js from
     `/public/pdfjs` — `PdfJsCanvasPreview.tsx`; images inline) with upload / delete

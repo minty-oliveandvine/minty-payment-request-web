@@ -20,7 +20,7 @@ type JwtClaims = {
  *
  * Returns neutral defaults on any decode error so the caller never crashes.
  * ``isViewOnly`` is read directly from the token because the backend already
- * computes it correctly per-entity (system superuser AND no UserEntity row),
+ * computes it correctly per-entity (system super admin AND no UserEntity row),
  * so the frontend should trust it rather than re-deriving from system_role.
  */
 const EMPTY_CLAIMS: JwtClaims = {
@@ -29,6 +29,15 @@ const EMPTY_CLAIMS: JwtClaims = {
   isViewOnly: null,
   isSystemSuperuser: false,
 };
+
+/**
+ * Whether `system_role` names a system super admin: Flask mints "superadmin"; "superuser" is
+ * the legacy spelling, still accepted. Trimmed and case-insensitive.
+ */
+function isSuperAdminSystemRole(systemRole: string): boolean {
+  const normalized = systemRole.trim().toLowerCase();
+  return normalized === "superadmin" || normalized === "superuser";
+}
 
 function getPermissionClaims(): JwtClaims {
   const empty = EMPTY_CLAIMS;
@@ -78,10 +87,11 @@ export type UserRoleInfo = {
   /**
    * True ONLY when the current user has effective view-only access on the
    * entity carried in the JWT.  This is the case when:
-   *   - The user is a system superuser (system_role='superuser'), AND
+   *   - The user is a system super admin (system_role 'superadmin', or the
+   *     legacy 'superuser'), AND
    *   - They do NOT have a UserEntity row for the current entity.
    *
-   * A system superuser who is also an entity member (e.g. super_admin of
+   * A system super admin who is also an entity member (e.g. super_admin of
    * the entity) is NOT view-only — they keep full per-entity-role CRUD.
    */
   isViewOnly: boolean;
@@ -128,7 +138,7 @@ export function useUserRole(): UserRoleInfo {
   // Keyed on the claims rather than on mount: at hydration `systemRole` is still "" and there is
   // nothing to ask for, so the fetch fires on the render that first carries the real token.
   useEffect(() => {
-    if (systemRole.trim().toLowerCase() !== "superuser") return;
+    if (!isSuperAdminSystemRole(systemRole)) return;
     const auth = getAuthSnapshot();
     if (!auth?.token) return;
     fetch(`${API_BASE}/api/v1/profile/me`, {
@@ -149,8 +159,7 @@ export function useUserRole(): UserRoleInfo {
   }, [systemRole, currentEntityId]);
 
   const normalized = (role ?? "").trim().toLowerCase().replace(/ /g, "_").replace(/-/g, "_");
-  const normalizedSystemRole = systemRole.trim().toLowerCase();
-  const isSystemSuperuser = normalizedSystemRole === "superuser";
+  const isSystemSuperuser = isSuperAdminSystemRole(systemRole);
 
   // Trust the JWT's is_view_only claim when present — the backend already
   // computed it correctly per-entity.  Fall back to membership intersection
