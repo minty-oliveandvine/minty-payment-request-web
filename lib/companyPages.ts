@@ -12,31 +12,9 @@
 
 import { companyRef, shortIdOf, slugifyName } from "@minty/shared/companyRef";
 
-export type CompanyPages = {
-  list: string;
-  /**
-   * One payment request: by its Payment No. (`reference`) when it has one, else by its id
-   * (2026-10-05). The details page looks a Payment No. up (`lib/useRequestId.ts`) and turns an
-   * id address into the Payment No. one once the request has loaded.
-   */
-  request: (id: string, reference?: string | null) => string;
-  settings: string;
-};
+import { pagesUnder, type CompanyPages } from "./companyPaths";
 
-const LIST = "payment-request";
-const SETTINGS = "settings/payment-request";
-
-/** `/entity/<ref>/<slug>/<page>`; `page` is `payment-request`, `payment-request/<id>` or `settings/payment-request`. */
-export const COMPANY_PAGE =
-  /^\/entity\/([0-9a-fA-F]{8})\/([^/]+)\/(payment-request(?:\/[^/]+)?|settings\/payment-request)$/;
-
-export function pagesUnder(base: string): CompanyPages {
-  return {
-    list: `${base}/${LIST}`,
-    request: (id, reference) => `${base}/${LIST}/${encodeURIComponent(reference?.trim() || id)}`,
-    settings: `${base}/${SETTINGS}`,
-  };
-}
+export { COMPANY_PAGE, pagesUnder, type CompanyPages } from "./companyPaths";
 
 /** `/entity/<shortid>/<name>` of a company, from its id and name. */
 export function companyBase(entityId: string, entityName: string): string {

@@ -11,7 +11,8 @@
 import { createHmac } from 'node:crypto';
 import { test, type Page, type Route } from '@playwright/test';
 
-import { companyPages, type CompanyPages } from '../lib/companyPages';
+import { pagesUnder, type CompanyPages } from '../lib/companyPaths';
+import { companyRef } from './companyRef';
 import { entityBillAccounts } from '../lib/__fixtures__/accounts';
 import { ALL_STATUSES } from '../lib/__fixtures__/bills';
 import type { BillListItem } from '../lib/api';
@@ -88,9 +89,9 @@ export async function stubXeroStatus(page: Page, connected: boolean): Promise<vo
   );
 }
 
-/** The company's pages in this app - `/entity/<shortid>/<name>/...` since 2026-10-05 (lib/companyPages.ts). */
+/** The company's pages in this app - `/entity/<shortid>/<name>/...` since 2026-10-05 (lib/companyPaths.ts; e2e/companyRef.ts says why not lib/companyPages.ts). */
 export function pagesOf(creds: Credentials): CompanyPages {
-  return companyPages(creds.entityId, creds.entityName);
+  return pagesUnder(`/entity/${companyRef(creds.entityId, creds.entityName)}`);
 }
 
 /** Arrive the way Minty sends people: /landing stores the token and forwards to ``next``. */
