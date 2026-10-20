@@ -85,6 +85,8 @@ test.describe('the sidebar', () => {
     const panel = page.locator('section[aria-label="My Profile"]').locator('xpath=..');
     await expect.poll(async () => Math.round((await panel.boundingBox())?.width ?? 0)).toBe(440);
     expect(await panel.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+    // no PASSWORD row: Minty holds no password (the owner, 2026-10-20)
+    await expect(profile.getByText(/password/i)).toHaveCount(0);
 
     const card = profile.getByRole('region', { name: 'Subscriptions Overview' });
     await expect(card.getByText('Active subscriptions')).toBeVisible();

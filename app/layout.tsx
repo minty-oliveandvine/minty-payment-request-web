@@ -35,7 +35,7 @@ export default function RootLayout({
           {/* The sidebar - menu + My Profile, copied from minty-web (components/ui/Sidebar.tsx):
               the one place the profile and subscription features meet, as in minty-web's
               app/layout.tsx. */}
-          <SidebarProvider profile={<ProfilePanel subscriptions={<SubscriptionsOverviewCard />} />}>
+          <SidebarProvider look="classic" profile={<ProfilePanel subscriptions={<SubscriptionsOverviewCard />} />}>
             <div id="app-scroll-root" className="min-h-dvh min-h-screen w-full min-w-0 max-w-full">
               {children}
             </div>

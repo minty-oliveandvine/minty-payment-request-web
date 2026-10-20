@@ -16,7 +16,6 @@ const TREES = ["components", "lib", "features", "app"];
 /** Pages that legitimately link OUT of the app - to Xero, to legal copy, to a status page. */
 const NOT_A_FILE_LINK = new Set([
   "app/maintenance/page.tsx", // the status page
-  "features/profile/components/DetailsCard.tsx", // "manage this in Xero"
 ]);
 
 function sources(dir: string): string[] {
