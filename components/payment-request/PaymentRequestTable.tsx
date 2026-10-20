@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import type { PaymentRequestStatusFilter } from "./PaymentRequestToolbar";
 import { BankSlipDetailsModal, type BankSlipDetails } from "./BankSlipDetailsModal";
+import { BankSlipLoadState } from "./BankSlipLoadState";
 import { RowDeleteConfirmModal } from "./RowDeleteConfirmModal";
 import { useUserRole } from "@/lib/useUserRole";
 import { useEntityCurrency } from "@/lib/entityCurrency";
@@ -46,6 +47,8 @@ export type PaymentRequestRow = {
   currencyCode?: string;
   bankslipFileCount?: number;
   bankSlipDetails?: BankSlipDetails;
+  /** Set while the count is unknown: not loaded yet, or the lookup failed (never read as 0). */
+  bankslipState?: "loading" | "error";
   xeroActive?: boolean;
   description?: string;
 };
@@ -313,6 +316,8 @@ type PaymentRequestTableProps = {
   headerSlot?: ReactNode;
   /** After bank slip files are uploaded via API for a bill. */
   onBankSlipUploaded?: () => void;
+  /** Reloads the bank slip counts after a lookup failed. */
+  onRetryBankSlips?: () => void;
 };
 
 /** Stable empty default so an uncontrolled table doesn't get a new Set every render. */
@@ -501,6 +506,7 @@ export function PaymentRequestTable({
   onToggleAll,
   headerSlot,
   onBankSlipUploaded,
+  onRetryBankSlips,
 }: PaymentRequestTableProps) {
   const sortDescriptionIdPrefix = useId();
   const { isElevated, isViewOnly } = useUserRole();
@@ -826,7 +832,9 @@ export function PaymentRequestTable({
                         ) : null}
                       </div>
                       <div className="flex h-10 min-h-10 shrink-0 items-center justify-end">
-                        {row.bankslipFileCount != null && row.bankslipFileCount > 0 ? (
+                        {row.bankslipState ? (
+                          <BankSlipLoadState state={row.bankslipState} contactTitle={row.contactTitle} onRetry={onRetryBankSlips} />
+                        ) : row.bankslipFileCount != null && row.bankslipFileCount > 0 ? (
                           <button
                             type="button"
                             className={`inline-flex h-10 min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${bankslipReadOnly ? "text-primary/40" : "text-secondary"}`}
@@ -1089,9 +1097,11 @@ export function PaymentRequestTable({
                           return (
                             <td key={title} className={`${invoiceDateCellClass} ${actionBodyCellBg} relative`}>
                               <RowLinkOverlay rowId={row.id} reference={row.reference} label={`Open ${row.contactTitle}`} />
-                              <div className="relative z-[1] flex items-center gap-2">
+                              <div className="relative z-[1] flex items-center justify-end gap-2">
                                 <div>
-                                  {row.bankslipFileCount != null && row.bankslipFileCount > 0 ? (
+                                  {row.bankslipState ? (
+                                    <BankSlipLoadState state={row.bankslipState} contactTitle={row.contactTitle} onRetry={onRetryBankSlips} />
+                                  ) : row.bankslipFileCount != null && row.bankslipFileCount > 0 ? (
                                     <button
                                       type="button"
                                       className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:gap-2 ${bankslipReadOnly ? "text-primary/40" : "text-secondary"}`}

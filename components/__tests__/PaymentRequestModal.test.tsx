@@ -35,12 +35,18 @@ const answer = (status: number, body: unknown) =>
 
 type Posted = { path: string; body: unknown };
 
-function serve({ submit, draft }: { submit?: () => Response; draft?: () => Response } = {}) {
+function serve({
+  submit,
+  draft,
+  currency,
+}: { submit?: () => Response; draft?: () => Response; currency?: () => Response } = {}) {
   const posted: Posted[] = [];
   fetchMock.mockImplementation(async (input, init) => {
     const url = new URL(String(input));
     const path = url.pathname;
-    if (path.endsWith("/auth/entity-currency")) return answer(200, { currency_code: "HKD" });
+    if (path.endsWith("/auth/entity-currency")) {
+      return (currency ?? (() => answer(200, { currency_code: "HKD" })))();
+    }
     if (path.endsWith("/auth/entitlements")) return answer(200, { billing_enabled: true });
     if (path.endsWith("/profile/me")) return answer(200, { member_entity_ids: [ENTITY_ID] });
     if (path.endsWith("/entity-bill-contacts/")) return answer(200, SUPPLIERS);
@@ -274,6 +280,70 @@ describe("saving a draft", () => {
       expect(
         await screen.findByText("That draft didn't quite save. Mind trying again?"),
       ).toBeInTheDocument();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+});
+
+describe("the company's currency", () => {
+  // lib/entityCurrency.ts caches the code for the page's life, so each case takes fresh modules.
+  async function showFresh() {
+    vi.resetModules();
+    const [{ PaymentRequestModal: Modal }, { ToastProvider: Toasts }, { setAuth: auth }] =
+      await Promise.all([
+        import("@/components/PaymentRequestModal"),
+        import("@/components/Toast"),
+        import("@/lib/auth"),
+      ]);
+    auth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
+    render(
+      <Toasts>
+        <Modal open onClose={onClose} onConfirm={onConfirm} onSaveDraft={onSaveDraft} />
+      </Toasts>,
+    );
+  }
+
+  it("stands beside the amount", async () => {
+    serve();
+    await showFresh();
+
+    await waitFor(() => expect(within(dialog()).getByLabelText("Currency")).toHaveTextContent("HKD"));
+    expect(saveDraft()).toBeEnabled();
+  });
+
+  it("says when the company has none, and sends nothing", async () => {
+    const { posted } = serve({ currency: () => answer(200, { currency_code: "" }) });
+    await showFresh();
+
+    expect(await screen.findByText(/Your company has no currency set/)).toBeInTheDocument();
+    expect(within(dialog()).getByLabelText("Currency")).toHaveTextContent("—");
+    expect(screen.getByRole("link", { name: "Entity & Integration settings" })).toHaveAttribute(
+      "href",
+      expect.stringContaining(`/entity/${ENTITY_ID}/settings/integration`),
+    );
+    expect(confirm()).toBeDisabled();
+    expect(saveDraft()).toBeDisabled();
+    expect(posted).toHaveLength(0);
+  });
+
+  it("tells a failed read apart from none set, and tries again", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      let calls = 0;
+      serve({
+        currency: () =>
+          ++calls === 1 ? answer(500, { detail: "boom" }) : answer(200, { currency_code: "HKD" }),
+      });
+      await showFresh();
+
+      expect(await screen.findByText(/couldn.t load your company.s currency/)).toBeInTheDocument();
+      expect(saveDraft()).toBeDisabled();
+
+      await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+      await waitFor(() => expect(within(dialog()).getByLabelText("Currency")).toHaveTextContent("HKD"));
+      expect(saveDraft()).toBeEnabled();
     } finally {
       consoleError.mockRestore();
     }

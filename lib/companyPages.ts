@@ -10,7 +10,7 @@
  * Flask, which mints a token for that one. No React here - the middleware imports it.
  */
 
-import { companyRef, shortIdOf, slugifyName } from "@/lib/companyRef";
+import { companyRef, shortIdOf, slugifyName } from "@minty/shared/companyRef";
 
 export type CompanyPages = {
   list: string;

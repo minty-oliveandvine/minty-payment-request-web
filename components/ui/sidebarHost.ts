@@ -1,11 +1,12 @@
+"use client";
+
 /**
- * The ONE app-specific file of the sidebar (menu + My Profile) this app carries since
- * 2026-09-30 - a copy of minty-web's `components/ui/Sidebar.tsx` family and its
- * `features/profile`, taken at the user's word ("build it now and transfer later to shared").
+ * The ONE app-specific file the packaged sidebar (`@minty/shared/sidebar`) reads of this app.
  *
- * Everything the copies need from THIS app comes through here and nowhere else, so this file is
- * also the list of what `@minty/shared` (`minty-shared-ts`, Part 3 step 4) will have to take as
- * injection when the copies are lifted and deleted:
+ * It was written on 2026-09-30 as the list of what a shared package would have to take as
+ * injection, while this app still carried its own copy of minty-web's sidebar. On 2026-10-12 the
+ * copies went and the package arrived, and this file became exactly what it predicted - the host.
+ * It still answers:
  *
  * - who and where: the company in the cookie, its modules (the token's claims);
  * - where the menu's items lead from this app (Minty's `/enter` and `/handoff/minty-web`);
@@ -15,13 +16,31 @@
  *   with the token it holds, and what a 401 means here (one refresh, then back to Minty).
  */
 
+import { usePathname } from "next/navigation";
+
+import {
+  setSidebarHost,
+  type SidebarHost,
+  type Viewer,
+} from "@minty/shared/sidebar";
+import { guardLeave } from "@minty/shared/leaveGuard";
+
 import { ApiError, logoutSession } from "@/lib/api";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import { env } from "@/lib/env";
-import { clearAuth, getAuth, isTokenExpiringSoon, redirectToLogin, refreshToken } from "@/lib/auth";
-import { guardLeave } from "@/lib/leaveGuard";
+import {
+  clearAuth,
+  getAuth,
+  isTokenExpiringSoon,
+  redirectToLogin,
+  refreshToken,
+} from "@/lib/auth";
 import { getModuleClaims } from "@/lib/moduleClaims";
-import { buildMintyEnterUrl, buildMintyProfileUrl, MINTY_MODULE_URL } from "@/lib/mintyUrls";
+import {
+  buildMintyEnterUrl,
+  buildMintyProfileUrl,
+  MINTY_MODULE_URL,
+} from "@/lib/mintyUrls";
 import { cookieCompanyPages } from "@/lib/useCompanyPages";
 
 /** minty-subscription-api - the Subscriptions Overview's read (`SUBSCRIPTION_API_URL`, lib/env.ts). */
@@ -36,7 +55,9 @@ const SETTINGS_PAGE = /^\/entity\/[^/]+\/[^/]+\/settings\/payment-request\/?$/;
 /** The home page's view choice (app/page.tsx) - this app's Logout always forgot it. */
 const EASY_VIEW_STORAGE_KEY = "payment-request-easy-view";
 
-export type ModuleAccess = { pettyCash: boolean; billing: boolean };
+/** Re-exported, not redeclared: the package owns the shape now (its src/host.ts). */
+export type { ModuleAccess } from "@minty/shared/sidebar";
+type ModuleAccess = { pettyCash: boolean; billing: boolean };
 
 /**
  * Into minty-web through Flask's login-gated re-handoff - by way of `/enter` when a company is in
@@ -45,12 +66,19 @@ export type ModuleAccess = { pettyCash: boolean; billing: boolean };
  */
 function handoff(next: string): string {
   const path = `/handoff/minty-web?${new URLSearchParams({ next }).toString()}`;
-  return getAuth()?.entityId ? buildMintyEnterUrl(path) : `${MINTY_MODULE_URL}${path}`;
+  return getAuth()?.entityId
+    ? buildMintyEnterUrl(path)
+    : `${MINTY_MODULE_URL}${path}`;
 }
 
 /** The company in this app's cookie ("" when none). */
 export function entityId(): string {
   return getAuth()?.entityId ?? "";
+}
+
+/** Its name, for the links that spell it. */
+export function entityName(): string {
+  return getAuth()?.entityName ?? "";
 }
 
 /** Which modules that company has - the token's claims, both on when unknown (never hide nav). */
@@ -65,7 +93,8 @@ export const links = {
   entities: () => buildMintyEnterUrl("/entity"),
   subscriptions: () => handoff(MINTY_WEB_SUBSCRIPTIONS),
   pettyCashDashboard: () => buildMintyEnterUrl(),
-  pettyCashReports: (id: string) => buildMintyEnterUrl(`/entity/${id}/petty-cash/reports`),
+  pettyCashReports: (id: string) =>
+    buildMintyEnterUrl(`/entity/${id}/petty-cash/reports`),
   /** The company's list - `/` (the middleware sends it there) when the cookie names none. */
   bills: () => cookieCompanyPages()?.list ?? "/",
   /**
@@ -77,10 +106,19 @@ export const links = {
   profile: () => buildMintyProfileUrl(),
 };
 
-/** Which menu item is the page being shown - Settings is the only one that is this app's page. */
-export function currentOf(): "profile" | "entities" | "subscriptions" | "settings" | null {
-  const path = typeof window === "undefined" ? "" : window.location.pathname;
-  return SETTINGS_PAGE.test(path) ? "settings" : null;
+/**
+ * Which menu item is the page being shown. Settings is the only one that is this app's own page -
+ * the entity list, subscriptions and the profile are all minty-web's, so a person is never ON
+ * them here, and this app never reports "profile" (which is why the menu's person block always
+ * switches the sidebar's view rather than just closing).
+ *
+ * Takes the path rather than reading `window.location` itself, so it is a pure function the
+ * packaged sidebar can feed from the app's router.
+ */
+export function currentOf(
+  pathname: string,
+): "profile" | "entities" | "subscriptions" | "settings" | null {
+  return SETTINGS_PAGE.test(pathname) ? "settings" : null;
 }
 
 /** Hold the page still while the sidebar is open; the returned function lets it go. */
@@ -98,9 +136,11 @@ export function lockScroll(): () => void {
  * `lib/leaveGuard.ts`): none of this runs until the person picks "Discard changes", and "Go Back"
  * leaves them on the page, still signed in - the promise then never settles.
  */
-export function logOut(): Promise<void> {
+export function logOut(onLeaving?: () => void): Promise<void> {
   return new Promise((resolve, reject) => {
     guardLeave(() => {
+      // Only now has the person committed to going, so only now may the drawer close.
+      onLeaving?.();
       endSession().then(resolve, reject);
     });
   });
@@ -120,7 +160,8 @@ async function endSession(): Promise<void> {
 // --- the two backends the copies read ----------------------------------------------------------
 
 /** Shown when a backend gave no sentence of its own - minty-web's `HOUSE_FALLBACK`. */
-export const HOUSE_FALLBACK = "Something went wrong on my end. Mind trying again?";
+export const HOUSE_FALLBACK =
+  "Something went wrong on my end. Mind trying again?";
 const SESSION_ENDED = "Your session has ended. Signing you back in…";
 
 export type HubRequest = {
@@ -158,14 +199,29 @@ async function readBody(res: Response): Promise<unknown> {
 }
 
 function sentence(body: unknown): string | null {
-  if (body && typeof body === "object" && typeof (body as { error?: unknown }).error === "string") {
+  if (
+    body &&
+    typeof body === "object" &&
+    typeof (body as { error?: unknown }).error === "string"
+  ) {
     return (body as { error: string }).error;
   }
   return null;
 }
 
-async function bearerJson<T>(base: string, path: string, init: HubRequest, retried = false): Promise<T> {
-  const { method = "GET", json, query, signal, onUnauthorized = "reauth" } = init;
+async function bearerJson<T>(
+  base: string,
+  path: string,
+  init: HubRequest,
+  retried = false,
+): Promise<T> {
+  const {
+    method = "GET",
+    json,
+    query,
+    signal,
+    onUnauthorized = "reauth",
+  } = init;
   if (!retried && isTokenExpiringSoon(120)) await refreshToken();
   const token = getAuth()?.token;
   if (!token) {
@@ -173,7 +229,10 @@ async function bearerJson<T>(base: string, path: string, init: HubRequest, retri
     throw new ApiError(401, SESSION_ENDED);
   }
 
-  const headers = new Headers({ Accept: "application/json", Authorization: `Bearer ${token}` });
+  const headers = new Headers({
+    Accept: "application/json",
+    Authorization: `Bearer ${token}`,
+  });
   if (json !== undefined) headers.set("Content-Type", "application/json");
   const res = await fetch(`${base}${withQuery(path, query)}`, {
     method,
@@ -183,7 +242,8 @@ async function bearerJson<T>(base: string, path: string, init: HubRequest, retri
   });
 
   if (res.status === 401) {
-    if (!retried && (await refreshToken())) return bearerJson<T>(base, path, init, true);
+    if (!retried && (await refreshToken()))
+      return bearerJson<T>(base, path, init, true);
     if (onUnauthorized === "reauth") redirectToLogin();
     throw new ApiError(401, SESSION_ENDED);
   }
@@ -196,12 +256,18 @@ async function bearerJson<T>(base: string, path: string, init: HubRequest, retri
  * Flask's hub surface - `/api/me/profile` (minty-web's `mintyFetch`). Never sends `X-Entity-Id`:
  * Flask allows only `Authorization` and `Content-Type`; a company travels as `?entity=`.
  */
-export function mintyFetch<T = unknown>(path: string, init: HubRequest = {}): Promise<T> {
+export function mintyFetch<T = unknown>(
+  path: string,
+  init: HubRequest = {},
+): Promise<T> {
   return bearerJson<T>(MINTY_MODULE_URL.replace(/\/+$/, ""), path, init);
 }
 
 /** minty-subscription-api's person-scoped `/api/me/*` (minty-web's `apiFetch`, without a company). */
-export function billingApiFetch<T = unknown>(path: string, init: HubRequest = {}): Promise<T> {
+export function billingApiFetch<T = unknown>(
+  path: string,
+  init: HubRequest = {},
+): Promise<T> {
   return bearerJson<T>(SUBSCRIPTION_API_URL, path, init);
 }
 
@@ -209,3 +275,40 @@ export function billingApiFetch<T = unknown>(path: string, init: HubRequest = {}
 export function currentToken(): string {
   return getAuth()?.token ?? "";
 }
+
+// --- the host the packaged sidebar reads ---------------------------------------------------------
+
+/**
+ * Flask's hub surface, as decoration: a read that fails must never move the page, so a 401 only
+ * rejects and the badge stays empty.
+ */
+async function loadViewer(): Promise<Viewer | null> {
+  const body = await mintyFetch<{
+    user?: { name?: unknown; initials?: unknown };
+  }>("/api/me/profile", { onUnauthorized: "reject" });
+  const user = body?.user;
+  if (typeof user?.name !== "string" || typeof user.initials !== "string")
+    return null;
+  return { name: user.name, initials: user.initials };
+}
+
+export const sidebarHost: SidebarHost = {
+  app: "minty-payment-request-web",
+  entityId,
+  entityName,
+  moduleAccess,
+  links,
+  /**
+   * This app's router. Imported HERE and not in the package, so a test's
+   * `vi.mock("next/navigation")` reaches it - a mock does not apply to a module inside
+   * node_modules, and the real hook returns null outside an app-router tree.
+   */
+  usePathname: () => usePathname() ?? "",
+  currentOf,
+  lockScroll,
+  logOut,
+  currentToken,
+  loadViewer,
+};
+
+setSidebarHost(sidebarHost);

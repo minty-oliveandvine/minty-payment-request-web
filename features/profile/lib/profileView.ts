@@ -8,7 +8,7 @@
  * sent.
  */
 
-import { EMAIL_ASCII_HINT, hasNonAsciiEmailChar } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT, hasNonAsciiEmailChar } from "@minty/shared/emailInput";
 import type { ProfileChanges, ProfileCompany } from "@/features/profile/api/profile";
 
 export const PAGE_TITLE = "My Profile";

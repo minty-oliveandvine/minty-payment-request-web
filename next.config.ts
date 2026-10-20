@@ -51,6 +51,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  /**
+   * @minty/shared ships .ts/.tsx SOURCE, not a build (modernisation_plan.md Part 3 step 4), so
+   * Next compiles it with this app's own toolchain. Without this the build fails on the first
+   * .ts file under node_modules - loudly, unlike the Tailwind scan, which fails silently (see
+   * the @source line in app/globals.css).
+   */
+  transpilePackages: ["@minty/shared"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

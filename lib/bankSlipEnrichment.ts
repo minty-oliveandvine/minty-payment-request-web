@@ -83,6 +83,8 @@ function paymentToDetailsBase(
 export type BankSlipEnrichment = {
   bankslipFileCount: number;
   bankSlipDetails?: BankSlipDetails;
+  /** The lookup failed: the count is unknown, NOT zero, so the row must not offer an upload. */
+  failed?: boolean;
 };
 
 export type BankSlipRowLabels = {
@@ -159,7 +161,8 @@ export async function fetchBillBankSlipEnrichment(
     const built = await buildBankSlipDetailsFromPaymentList(billId, payments, row);
     if (built.count === 0) return { bankslipFileCount: 0 };
     return { bankslipFileCount: built.count, bankSlipDetails: built.bankSlipDetails! };
-  } catch {
-    return { bankslipFileCount: 0 };
+  } catch (err) {
+    console.error(`Could not load the bank slips for bill ${billId}:`, err);
+    return { bankslipFileCount: 0, failed: true };
   }
 }
