@@ -18,7 +18,6 @@ import {
   publishBill,
   returnBill as returnBillApi,
   updateBill,
-  uploadBillAttachments,
   XERO_RECONNECT_MESSAGE,
   type BillAttachment,
   type BillDetail,
@@ -65,7 +64,9 @@ import {
 import { recordPaymentDetailButtonClass, returnPaymentRequestButtonClass } from "./paymentRequestButtonClasses";
 import { useToast } from "@/components/Toast";
 import { useCompanyPages } from "@/lib/useCompanyPages";
-import { rememberRequest, useRequestId } from "@/lib/useRequestId";
+import { isVoidStatus } from "@/lib/companyPages";
+import { joinNames, uploadEachAttachment } from "@/lib/uploadAttachments";
+import { forgetRequest, rememberRequest, useRequestId } from "@/lib/useRequestId";
 export type PaymentRequestDetailBodyProps = {
   /** Called after the bill is refreshed from the server so the header status badge can update. */
   onBillUpdated?: () => void;
@@ -423,11 +424,16 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   // The address names the request by its Payment No. (2026-10-05): an id address (Flask's
   // hand-off, an old link) becomes the Payment No. one once the request has loaded, and an edit
   // that changes the Payment No. moves the address with it - replace, so Back is unchanged.
+  // A voided request stays on (or moves to) its id: its Payment No. may name a live request
+  // now, so it is forgotten rather than remembered.
   useEffect(() => {
     if (!bill || bill.id !== requestId) return;
-    const wanted = pages.request(bill.id, bill.reference);
+    const company = (params?.ref ?? "").toLowerCase();
+    const voided = isVoidStatus(bill.status);
+    if (voided && bill.reference) forgetRequest(company, bill.reference);
+    const wanted = pages.request(bill.id, bill.reference, bill.status);
     if (window.location.pathname === wanted) return;
-    rememberRequest((params?.ref ?? "").toLowerCase(), bill.reference ?? "", bill.id);
+    if (!voided) rememberRequest(company, bill.reference ?? "", bill.id);
     router.replace(`${wanted}${window.location.search}${window.location.hash}`, { scroll: false });
   }, [bill, requestId, pages, params?.ref, router]);
 
@@ -711,14 +717,14 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
           (a): a is InvoiceAttachmentPreviewItem & { pendingFile: File } =>
             Boolean(a.pendingUploadKey && a.pendingFile),
         );
-        if (stagedForApi.length > 0) {
-          await uploadBillAttachments(
-            requestId,
-            stagedForApi.map((a) => a.pendingFile),
-          );
-          for (const a of stagedForApi) {
-            if (a.url.startsWith("blob:")) URL.revokeObjectURL(a.url);
-          }
+        // The request is saved by now: a file that fails is reported once the save finishes
+        // (below), never as "didn't save".
+        const notUploaded = await uploadEachAttachment(
+          requestId,
+          stagedForApi.map((a) => a.pendingFile),
+        );
+        for (const a of stagedForApi) {
+          if (a.url.startsWith("blob:")) URL.revokeObjectURL(a.url);
         }
 
         const blobsForIndexedDb = attachments.filter(
@@ -767,6 +773,12 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         setAccountCodeError(null);
         setSubmitAttemptFieldErrors(null);
         bumpAudit();
+        if (notUploaded.length > 0) {
+          showToast(
+            `I saved your payment request, but ${joinNames(notUploaded)} didn't upload. Edit the request and add ${notUploaded.length > 1 ? "them" : "it"} again.`,
+            "warning",
+          );
+        }
       } catch (e) {
         if (isDuplicateBillReferenceError(e)) {
           setBillNoError(e.message);
@@ -920,14 +932,14 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         (a): a is InvoiceAttachmentPreviewItem & { pendingFile: File } =>
           Boolean(a.pendingUploadKey && a.pendingFile),
       );
-      if (stagedForApi.length > 0) {
-        await uploadBillAttachments(
-          requestId,
-          stagedForApi.map((a) => a.pendingFile),
-        );
-        for (const a of stagedForApi) {
-          if (a.url.startsWith("blob:")) URL.revokeObjectURL(a.url);
-        }
+      // The request is saved by now: a file that fails is reported once the save finishes
+      // (below), never as "didn't save".
+      const notUploaded = await uploadEachAttachment(
+        requestId,
+        stagedForApi.map((a) => a.pendingFile),
+      );
+      for (const a of stagedForApi) {
+        if (a.url.startsWith("blob:")) URL.revokeObjectURL(a.url);
       }
 
       const blobsForIndexedDb = attachments.filter(
@@ -975,6 +987,12 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       setSubmitAttemptFieldErrors(null);
       await loadPayments();
       bumpAudit();
+      if (notUploaded.length > 0) {
+        showToast(
+          `I submitted your payment request, but ${joinNames(notUploaded)} didn't upload. Edit the request and add ${notUploaded.length > 1 ? "them" : "it"} again.`,
+          "warning",
+        );
+      }
     } catch (e) {
       if (isDuplicateBillReferenceError(e)) {
         // Surfaced inline under Bill No. — a toast would just repeat it.
@@ -1080,7 +1098,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         amountLabel: `(${formatMoney(p.amount || "0", currencyLabel)})`,
         statusLabel,
         invoiceNo: ref,
-        invoiceHref: forThisBill ? "#" : pages.request(p.bill_id, p.bill_reference),
+        invoiceHref: forThisBill ? "#" : pages.request(p.bill_id, p.bill_reference, p.bill_status),
         isOtherBill: !forThisBill,
       };
     });

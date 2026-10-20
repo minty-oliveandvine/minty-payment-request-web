@@ -161,9 +161,10 @@ describe("the token's is_view_only claim", () => {
   });
 });
 
-describe("a system superuser on a token without the claim", () => {
+// Flask mints "superadmin"; "superuser" is the legacy spelling. Both are a system super admin.
+describe.each(["superadmin", "superuser"])("a system super admin (%s) on a token without the claim", (systemRole) => {
   const legacySuperuser = () =>
-    setAuth(unsignedToken({ role: "admin", system_role: "superuser" }), ENTITY_ID, ENTITY_NAME);
+    setAuth(unsignedToken({ role: "admin", system_role: systemRole }), ENTITY_ID, ENTITY_NAME);
 
   it("asks the profile endpoint which companies they are a member of", async () => {
     legacySuperuser();
@@ -224,7 +225,7 @@ describe("a system superuser on a token without the claim", () => {
   });
 
   it("is view-only when no company is in the cookie at all", async () => {
-    setAuth(unsignedToken({ role: "admin", system_role: "superuser" }), "", "");
+    setAuth(unsignedToken({ role: "admin", system_role: systemRole }), "", "");
     fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [] }));
 
     await show();
@@ -252,8 +253,8 @@ describe("the superuser check", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("reads 'superuser' whatever its case or padding", async () => {
-    setAuth(unsignedToken({ role: "admin", system_role: "  SUPERUSER " }), ENTITY_ID, ENTITY_NAME);
+  it.each(["  SUPERUSER ", "  SUPERADMIN "])("reads %j whatever its case or padding", async (systemRole) => {
+    setAuth(unsignedToken({ role: "admin", system_role: systemRole }), ENTITY_ID, ENTITY_NAME);
     fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [ENTITY_ID] }));
 
     await show();

@@ -136,9 +136,21 @@ describe("a company's own page", () => {
     );
   });
 
-  it("percent-encodes a request id on the way to Flask", () => {
+  it("percent-encodes a request id on the way to Flask once, not twice", () => {
     expect(run(`${BASE}/payment-request/PR%2F0001`, {}).location).toBe(
-      `${MINTY}/entity/360812e1/olive-and-vine/payment-request?request=PR%252F0001`,
+      `${MINTY}/entity/360812e1/olive-and-vine/payment-request?request=PR%2F0001`,
+    );
+  });
+
+  it("hands a plain Payment No. to Flask as it is", () => {
+    expect(run(`${BASE}/payment-request/PR-0042`, {}).location).toBe(
+      `${MINTY}/entity/360812e1/olive-and-vine/payment-request?request=PR-0042`,
+    );
+  });
+
+  it("does not hand `new` to Flask as a request", () => {
+    expect(run(`${BASE}/payment-request/new`, {}).location).toBe(
+      `${MINTY}/entity/360812e1/olive-and-vine/payment-request`,
     );
   });
 

@@ -30,7 +30,6 @@ import {
   isDuplicateBillReferenceError,
   saveBillDraft,
   submitBill,
-  uploadBillAttachments,
 } from "@/lib/api";
 import type { EntityBillContact } from "@/lib/api";
 import { DateTextField } from "@/components/DateTextField";
@@ -44,6 +43,8 @@ import {
   toAmountString,
 } from "@/lib/amountFormat";
 import { useCompanyPages } from "@/lib/useCompanyPages";
+import { joinNames, uploadEachAttachment } from "@/lib/uploadAttachments";
+import { useToast } from "@/components/Toast";
 
 export type PaymentRequestModalProps = {
   open: boolean;
@@ -175,6 +176,7 @@ export function PaymentRequestModal({
 }: PaymentRequestModalProps) {
   const router = useRouter();
   const pages = useCompanyPages();
+  const { showToast } = useToast();
   // The bill's currency is the company's; with none set (or unreadable) the form can't be sent.
   const currency = useEntityCurrencyState();
   const entityCurrency = currency.code;
@@ -432,13 +434,10 @@ export function PaymentRequestModal({
           : undefined,
       });
 
-      if (uploadedFiles.length > 0) {
-        try {
-          await uploadBillAttachments(bill.id, uploadedFiles.map((x) => x.file));
-        } catch (e) {
-          console.error("Failed to upload attachments:", e);
-        }
-      }
+      const notUploaded = await uploadEachAttachment(
+        bill.id,
+        uploadedFiles.map((x) => x.file),
+      );
 
       try {
         await saveAttachmentBlobs(
@@ -451,6 +450,14 @@ export function PaymentRequestModal({
 
       onSaveDraft?.();
       onClose();
+      if (notUploaded.length > 0) {
+        // The draft exists; only the file is missing - open it, so it can be added there.
+        showToast(
+          `Draft saved, but ${joinNames(notUploaded)} didn't upload. Edit the draft and add ${notUploaded.length > 1 ? "them" : "it"} again.`,
+          "warning",
+        );
+        router.push(pages.request(bill.id, bill.reference));
+      }
     } catch (err) {
       console.error("Failed to save draft:", err);
       if (isDuplicateBillReferenceError(err)) {
@@ -517,13 +524,10 @@ export function PaymentRequestModal({
         ],
       });
 
-      if (uploadedFiles.length > 0) {
-        try {
-          await uploadBillAttachments(bill.id, uploadedFiles.map((x) => x.file));
-        } catch (e) {
-          console.error("Failed to upload attachments:", e);
-        }
-      }
+      const notUploaded = await uploadEachAttachment(
+        bill.id,
+        uploadedFiles.map((x) => x.file),
+      );
 
       try {
         await saveAttachmentBlobs(
@@ -536,6 +540,12 @@ export function PaymentRequestModal({
 
       onConfirm?.();
       onClose();
+      if (notUploaded.length > 0) {
+        showToast(
+          `Payment request for ${contactName} sent, but ${joinNames(notUploaded)} didn't upload. Edit the request and add ${notUploaded.length > 1 ? "them" : "it"} again.`,
+          "warning",
+        );
+      }
       router.push(pages.request(bill.id, bill.reference));
     } catch (err) {
       console.error("Failed to create bill:", err);

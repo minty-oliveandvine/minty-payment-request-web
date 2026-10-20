@@ -28,6 +28,16 @@ export function rememberRequest(company: string, reference: string, id: string):
   if (reference.trim()) known.set(keyOf(company, reference), id);
 }
 
+/**
+ * `reference` no longer names the request it was remembered for (the request was voided, and a new
+ * one may take its Payment No.): drop it, so the next address with it is looked up afresh.
+ */
+export function forgetRequest(company: string, reference: string): void {
+  const key = keyOf(company, reference);
+  known.delete(key);
+  pending.delete(key);
+}
+
 function lookUp(key: string, reference: string): Promise<string> {
   let p = pending.get(key);
   if (!p) {

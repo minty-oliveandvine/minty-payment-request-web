@@ -323,7 +323,7 @@ describe("Add Payment", () => {
 
   it("is dead, with a reason, for a view-only superuser", async () => {
     setAuth(
-      unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }),
+      unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }),
       ENTITY_ID,
       ENTITY_NAME,
     );

@@ -84,6 +84,15 @@ test('a status tab narrows the list to that status', async ({ page }) => {
   await expect(rowFor(page, 'Cancelled Order Inc')).toBeVisible();
 });
 
+test('a voided row links to its id - its Payment No. may name a live request now', async ({ page }) => {
+  await openList(page);
+
+  await statusTab(page, 'Voided').click();
+
+  const link = page.getByRole('table').getByRole('link', { name: 'Open Cancelled Order Inc' }).first();
+  await expect(link).toHaveAttribute('href', /\/payment-request\/b-void$/);
+});
+
 test('typing in the search box matches part of an amount; submitting matches the whole one', async ({ page }) => {
   await openList(page);
   const search = page.getByRole('searchbox');

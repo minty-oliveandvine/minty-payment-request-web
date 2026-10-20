@@ -15,7 +15,7 @@ import { bill } from "@/lib/__fixtures__/bills";
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { rememberRequest, useRequestId } from "@/lib/useRequestId";
+import { forgetRequest, rememberRequest, useRequestId } from "@/lib/useRequestId";
 
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
 const COMPANY = "360812e1";
@@ -173,6 +173,38 @@ describe("rememberRequest", () => {
     render(<Probe />);
 
     expect(shown()).toContain("pending=true");
+  });
+});
+
+describe("forgetRequest", () => {
+  // A voided bill gives its Payment No. up: the same Payment No. may now name a live bill, so
+  // what was remembered for it must be looked up afresh.
+  it("forces a fresh lookup of a remembered Payment No.", async () => {
+    rememberRequest(COMPANY, "PR-FORGET-1", "bill-voided");
+    forgetRequest(COMPANY, "pr-forget-1");
+    params.id = "PR-FORGET-1";
+    fetchMock.mockResolvedValueOnce(answer(200, bill({ id: "bill-live", reference: "PR-FORGET-1" })));
+
+    render(<Probe />);
+
+    expect(shown()).toContain("pending=true");
+    await waitFor(() => expect(shown()).toBe("id=bill-live pending=false error="));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("forces a fresh lookup of one that was looked up before", async () => {
+    params.id = "PR-FORGET-2";
+    fetchMock.mockResolvedValueOnce(answer(200, bill({ id: "bill-old", reference: "PR-FORGET-2" })));
+    const first = render(<Probe />);
+    await waitFor(() => expect(shown()).toContain("id=bill-old"));
+    first.unmount();
+
+    forgetRequest(COMPANY, "PR-FORGET-2");
+    fetchMock.mockResolvedValueOnce(answer(200, bill({ id: "bill-new", reference: "PR-FORGET-2" })));
+    render(<Probe />);
+
+    await waitFor(() => expect(shown()).toBe("id=bill-new pending=false error="));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

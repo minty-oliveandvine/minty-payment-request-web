@@ -5,7 +5,7 @@
 // sends only what CHANGED (buildBillUpdatePayload), and view-only access takes every write
 // control away rather than leaving one that 403s.
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -22,9 +22,10 @@ const ENTITY_NAME = "Olive & Vine";
 const BILL_ID = "f47ac10b-58cc-4372-a567-0e02b2c3d479";
 
 const params: { ref?: string; slug?: string; id?: string } = {};
+const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useParams: () => params,
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  useRouter: () => router,
 }));
 
 vi.mock("@/components/PdfJsCanvasPreview", () => ({
@@ -51,11 +52,14 @@ function serve({
   billAnswer,
   payments = [],
   save,
+  upload,
 }: {
   detail?: ReturnType<typeof bill>;
   billAnswer?: () => Response;
   payments?: ReturnType<typeof payment>[];
   save?: () => Response;
+  /** `POST /bills/{id}/attachments`. */
+  upload?: () => Response;
 } = {}) {
   const calls: Call[] = [];
   fetchMock.mockImplementation(async (input, init) => {
@@ -75,6 +79,9 @@ function serve({
     if (path.includes("/entity-bill-accounts/")) return answer(200, entityBillAccounts());
     if (path.endsWith("/audit")) return answer(200, [audit({ bill_id: BILL_ID })]);
     if (path.endsWith("/payments")) return answer(200, { paid_total: "0.00", payments });
+    if (method === "POST" && path.endsWith(`/bills/${BILL_ID}/attachments`)) {
+      return (upload ?? (() => answer(201, [billAttachment()])))();
+    }
     if (path.includes("/attachments")) return answer(200, []);
     if (path.includes("/bills/by-reference/")) {
       return (billAnswer ?? (() => answer(200, detail)))();
@@ -157,6 +164,48 @@ describe("the request on screen", () => {
     await loaded();
     // "View Payment History" also matches /History/, so the accordion is named exactly.
     expect(screen.getByRole("button", { name: "History" })).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+describe("the address", () => {
+  const BY_ID = `/entity/360812e1/olive-and-vine/payment-request/${BILL_ID}`;
+  const BY_REFERENCE = "/entity/360812e1/olive-and-vine/payment-request/PR-0001";
+
+  beforeEach(() => {
+    router.replace.mockClear();
+    window.history.replaceState(null, "", BY_ID);
+  });
+
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("turns an id address into the Payment No. one for a live request", async () => {
+    serve();
+
+    show();
+
+    await loaded();
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(BY_REFERENCE, { scroll: false }));
+  });
+
+  it("keeps a voided request on its id - its Payment No. may name a live request now", async () => {
+    serve({
+      detail: bill({
+        id: BILL_ID,
+        status: "void",
+        contact: "Young Bros Transport",
+        reference: "PR-0001",
+        attachments: [billAttachment()],
+      }),
+    });
+
+    show();
+
+    await loaded();
+    // Give the address effect its turn before asserting it did nothing.
+    await waitFor(() => expect(screen.getByText("Young Bros Transport")).toBeInTheDocument());
+    expect(router.replace).not.toHaveBeenCalled();
   });
 });
 
@@ -282,6 +331,37 @@ describe("editing it", () => {
     expect(screen.queryByDisplayValue("Abandoned")).not.toBeInTheDocument();
   });
 
+  it("says a file that didn't upload needs adding again - not that the request didn't save", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { calls } = serve({ upload: () => answer(500, { detail: "boom" }) });
+    show();
+    await loaded();
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByDisplayValue("Corporate stationery and printer supplies");
+    await userEvent.click(screen.getByRole("button", { name: "Add more attachments" }));
+    const upload = await screen.findByRole("dialog");
+    await userEvent.upload(
+      within(upload).getByLabelText("Choose files to attach"),
+      new File(["x"], "receipt.pdf", { type: "application/pdf" }),
+    );
+    await userEvent.click(within(upload).getByRole("button", { name: "Upload" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() =>
+      expect(document.querySelector("[data-toast-type='warning']")).toHaveTextContent(
+        "I saved your payment request, but receipt.pdf didn't upload. Edit the request and add it again.",
+      ),
+    );
+    expect(calls.some((c) => c.method === "PUT")).toBe(true);
+    expect(calls.some((c) => c.method === "POST" && c.path.endsWith("/attachments"))).toBe(true);
+    expect(document.querySelector("[data-toast-type='error']")).toBeNull();
+    // The save finished: the page is out of edit mode.
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
   it("says so when the save is refused, and stays in edit mode", async () => {
     serve({ save: () => answer(409, { detail: "Someone else changed that first." }) });
     show();
@@ -341,7 +421,7 @@ describe("the actions its status allows", () => {
 describe("view-only access", () => {
   it("leaves every write control dead, with the reason on it", async () => {
     setAuth(
-      unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }),
+      unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }),
       ENTITY_ID,
       ENTITY_NAME,
     );
@@ -358,7 +438,7 @@ describe("view-only access", () => {
 
   it("leaves the request itself perfectly readable", async () => {
     setAuth(
-      unsignedToken({ role: "admin", system_role: "superuser", is_view_only: true }),
+      unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }),
       ENTITY_ID,
       ENTITY_NAME,
     );

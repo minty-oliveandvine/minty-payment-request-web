@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { AUTH_COOKIE_NAME, ENTITY_ID_COOKIE_NAME, ENTITY_NAME_COOKIE_NAME } from "@/lib/auth";
-import { COMPANY_PAGE, companyBase, companyPages, isCanonicalRef } from "@/lib/companyPages";
+import { COMPANY_PAGE, companyBase, companyPages, decodeSegment, isCanonicalRef } from "@/lib/companyPages";
 import { shortIdOf } from "@minty/shared/companyRef";
 import { resolveMintyModuleUrl } from "@/lib/mintyEnv";
 
@@ -52,8 +52,10 @@ function profileForward(pathname: string, search: string): string | null {
 function flaskHandoff(ref: string, slug: string, page: string): string {
   const company = `${resolveMintyModuleUrl().replace(/\/+$/, "")}/entity/${ref}/${slug}`;
   if (page.startsWith("settings/")) return `${company}/settings/payment-request`;
-  const requestId = page.split("/")[1];
-  return requestId
+  // The pathname is still percent-encoded and URLSearchParams encodes again, so decode first
+  // (`PR%2F0001` reaches Flask as `PR%2F0001`, not `PR%252F0001`). `new` names no request.
+  const requestId = decodeSegment(page.split("/")[1] ?? "").trim();
+  return requestId && requestId !== "new"
     ? `${company}/payment-request?${new URLSearchParams({ request: requestId }).toString()}`
     : `${company}/payment-request`;
 }

@@ -75,6 +75,11 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       before upload.
 - [ ] Confirm uploads attachments only after the bill itself exists, then opens the new
       request's detail page.
+- [ ] Block `/attachments` in devtools: Confirm still opens the request with a warning toast
+      naming the file to add again; Save as draft opens the draft with the same kind of
+      warning; the detail page's Save leaves edit mode and warns, never "didn't save".
+- [ ] Void a request: the address moves to its id, and a reload still shows it Voided (also
+      after a new request takes the same Payment No.).
 - [ ] **DB:** `SELECT status, contact_name, amount, xero_account_code FROM pettycashv3.bill
       WHERE id = '<id>';` plus `SELECT * FROM pettycashv3.bill_line WHERE bill_id = '<id>';`
       — Save as draft inserts `status = 'draft'`; Confirm inserts `status = 'submitted'`
@@ -102,6 +107,8 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       roles (accountant / admin / super_admin) on screen — confirm a cashier/shop-manager
       session doesn't even render the controls (separately: hitting the API directly as a
       non-elevated role must still be refused server-side).
+- [ ] A system super admin (`system_role` `superadmin`) on a company they are not a member of
+      sees every write control dead.
 - [ ] Recording a payment that would exceed the bill's outstanding amount shows the
       overpayment warning before it goes through.
 - [ ] A bank-slip upload on a payment can also be pushed to the Xero invoice from the same

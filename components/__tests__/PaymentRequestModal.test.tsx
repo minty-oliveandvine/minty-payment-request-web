@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PaymentRequestModal } from "@/components/PaymentRequestModal";
 import { ToastProvider } from "@/components/Toast";
-import { bill } from "@/lib/__fixtures__/bills";
+import { bill, billAttachment } from "@/lib/__fixtures__/bills";
 import { SUPPLIERS } from "@/lib/__fixtures__/contacts";
 import { entityBillAccounts } from "@/lib/__fixtures__/accounts";
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
@@ -19,9 +19,10 @@ import { setAuth } from "@/lib/auth";
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
 const ENTITY_NAME = "Olive & Vine";
 
+const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useParams: () => ({ ref: "360812e1", slug: "olive-and-vine" }),
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  useRouter: () => router,
 }));
 
 vi.mock("@/components/PdfJsCanvasPreview", () => ({
@@ -39,7 +40,14 @@ function serve({
   submit,
   draft,
   currency,
-}: { submit?: () => Response; draft?: () => Response; currency?: () => Response } = {}) {
+  upload,
+}: {
+  submit?: () => Response;
+  draft?: () => Response;
+  currency?: () => Response;
+  /** `POST /bills/{id}/attachments`; given the one file the call carries. */
+  upload?: (file: File) => Response;
+} = {}) {
   const posted: Posted[] = [];
   fetchMock.mockImplementation(async (input, init) => {
     const url = new URL(String(input));
@@ -54,7 +62,12 @@ function serve({
     if (path.endsWith("/bills/suggested-reference/")) return answer(200, { reference: "MBIOVI-1" });
     if (path.endsWith("/currencies/")) return answer(200, []);
     if (init?.method === "POST") {
-      posted.push({ path, body: init.body ? JSON.parse(String(init.body)) : null });
+      // An upload's body is FormData, which only a string body could be parsed from.
+      posted.push({ path, body: typeof init.body === "string" ? JSON.parse(init.body) : (init.body ?? null) });
+      if (/\/bills\/[^/]+\/attachments$/.test(path)) {
+        const sent = init.body instanceof FormData ? (init.body.get("files") as File) : null;
+        return (upload ?? (() => answer(201, [billAttachment()])))(sent as File);
+      }
       if (path.endsWith("/bills/draft/")) return (draft ?? (() => answer(201, bill())))();
       if (path.endsWith("/bills/submit/") || path.endsWith("/bills/")) {
         return (submit ?? (() => answer(201, bill())))();
@@ -283,6 +296,108 @@ describe("saving a draft", () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+});
+
+describe("uploading the invoice after the request exists", () => {
+  const SENT = bill({ id: "bill-sent", reference: "PR-0100", contact: "ABC Furniture" });
+  const REQUEST_PAGE = "/entity/360812e1/olive-and-vine/payment-request/PR-0100";
+
+  /** Everything Confirm insists on, and the files to attach. */
+  async function fillForConfirm(...files: File[]) {
+    await userEvent.type(within(dialog()).getByPlaceholderText("0.00"), "6000");
+    fireEvent.change(document.getElementById("pr-invoice-date")!, { target: { value: "2026-03-03" } });
+    fireEvent.change(document.getElementById("pr-due-date")!, { target: { value: "2026-03-31" } });
+    await userEvent.click(document.getElementById("pr-contact")!);
+    await userEvent.click(await screen.findByRole("option", { name: "ABC Furniture" }));
+    await userEvent.click(document.getElementById("pr-account")!);
+    await userEvent.click(await screen.findByRole("option", { name: /^429 - / }));
+    await userEvent.upload(filePicker(), files);
+  }
+
+  const uploads = (posted: Posted[]) => posted.filter((p) => p.path.endsWith("/attachments"));
+  const warning = () => document.querySelector('[data-toast-type="warning"]');
+
+  beforeEach(() => {
+    router.push.mockClear();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("posts the file to the new request's attachments and opens it, with no warning", async () => {
+    const { posted } = serve({ submit: () => answer(201, SENT) });
+    show();
+    await fillForConfirm(file("invoice.pdf", "application/pdf"));
+
+    await userEvent.click(confirm());
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(REQUEST_PAGE));
+    expect(uploads(posted).map((p) => p.path)).toEqual(["/api/v1/bills/bill-sent/attachments"]);
+    expect(warning()).toBeNull();
+  });
+
+  it("says the file didn't upload when the server fails, and still opens the request", async () => {
+    serve({ submit: () => answer(201, SENT), upload: () => answer(500, { detail: "boom" }) });
+    show();
+    await fillForConfirm(file("invoice.pdf", "application/pdf"));
+
+    await userEvent.click(confirm());
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(REQUEST_PAGE));
+    expect(warning()?.textContent).toContain(
+      "Payment request for ABC Furniture sent, but invoice.pdf didn't upload. Edit the request and add it again.",
+    );
+  });
+
+  it("says the same when the server refuses the file", async () => {
+    serve({
+      submit: () => answer(201, SENT),
+      upload: () => answer(422, { detail: "Files need to be under 10MB." }),
+    });
+    show();
+    await fillForConfirm(file("invoice.pdf", "application/pdf"));
+
+    await userEvent.click(confirm());
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(REQUEST_PAGE));
+    expect(warning()?.textContent).toContain("invoice.pdf didn't upload");
+  });
+
+  it("names only the file that failed when several were sent", async () => {
+    const { posted } = serve({
+      submit: () => answer(201, SENT),
+      upload: (f) => (f.name === "second.pdf" ? answer(500, { detail: "boom" }) : answer(201, [billAttachment()])),
+    });
+    show();
+    await fillForConfirm(file("first.pdf", "application/pdf"), file("second.pdf", "application/pdf"));
+
+    await userEvent.click(confirm());
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(REQUEST_PAGE));
+    expect(uploads(posted)).toHaveLength(2);
+    expect(warning()?.textContent).toContain("but second.pdf didn't upload");
+    expect(warning()?.textContent).not.toContain("first.pdf");
+  });
+
+  it("opens a saved draft whose file didn't upload, so it can be added again", async () => {
+    const draft = bill({ id: "bill-draft", reference: "PR-0101", status: "draft" });
+    serve({ draft: () => answer(201, draft), upload: () => answer(500, { detail: "boom" }) });
+    show();
+    await userEvent.type(within(dialog()).getByPlaceholderText("0.00"), "6000");
+    await attach(file("invoice.pdf", "application/pdf"));
+
+    await userEvent.click(saveDraft());
+
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith("/entity/360812e1/olive-and-vine/payment-request/PR-0101"),
+    );
+    expect(onClose).toHaveBeenCalled();
+    expect(warning()?.textContent).toContain(
+      "Draft saved, but invoice.pdf didn't upload. Edit the draft and add it again.",
+    );
   });
 });
 

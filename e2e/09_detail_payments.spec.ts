@@ -139,4 +139,13 @@ test('the request this spec created is voided, so the shop is left as it was fou
   await confirm.getByRole('button', { name: /Void Payment/ }).click();
 
   await expect(confirm).toBeHidden({ timeout: 20_000 });
+
+  // A voided request gives its Payment No. up (a new request may take it, and the lookup
+  // prefers the live one), so the address moves to the request's id...
+  await expect(page).toHaveURL(/\/payment-request\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, {
+    timeout: 20_000,
+  });
+  // ...and a reload opens this voided request, not a live one with the same Payment No.
+  await page.reload();
+  await expect(page.getByText('Voided').first()).toBeVisible({ timeout: 20_000 });
 });

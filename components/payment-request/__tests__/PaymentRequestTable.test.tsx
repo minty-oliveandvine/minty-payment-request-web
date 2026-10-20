@@ -174,7 +174,29 @@ describe("the rows", () => {
 
     await userEvent.click(table().getByText("Young Bros Transport"));
 
-    expect(onRowClick).toHaveBeenCalledWith("r-requested", "PR-0001");
+    expect(onRowClick).toHaveBeenCalledWith("r-requested", "PR-0001", "Payment Requested");
+  });
+
+  it("hand a voided row's status over with the click, so it opens by its id", async () => {
+    show();
+
+    await userEvent.click(table().getByText("Cancelled Order Inc"));
+
+    expect(onRowClick).toHaveBeenCalledWith("r-void", "PR-0001", "Voided");
+  });
+
+  // A voided request's Payment No. may belong to a live one now, and the lookup prefers it.
+  it("link a voided row by its id and a live one by its Payment No.", () => {
+    show();
+
+    for (const scope of [table(), cards()]) {
+      expect(scope.getAllByRole("link", { name: "Open Cancelled Order Inc" })[0].getAttribute("href")).toBe(
+        "/entity/360812e1/olive-and-vine/payment-request/r-void",
+      );
+      expect(scope.getAllByRole("link", { name: "Open Young Bros Transport" })[0].getAttribute("href")).toBe(
+        "/entity/360812e1/olive-and-vine/payment-request/PR-0001",
+      );
+    }
   });
 
   it("offer each row as a link too, so it can be opened in a new tab", () => {

@@ -14,7 +14,7 @@ import { companyRef, shortIdOf, slugifyName } from "@minty/shared/companyRef";
 
 import { pagesUnder, type CompanyPages } from "./companyPaths";
 
-export { COMPANY_PAGE, pagesUnder, type CompanyPages } from "./companyPaths";
+export { COMPANY_PAGE, isVoidStatus, pagesUnder, type CompanyPages } from "./companyPaths";
 
 /** `/entity/<shortid>/<name>` of a company, from its id and name. */
 export function companyBase(entityId: string, entityName: string): string {

@@ -84,6 +84,15 @@ both dates and *at least one attachment* before sending, shows each field's erro
 (`role="alert"`), uploads the files right after the bill exists, then opens the new
 request's detail page.
 
+The files go up **one per call** (`lib/uploadAttachments.ts` `uploadEachAttachment`), so one
+refused file does not take the others with it. The request exists by then, so a failed file is
+never "didn't save": Confirm shows a warning toast - "Payment request for {supplier} sent, but
+{files} didn't upload. Edit the request and add it again." - and still opens the request; Save
+as draft says "Draft saved, but {files} didn't upload. Edit the draft and add it again." and
+opens the draft (only a clean draft just closes the dialog). Until 2026-10-20 both were only
+logged. The detail page's Save and a draft's Submit do the same: the save finishes (the bill is
+re-read, edit mode closes) and a warning names the files to add again.
+
 ## The detail page (`/entity/<shortid>/<name>/payment-request/<Payment No.>`)
 
 Addressed by the Payment No. (the bill's `reference`) since 2026-10-05, the id when there is none
@@ -93,6 +102,15 @@ insensitive; once, shared by the body and the header badge). Once the request ha
 address (Flask's `?request=<id>` hand-off, an old link) is replaced by the Payment No. one, and an
 edit that changes the Payment No. moves the address with it (`router.replace`, so Back is
 unchanged). A Payment No. the company does not have shows "I couldn't find that payment request".
+
+A **voided** request is always addressed by its id (`pages.request(id, reference, status)` with
+`void` / `Voided`; every list link, row click and payment-history link passes the status): void
+bills are left out of the Payment No. uniqueness check, so a live request may reuse it, and the
+by-reference lookup prefers the live one. The detail page keeps a voided request on its id
+address (moving it there from the Payment No. one, e.g. right after Void) and drops the
+remembered Payment No.
+(`forgetRequest`), so a reload opens the voided request and the next lookup of that Payment No.
+is fresh.
 
 `PaymentRequestDetailBody.tsx` for a submitted-or-later request,
 `EasyViewDraftDetailBody.tsx` for a draft. What it holds:

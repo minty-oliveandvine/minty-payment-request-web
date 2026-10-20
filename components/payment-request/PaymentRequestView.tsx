@@ -848,7 +848,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 selectedBillId={easyViewSelectedBillId}
                 invoiceAttachments={easyViewInvoiceAttachments}
                 invoiceAttachmentsLoading={easyViewInvoiceLoading}
-                onRowClick={(rowId, reference) => router.push(pages.request(rowId, reference))}
+                onRowClick={(rowId, reference, status) => router.push(pages.request(rowId, reference, status))}
                 onPaymentRequestedPay={(rowId) => {
                   const isClosing = easyViewPayBillId === rowId;
                   setEasyViewPayReadOnly(false);
@@ -912,7 +912,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 onToggleAll={onToggleAll}
                 headerSlot={totalsBanner}
                 onRecordPayment={(rowId, readOnly) => setRecordPaymentTarget({ billId: rowId, readOnly: readOnly ?? false })}
-                onRowClick={(rowId, reference) => router.push(pages.request(rowId, reference))}
+                onRowClick={(rowId, reference, status) => router.push(pages.request(rowId, reference, status))}
                 onRowDelete={async (rowId) => {
                   try {
                     await deleteBill(rowId);

@@ -150,6 +150,21 @@ describe("the cards", () => {
     expect(onRowClick).not.toHaveBeenCalled();
   });
 
+  it("link a live request by its Payment No.", () => {
+    show();
+
+    const link = screen.getAllByText("Young Bros Transport")[0].closest("a");
+    expect(link?.getAttribute("href")).toBe("/entity/360812e1/olive-and-vine/payment-request/PR-0001");
+  });
+
+  // A voided request's Payment No. may belong to a live one now, and the lookup prefers it.
+  it("link a voided request by its id", () => {
+    show();
+
+    const link = screen.getAllByText("Cancelled Order Inc")[0].closest("a");
+    expect(link?.getAttribute("href")).toBe("/entity/360812e1/olive-and-vine/payment-request/r-void");
+  });
+
   it("draw nothing but their frame when there is nothing to show", () => {
     show({ rows: [] });
 

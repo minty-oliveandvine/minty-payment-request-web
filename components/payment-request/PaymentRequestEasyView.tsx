@@ -178,7 +178,7 @@ export type PaymentRequestEasyViewProps = {
   selectedBillId: string | null;
   invoiceAttachments: InvoiceAttachmentPreviewItem[];
   invoiceAttachmentsLoading: boolean;
-  onRowClick: (rowId: string, reference?: string) => void;
+  onRowClick: (rowId: string, reference?: string, status?: string) => void;
   /** Opens the inline pay panel (Payment Requested) instead of the floating record-payment modal. */
   onPaymentRequestedPay: (rowId: string) => void;
   /** Opens inline payment history (read-only) for paid bills. */
@@ -793,7 +793,7 @@ export function PaymentRequestEasyView({
                         />
                       </div>
                       <a
-                        href={pages.request(row.id, row.reference)}
+                        href={pages.request(row.id, row.reference, row.status)}
                         onClick={(e) => {
                           if (dimRow) {
                             e.preventDefault();
