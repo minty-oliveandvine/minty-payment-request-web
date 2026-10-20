@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 
+import { companyRef } from "@minty/shared/companyRef";
+
+import { getAuth } from "@/lib/auth";
 import { useEntitlements } from "@/lib/moduleClaims";
+import { useClientValue } from "@/lib/useClientValue";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export const SETTINGS_TAB_IDS = ["users", "xero", "entity", "bill", "modules"] as const;
@@ -34,6 +38,20 @@ const pillClass = (isActive: boolean) =>
     isActive ? "bg-secondary font-semibold text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
   }`;
 
+/**
+ * Petty Cash Settings: the Petty Cash app's settings page (minty-petty-cash-web), through Flask's
+ * login-gated `/handoff/petty-cash-web`, which mints that app's token for this company and lands
+ * on `next` - as minty-web's pill does. Never Flask's own (retired) settings page. No token in
+ * the address: the Flask session is the credential, as for the other pills.
+ */
+export const pettyCashSettingsUrl = (module1Url: string, entityId: string, entityName: string) => {
+  const qs = new URLSearchParams({
+    entity_id: entityId,
+    next: `/entity/${companyRef(entityId, entityName)}/settings/petty-cash`,
+  });
+  return `${module1Url}/handoff/petty-cash-web?${qs.toString()}`;
+};
+
 /** Entity & Integration (where Xero is connected) - also the way there from a Xero-less card. */
 export const integrationTabUrl = (module1Url: string, entityId: string) =>
   `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/integration`;
@@ -50,8 +68,6 @@ const FLASK_REDIRECT_TABS: Partial<
   users: (module1Url, entityId) =>
     `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/users`,
   xero: integrationTabUrl,
-  entity: (module1Url, entityId) =>
-    `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/petty-cash`,
   modules: (module1Url, entityId) =>
     `${module1Url}/entity/${encodeURIComponent(entityId)}/settings/modules`,
 };
@@ -68,6 +84,7 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
   // would land them on a screen they can't use. Filter it out when disabled.
   const { pettyCashEnabled } = useEntitlements();
   const pages = useCompanyPages();
+  const entityName = useClientValue(() => getAuth()?.entityName ?? "", "");
   const visibleTabs = TABS.filter((t) => t.id !== "entity" || pettyCashEnabled);
 
   return (
@@ -76,12 +93,14 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
         {visibleTabs.map(({ id, label }) => {
           const isActive = activeTab === id;
           const flaskUrl = FLASK_REDIRECT_TABS[id];
+          const away =
+            id === "entity" ? pettyCashSettingsUrl(module1Url, entityId, entityName) : flaskUrl?.(module1Url, entityId);
 
           // A real link (no token in it), so Payment Settings' "Leave without saving?"
           // (lib/leaveGuard.ts) holds it like any other way out of the page.
-          if (flaskUrl) {
+          if (away) {
             return (
-              <a key={id} href={flaskUrl(module1Url, entityId)} className={pillClass(isActive)}>
+              <a key={id} href={away} className={pillClass(isActive)}>
                 {label}
               </a>
             );

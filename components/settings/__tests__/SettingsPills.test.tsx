@@ -131,15 +131,27 @@ describe("the pills on screen", () => {
   it.each([
     ["Users", "users"],
     ["Entity & Integration", "integration"],
-    ["Petty Cash Settings", "petty-cash"],
     ["Modules", "modules"],
-  ])("send %s to Flask's own settings page", async (name, page) => {
+  ])("send %s to Flask's settings address, which hands over to minty-web", async (name, page) => {
     pills();
 
     const link = await screen.findByRole("link", { name });
     expect(link.getAttribute("href")).toBe(
       `${env.PETTY_CASH_URL}/entity/${ENTITY_ID}/settings/${page}`,
     );
+  });
+
+  it("send Petty Cash Settings to the Petty Cash app's settings, through Flask's hand-off - never Flask's own page", async () => {
+    // The owner, 2026-10-19: the settings live in minty-petty-cash-web now; Flask's Jinja page
+    // at /entity/<id>/settings/petty-cash is the retired one. Flask's login-gated
+    // /handoff/petty-cash-web mints that app's token and lands on `next`.
+    pills();
+
+    const href = (await screen.findByRole("link", { name: "Petty Cash Settings" })).getAttribute("href")!;
+    const url = new URL(href);
+    expect(url.origin + url.pathname).toBe(`${env.PETTY_CASH_URL}/handoff/petty-cash-web`);
+    expect(url.searchParams.get("entity_id")).toBe(ENTITY_ID);
+    expect(url.searchParams.get("next")).toBe("/entity/360812e1/olive-and-vine/settings/petty-cash");
   });
 
   it("carry no token in any address - a settings link is never a credential", async () => {
