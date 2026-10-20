@@ -60,7 +60,7 @@ export async function reachable(url: string): Promise<boolean> {
 }
 
 export const PAYMENT_REQUEST_API_URL = process.env.E2E_PAYMENT_REQUEST_API_URL || 'http://localhost:8020';
-export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || 'http://localhost:8010';
+export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || 'http://localhost:8000';
 
 export async function requireStack(): Promise<void> {
   test.skip(!(await reachable((process.env.E2E_BASE_URL || 'http://localhost:3020') + '/landing')), 'Next (:3020) is not answering');
@@ -158,7 +158,7 @@ export async function requireNextOnly(): Promise<void> {
   );
 }
 
-export const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || 'http://localhost:8000';
+export const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || 'http://localhost:8001';
 
 type Json = unknown;
 
