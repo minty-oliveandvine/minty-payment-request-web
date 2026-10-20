@@ -6,7 +6,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { PAYMENT_REQUEST_API_URL, PETTY_CASH_URL, handoff, pagesOf, requireCredentials, requireStack, type Credentials } from './helpers';
 
-const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || 'http://localhost:8000';
+const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || 'http://localhost:8001';
 
 const CORS = {
   'access-control-allow-origin': '*',

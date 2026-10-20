@@ -9,7 +9,7 @@ npm run dev             # in another terminal
 npx playwright test e2e/08 e2e/11 e2e/12 e2e/13
 ```
 
-Real browser, stack already up (Next :3020 `npm run dev`, minty-payment-request-api :8020, Minty :8010,
+Real browser, stack already up (Next :3020 `npm run dev`, minty-payment-request-api :8020, Minty :8000,
 Postgres). Nothing is started here. Specs skip with a reason when a service or the credentials
 are missing.
 
@@ -38,8 +38,8 @@ themselves with the shared `SECRET_KEY` (see `e2e/helpers.ts` for why nothing is
 | `E2E_JWT_SECRET` | the `SECRET_KEY` shared by Minty and minty-payment-request-api |
 | `E2E_MINTY_USER` / `E2E_MINTY_ENTITY` | the identity `Minty/scripts/e2e_seed.py --print` creates — the entity has the BILL module on, synced suppliers and bill account codes |
 | `E2E_MINTY_ENTITY_NAME` | optional, default `E2E Petty Cash Shop` |
-| `E2E_BASE_URL` / `E2E_PAYMENT_REQUEST_API_URL` / `E2E_PETTY_CASH_URL` | the three hosts; default the local ports (`http://localhost:3020` / `:8020` / `:8010`), set them to the deployed hosts for a run against a deployment. `E2E_PETTY_CASH_URL` must be the Minty origin the Next server itself resolves (`PETTY_CASH_URL`, `lib/env.ts`) - `03` and `05` compare links and redirects against it |
-| `E2E_SUBSCRIPTION_API_URL` | minty-subscription-api, whose `/api/me/subscriptions` `05_sidebar` stubs (default `http://localhost:8000`) |
+| `E2E_BASE_URL` / `E2E_PAYMENT_REQUEST_API_URL` / `E2E_PETTY_CASH_URL` | the three hosts; default the local ports (`http://localhost:3020` / `:8020` / `:8000`), set them to the deployed hosts for a run against a deployment. `E2E_PETTY_CASH_URL` must be the Minty origin the Next server itself resolves (`PETTY_CASH_URL`, `lib/env.ts`) - `03` and `05` compare links and redirects against it |
+| `E2E_SUBSCRIPTION_API_URL` | minty-subscription-api, whose `/api/me/subscriptions` `05_sidebar` stubs (default `http://localhost:8001`) |
 | `STUB_CREDS` | `1` makes the stubbed specs (`08`, `11`, `12`, `13`) use a fixed identity when the live `E2E_*` variables are unset. They do it by default anyway - `stubCredentials()` falls back on its own - so this is only for being explicit |
 | `E2E_XERO` | `1` when the e2e entity is connected to a Xero organisation (a Demo Company, linked by hand): `04_xero_publish` runs and the supplier is `ABC Furniture` instead of the seed's placeholder; `E2E_SUPPLIER_QUERY` / `E2E_SUPPLIER` / `E2E_BILL_ACCOUNT_CODE` override the names |
 
