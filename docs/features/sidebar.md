@@ -22,7 +22,7 @@ The copies are gone. The components now come from the package, pinned by git tag
 | `components/ui/ViewerBadge.tsx` | a shim |
 | `components/ui/NavMenu.tsx` | a shim (it replaced this app's `components/layout/NavMenu.tsx`) |
 | `lib/viewer.ts` | a shim over `@minty/shared/viewer` |
-| `features/profile/*`, `features/subscription/*` | **still this app's own** — not in the package |
+| `features/profile/*`, `features/subscription/routes/SubscriptionsOverviewCard.tsx` | **the package's since v0.6** (`@minty/shared/profile`, the redesign here): this app keeps only its Flask calls (`features/profile/api/profile.ts` `profileApi`), its subscriptions read and its toast. No PASSWORD row. |
 
 Each shim's first line is `import "@/components/ui/sidebarHost";`, and that is load-bearing: it
 registers this app's host before anything renders. Keeping the paths is why no page, feature or

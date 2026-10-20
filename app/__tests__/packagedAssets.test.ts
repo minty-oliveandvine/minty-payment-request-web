@@ -6,15 +6,19 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { PROFILE_ASSETS } from "@minty/shared/profile";
 import { SIDEBAR_ASSETS } from "@minty/shared/sidebar";
 import { describe, expect, it } from "vitest";
 
-describe("the packaged sidebar's assets", () => {
+describe.each([
+  ["sidebar", SIDEBAR_ASSETS],
+  ["profile", PROFILE_ASSETS],
+])("the packaged %s's assets", (_, assets: readonly string[]) => {
   it("lists some", () => {
-    expect(SIDEBAR_ASSETS.length).toBeGreaterThan(0);
+    expect(assets.length).toBeGreaterThan(0);
   });
 
-  it.each(SIDEBAR_ASSETS)("public%s is served by this app", (asset) => {
+  it.each(assets)("public%s is served by this app", (asset) => {
     expect(existsSync(resolve("public", asset.replace(/^\//, "")))).toBe(true);
   });
 });

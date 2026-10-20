@@ -85,6 +85,8 @@ test.describe('the sidebar', () => {
     const panel = page.locator('section[aria-label="My Profile"]').locator('xpath=..');
     await expect.poll(async () => Math.round((await panel.boundingBox())?.width ?? 0)).toBe(440);
     expect(await panel.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+    // no PASSWORD row: Minty holds no password (the owner, 2026-10-20)
+    await expect(profile.getByText(/password/i)).toHaveCount(0);
 
     const card = profile.getByRole('region', { name: 'Subscriptions Overview' });
     await expect(card.getByText('Active subscriptions')).toBeVisible();
@@ -92,7 +94,7 @@ test.describe('the sidebar', () => {
     await expect(card).toContainText('Trial ending1entity');
     await expect(card.getByRole('link', { name: 'Manage Subscription' })).toHaveAttribute(
       'href',
-      new RegExp(`^${PETTY_CASH_URL}/entity/${creds.entityId}/enter\\?token=.+&next=${encodeURIComponent('/handoff/minty-web?next=%2Fsubscription').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
+      new RegExp(`^${PETTY_CASH_URL}/entity/${creds.entityId}/enter\\?token=.+&next=${encodeURIComponent('/handoff/minty-web?next=%2Fsubscription').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(&return_origin=[^&]+)?$`),
     );
 
     await profile.getByRole('button', { name: 'Back to the menu' }).click();
@@ -114,10 +116,12 @@ test.describe('the sidebar', () => {
 
     await expect(nav.getByRole('link', { name: 'Settings', exact: true })).toHaveAttribute('href', pagesOf(creds).settings);
     await expect(nav.getByRole('link', { name: 'Bills', exact: true })).toHaveAttribute('href', pagesOf(creds).list);
+    // the hand-offs carry `&return_origin=` since 2026-10-15 (branch preview sets): drop it first
+    const bare = (href: string | null) => (href ?? '').replace(/&return_origin=[^&]*$/, '');
     const select = await nav.getByRole('link', { name: 'Select Entity', exact: true }).getAttribute('href');
-    expect(select?.startsWith(enter) && select.endsWith(`&next=${encodeURIComponent('/entity')}`)).toBe(true);
+    expect(select?.startsWith(enter) && bare(select).endsWith(`&next=${encodeURIComponent('/entity')}`)).toBe(true);
     const reports = await nav.getByRole('link', { name: 'Reports', exact: true }).getAttribute('href');
-    expect(reports?.startsWith(enter) && reports.endsWith(`&next=${encodeURIComponent(`/entity/${creds.entityId}/petty-cash/reports`)}`)).toBe(true);
+    expect(reports?.startsWith(enter) && bare(reports).endsWith(`&next=${encodeURIComponent(`/entity/${creds.entityId}/petty-cash/reports`)}`)).toBe(true);
     await expect(nav.getByRole('group', { name: 'Petty Cash' })).toBeVisible();
     await expect(nav.getByRole('group', { name: 'Payment Request' })).toBeVisible();
     await expect(nav.getByRole('button', { name: 'Logout', exact: true })).toBeVisible();
