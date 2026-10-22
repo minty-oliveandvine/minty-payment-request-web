@@ -32,5 +32,9 @@ export default defineConfig({
     globals: false,
     clearMocks: true,
     restoreMocks: true,
+    // Since Vitest 4, restoreMocks touches only vi.spyOn spies, so a test's unused
+    // mockResolvedValueOnce on a shared vi.fn() leaked into the next test. mockReset empties
+    // that queue and keeps every vi.fn(impl) on its own implementation (Vitest 3's behaviour).
+    mockReset: true,
   },
 });

@@ -6,7 +6,7 @@
 // is the opposite: when storage is unavailable the notice SHOWS, because a repeated warning is
 // a smaller failure than a missed one.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
@@ -115,7 +115,8 @@ describe("fetchSubscriptionNotice", () => {
   // Silent to the USER, never to the console: outside production the module says why nothing
   // appeared, because "no modal" is otherwise indistinguishable from "nothing to say". The spy
   // both keeps the suite's output readable and lets each case assert that it said so.
-  let warn: ReturnType<typeof vi.spyOn>;
+  // Typed: Vitest 5 no longer infers the spied function's signature from ReturnType<typeof vi.spyOn>.
+  let warn: MockInstance<typeof console.warn>;
 
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
