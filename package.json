@@ -16,13 +16,13 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@minty/shared": "github:minty-oliveandvine/minty-shared-ts#v0.6",
+    "@minty/shared": "github:minty-oliveandvine/minty-shared-ts#v0.7",
     "@vercel/analytics": "^2.0.1",
     "material-symbols": "^0.48.0",
     "next": "16.3.8",
     "pdfjs-dist": "^4.10.38",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
