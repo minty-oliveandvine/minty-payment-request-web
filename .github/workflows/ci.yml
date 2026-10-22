@@ -13,6 +13,7 @@ jobs:
   check:
     uses: minty-oliveandvine/.github/.github/workflows/next-web.yml@v1
     with:
+      extra-scripts: format:check
       build-env: |
         PETTY_CASH_URL=http://localhost:8010
         PAYMENT_REQUEST_API_URL=http://localhost:8020
