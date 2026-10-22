@@ -8,8 +8,7 @@ export const metadata: Metadata = {
 
 /** Set `MAINTENANCE_SHOW_NEW_LINK=1` (or `true`) when the new app link should appear in the footer. */
 const showNewAppLink =
-  process.env.MAINTENANCE_SHOW_NEW_LINK === "1" ||
-  process.env.MAINTENANCE_SHOW_NEW_LINK === "true";
+  process.env.MAINTENANCE_SHOW_NEW_LINK === "1" || process.env.MAINTENANCE_SHOW_NEW_LINK === "true";
 
 export default function MaintenancePage() {
   return (

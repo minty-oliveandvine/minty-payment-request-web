@@ -61,9 +61,11 @@ describe("the ordinary select", () => {
     await userEvent.click(trigger());
 
     expect(trigger()).toHaveAttribute("aria-expanded", "true");
-    expect(within(listbox()).getAllByRole("option").map((o) => o.textContent)).toEqual(
-      OPTIONS.map((o) => o.label),
-    );
+    expect(
+      within(listbox())
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual(OPTIONS.map((o) => o.label));
   });
 
   it("marks the chosen option as selected", async () => {
@@ -75,10 +77,9 @@ describe("the ordinary select", () => {
       "aria-selected",
       "true",
     );
-    expect(within(listbox()).getByRole("option", { name: "429 - General Expenses" })).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
+    expect(
+      within(listbox()).getByRole("option", { name: "429 - General Expenses" }),
+    ).toHaveAttribute("aria-selected", "false");
   });
 
   it("reports the value that was picked, and closes", async () => {
@@ -160,9 +161,11 @@ describe("the searchable select", () => {
     await userEvent.click(searchBox());
     await userEvent.type(searchBox(), "general");
 
-    expect(within(listbox()).getAllByRole("option").map((o) => o.textContent)).toEqual([
-      "429 - General Expenses",
-    ]);
+    expect(
+      within(listbox())
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual(["429 - General Expenses"]);
   });
 
   it("matches on the code as well as the name", async () => {

@@ -50,7 +50,11 @@ describe("moduleAccess", () => {
   });
 
   it("honours an explicit false in the token", () => {
-    setAuth(unsignedToken({ petty_cash_enabled: false, billing_enabled: true }), ENTITY_ID, ENTITY_NAME);
+    setAuth(
+      unsignedToken({ petty_cash_enabled: false, billing_enabled: true }),
+      ENTITY_ID,
+      ENTITY_NAME,
+    );
     expect(moduleAccess()).toEqual({ pettyCash: false, billing: true });
   });
 });
@@ -192,7 +196,9 @@ describe("mintyApi (Flask)", () => {
     await mintyApi.json("/api/me/profile");
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization")).toBe(`Bearer ${fresh}`);
+    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization")).toBe(
+      `Bearer ${fresh}`,
+    );
   });
 
   it("retries a 401 ONCE after a successful refresh", async () => {
@@ -201,7 +207,9 @@ describe("mintyApi (Flask)", () => {
     fetchMock.mockResolvedValueOnce(answer(200, { token: fresh }));
     fetchMock.mockResolvedValueOnce(answer(200, { user: { name: "Olive Vine" } }));
 
-    await expect(mintyApi.json("/api/me/profile")).resolves.toEqual({ user: { name: "Olive Vine" } });
+    await expect(mintyApi.json("/api/me/profile")).resolves.toEqual({
+      user: { name: "Olive Vine" },
+    });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
@@ -212,9 +220,7 @@ describe("mintyApi (Flask)", () => {
     fetchMock.mockResolvedValueOnce(answer(401, {}));
     fetchMock.mockResolvedValueOnce(answer(401, {})); // the refresh fails too
 
-    const err = (await mintyQuietApi.json("/api/me/profile").catch(
-      (e: unknown) => e,
-    )) as ApiError;
+    const err = (await mintyQuietApi.json("/api/me/profile").catch((e: unknown) => e)) as ApiError;
 
     expect(err).toBeInstanceOf(ApiError);
     expect(err.status).toBe(401);
@@ -262,7 +268,9 @@ describe("subscriptionApi", () => {
 
     await subscriptionApi.json("/api/me/subscriptions");
 
-    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.SUBSCRIPTION_API_URL}/api/me/subscriptions`);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      `${env.SUBSCRIPTION_API_URL}/api/me/subscriptions`,
+    );
     expect(String(fetchMock.mock.calls[0][0])).not.toContain(env.PAYMENT_REQUEST_API_URL);
   });
 });
@@ -414,7 +422,9 @@ describe("what a 401 means, in each mode", () => {
     expect(err.message).toBe("Your session has ended. Signing you back in…");
     expect(redirectSpy).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(String(fetchMock.mock.calls[1][0])).toBe(`${env.PAYMENT_REQUEST_API_URL}/api/v1/auth/token/refresh`);
+    expect(String(fetchMock.mock.calls[1][0])).toBe(
+      `${env.PAYMENT_REQUEST_API_URL}/api/v1/auth/token/refresh`,
+    );
   });
 
   it("'reject' (mintyQuietApi): the same error, and the page is never moved", async () => {
@@ -423,8 +433,8 @@ describe("what a 401 means, in each mode", () => {
     fetchMock.mockResolvedValueOnce(answer(401, {}));
     fetchMock.mockResolvedValueOnce(answer(401, {}));
 
-    const err = (await host
-      .mintyQuietApi.json("/api/me/profile")
+    const err = (await host.mintyQuietApi
+      .json("/api/me/profile")
       .catch((e: unknown) => e)) as ApiError;
 
     expect(err.message).toBe("Your session has ended. Signing you back in…");
@@ -438,7 +448,9 @@ describe("what a 401 means, in each mode", () => {
     fetchMock.mockResolvedValueOnce(answer(200, { token: unsignedToken({ note: "fresh" }) }));
     fetchMock.mockResolvedValueOnce(answer(401, {}));
 
-    const err = (await host.subscriptionApi.json("/api/me/subscriptions").catch((e: unknown) => e)) as ApiError;
+    const err = (await host.subscriptionApi
+      .json("/api/me/subscriptions")
+      .catch((e: unknown) => e)) as ApiError;
 
     expect(err.status).toBe(401);
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -448,13 +460,15 @@ describe("what a 401 means, in each mode", () => {
   it("with no token at all asks nothing; 'reauth' goes back to Minty, 'reject' does not", async () => {
     const { host } = await freshHost();
 
-    const reauth = (await host.mintyApi.json("/api/me/profile").catch((e: unknown) => e)) as ApiError;
+    const reauth = (await host.mintyApi
+      .json("/api/me/profile")
+      .catch((e: unknown) => e)) as ApiError;
     expect(reauth.status).toBe(401);
     expect(reauth.message).toBe("Your session has ended. Signing you back in…");
     expect(redirectSpy).toHaveBeenCalledTimes(1);
 
-    const reject = (await host
-      .mintyQuietApi.json("/api/me/profile")
+    const reject = (await host.mintyQuietApi
+      .json("/api/me/profile")
       .catch((e: unknown) => e)) as ApiError;
     expect(reject.status).toBe(401);
     expect(redirectSpy).toHaveBeenCalledTimes(1);
@@ -483,7 +497,9 @@ describe("handoff, through links.subscriptions", () => {
 
   it("the profile link enters through the company and lands on Minty's /profile naming it", () => {
     setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
-    expect(new URL(links.profile()).searchParams.get("next")).toBe(`/profile?entity_id=${ENTITY_ID}`);
+    expect(new URL(links.profile()).searchParams.get("next")).toBe(
+      `/profile?entity_id=${ENTITY_ID}`,
+    );
   });
 
   it("the Petty Cash dashboard is a bare /enter, with no `next`", () => {

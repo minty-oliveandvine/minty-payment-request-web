@@ -46,7 +46,12 @@ describe("one currency", () => {
   });
 
   it("reads a blank amount as nothing rather than breaking the sum", () => {
-    show({ allRows: [hkd("6,000.00", "6,000.00", "a"), billRow({ id: "b", invoiceTotal: "", unpaidAmount: "" })] });
+    show({
+      allRows: [
+        hkd("6,000.00", "6,000.00", "a"),
+        billRow({ id: "b", invoiceTotal: "", unpaidAmount: "" }),
+      ],
+    });
 
     expect(figureFor("Total unpaid amount")).toBe("6,000.00");
   });
@@ -64,7 +69,12 @@ describe("a selection", () => {
   });
 
   it("hides the date range while rows are checked", () => {
-    show({ allRows: rows, selectedRows: [rows[0]], startDate: "2026-08-10", endDate: "2026-08-17" });
+    show({
+      allRows: rows,
+      selectedRows: [rows[0]],
+      startDate: "2026-08-10",
+      endDate: "2026-08-17",
+    });
 
     expect(banner().queryByText(/10 Aug 2026/)).not.toBeInTheDocument();
   });
@@ -111,12 +121,18 @@ describe("several currencies", () => {
   it("leads with the largest unpaid total, matching the headline figure", () => {
     show({ allRows: rows });
 
-    const labels = banner().getAllByText(/^(HKD|USD)$/).map((el) => el.textContent);
+    const labels = banner()
+      .getAllByText(/^(HKD|USD)$/)
+      .map((el) => el.textContent);
     expect(labels).toEqual(["HKD", "USD"]);
   });
 
   it("treats a row with no currency code as HKD", () => {
-    show({ allRows: [billRow({ id: "x", currencyCode: undefined, invoiceTotal: "10.00", unpaidAmount: "10.00" })] });
+    show({
+      allRows: [
+        billRow({ id: "x", currencyCode: undefined, invoiceTotal: "10.00", unpaidAmount: "10.00" }),
+      ],
+    });
 
     expect(figureFor("Total unpaid amount")).toBe("10.00");
     expect(banner().queryByText("HKD")).not.toBeInTheDocument();

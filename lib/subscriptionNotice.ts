@@ -59,10 +59,7 @@ function debugNotice(reason: string, extra?: unknown) {
   console.warn(`[subscription-notice] ${reason}`, extra ?? "");
 }
 
-async function requestNotice(
-  url: string,
-  token: string,
-): Promise<Response | null> {
+async function requestNotice(url: string, token: string): Promise<Response | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), NOTICE_TIMEOUT_MS);
   try {

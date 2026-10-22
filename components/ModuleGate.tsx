@@ -91,11 +91,7 @@ function ArrowLeftIcon() {
   );
 }
 
-export function ModuleNotActive({
-  variant = "module",
-}: {
-  variant?: "module" | "permission";
-}) {
+export function ModuleNotActive({ variant = "module" }: { variant?: "module" | "permission" }) {
   const inactive = variant === "module";
   const title = inactive ? "Module not active" : "Access Denied";
 
@@ -131,11 +127,7 @@ export function ModuleNotActive({
                 : "bg-status-danger-bg text-status-danger-ink"
             }`}
           >
-            {inactive ? (
-              <CardIcon className="h-10 w-10" />
-            ) : (
-              <LockIcon className="h-10 w-10" />
-            )}
+            {inactive ? <CardIcon className="h-10 w-10" /> : <LockIcon className="h-10 w-10" />}
           </div>
 
           <h2 className="text-2xl font-bold text-text-primary">{title}</h2>
@@ -143,16 +135,16 @@ export function ModuleNotActive({
           <p className="max-w-sm text-center text-text-secondary">
             {inactive ? (
               <>
-                This module isn&apos;t active for this entity. That usually means it was
-                switched off, or its subscription has lapsed.
+                This module isn&apos;t active for this entity. That usually means it was switched
+                off, or its subscription has lapsed.
                 {!canCheckSubscription
                   ? " Ask an admin for this entity to check its subscription settings."
                   : ""}
               </>
             ) : (
               <>
-                You don&apos;t have permission to view this page. Please contact your
-                administrator or go back to the entity list.
+                You don&apos;t have permission to view this page. Please contact your administrator
+                or go back to the entity list.
               </>
             )}
           </p>

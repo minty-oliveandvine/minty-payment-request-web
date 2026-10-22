@@ -10,7 +10,7 @@ write-up lives in the Minty repo as `docs/features/ERROR_MESSAGE_LEAKS.md`.
 
 1. Under two sentences.
 2. First person -- not `Error:`, not `Failed to`.
-3. Name the specific thing: *"that invoice"*, not *"the operation"*.
+3. Name the specific thing: _"that invoice"_, not _"the operation"_.
 4. Warm close, no blame. Drop the apology when retrying won't help (a validation
    error, a hard limit) and state the requirement instead:
    `Files need to be under 10MB.`
@@ -26,10 +26,10 @@ Every client is `@minty/shared/apiClient`'s `createBearerClient`, and every refu
 `@minty/shared/errorCopy`'s (the shared-code refactor, owner 2026-10-21: one shared module for
 every app). This app configures four:
 
-| File | Talks to | Error type |
-|---|---|---|
-| `lib/api.ts` (`apiFetch`) | the Django billing backend (`API_BASE/api/v1`) | `ApiError` (the body's sentence, else the status's copy - `statusFallback`) |
-| `components/ui/sidebarHost.ts` (`mintyApi`, `mintyQuietApi`, `subscriptionApi`) | Flask's `/api/me/profile` and minty-subscription-api's `/api/me/subscriptions` - the sidebar's reads | `ApiError` (the body's sentence, else `HOUSE_FALLBACK`) |
+| File                                                                            | Talks to                                                                                             | Error type                                                                  |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `lib/api.ts` (`apiFetch`)                                                       | the Django billing backend (`API_BASE/api/v1`)                                                       | `ApiError` (the body's sentence, else the status's copy - `statusFallback`) |
+| `components/ui/sidebarHost.ts` (`mintyApi`, `mintyQuietApi`, `subscriptionApi`) | Flask's `/api/me/profile` and minty-subscription-api's `/api/me/subscriptions` - the sidebar's reads | `ApiError` (the body's sentence, else `HOUSE_FALLBACK`)                     |
 
 `lib/subscriptionNotice.ts` (Flask's subscription notice) is deliberately silent: a failed
 notice shows nothing and never throws. This app's own payer-portal client (`lib/payerPortal.ts`,
@@ -73,10 +73,10 @@ narrow to `ApiError`:
 ```ts
 // Wrong: apiFetch does not wrap network failures, so a dropped connection is a
 // raw TypeError and the user reads "Failed to fetch".
-err instanceof Error ? err.message : "I couldn't load that. Mind trying again?"
+err instanceof Error ? err.message : "I couldn't load that. Mind trying again?";
 
 // Right:
-err instanceof ApiError ? err.message : "I couldn't load that. Mind trying again?"
+err instanceof ApiError ? err.message : "I couldn't load that. Mind trying again?";
 ```
 
 ## Deliberate exceptions

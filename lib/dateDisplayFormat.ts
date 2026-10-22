@@ -39,7 +39,13 @@ export function parseDdMmmYyyyToIso(raw: string): string | null {
   if (/^\d{4}-\d{2}-\d{2}$/.test(maybeIso)) {
     return formatDay(maybeIso) ? maybeIso : null;
   }
-  const match = /^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/.exec(t) ?? /^(\d{1,2})\/([A-Za-z]{3})\/(\d{4})$/.exec(t);
+  const match =
+    /^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/.exec(t) ??
+    /^(\d{1,2})\/([A-Za-z]{3})\/(\d{4})$/.exec(t);
   if (!match) return null;
-  return calendarIso(Number.parseInt(match[3], 10), monthIndex(match[2]), Number.parseInt(match[1], 10));
+  return calendarIso(
+    Number.parseInt(match[3], 10),
+    monthIndex(match[2]),
+    Number.parseInt(match[1], 10),
+  );
 }

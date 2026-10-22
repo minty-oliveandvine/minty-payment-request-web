@@ -42,7 +42,10 @@ import {
   parseAmount,
 } from "@minty/shared/money";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
-import { billHasRemainingCountablePayments, billStatusShouldRollbackWhenNoPayments } from "@/lib/billStatusRollback";
+import {
+  billHasRemainingCountablePayments,
+  billStatusShouldRollbackWhenNoPayments,
+} from "@/lib/billStatusRollback";
 import { enrichAccountCodeWithOptions } from "@/lib/billFormSelectOptions";
 import { billToDetailedInfo, buildBillUpdatePayload } from "@/lib/paymentRequestBillMap";
 import { formatDay } from "@minty/shared/dates";
@@ -55,7 +58,10 @@ import {
 import { ActivityHistoryAccordion } from "./ActivityHistoryAccordion";
 import { BillActionBar } from "./BillActionBar";
 import { BillDraftSubmitButton } from "./BillDraftSubmitButton";
-import { InvoiceAttachmentPreview, type InvoiceAttachmentPreviewItem } from "./InvoiceAttachmentPreview";
+import {
+  InvoiceAttachmentPreview,
+  type InvoiceAttachmentPreviewItem,
+} from "./InvoiceAttachmentPreview";
 import { InvoiceAttachmentToolbar } from "./InvoiceAttachmentToolbar";
 import { OverpaymentWarningModal } from "./OverpaymentWarningModal";
 import { PaymentHistoryListPanel, type PaymentHistoryRow } from "./PaymentHistoryCard";
@@ -64,7 +70,10 @@ import { RecordPaymentDrawer } from "./RecordPaymentDrawer";
 import { RowDeleteConfirmModal } from "./RowDeleteConfirmModal";
 import { AttachmentDeleteConfirmModal } from "./AttachmentDeleteConfirmModal";
 import { UploadInvoiceAttachmentModal } from "./UploadInvoiceAttachmentModal";
-import { PaymentRequestDetailedInfo, type PaymentRequestDetailedInfoData } from "./PaymentRequestDetailedInfo";
+import {
+  PaymentRequestDetailedInfo,
+  type PaymentRequestDetailedInfoData,
+} from "./PaymentRequestDetailedInfo";
 import { useToast } from "@/components/Toast";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 import { forgetRequest, rememberRequest, useRequestId } from "@/lib/useRequestId";
@@ -82,7 +91,9 @@ type DetailSubmitFieldErrors = Partial<
  * "Mandatory". These are the EMPTY-field messages, so (CLAUDE.md "Validation while typing") they
  * appear only after a refused submit; nothing paints an untouched field red.
  */
-function validateDetailRequiredForSubmit(d: PaymentRequestDetailedInfoData): DetailSubmitFieldErrors | null {
+function validateDetailRequiredForSubmit(
+  d: PaymentRequestDetailedInfoData,
+): DetailSubmitFieldErrors | null {
   const errors: DetailSubmitFieldErrors = {};
   if (!d.contact.trim()) errors.contact = "The supplier is still empty. Choose one to continue.";
   const amt = parseAmount(d.amount);
@@ -91,9 +102,11 @@ function validateDetailRequiredForSubmit(d: PaymentRequestDetailedInfoData): Det
   } else if (!isWithinAmountLimits(d.amount ?? "")) {
     errors.amount = `Use up to ${MAX_AMOUNT_INT_DIGITS} digits before the decimal point.`;
   }
-  if (!d.invoiceDate.trim()) errors.invoiceDate = "The invoice date is still empty. Add it to continue.";
+  if (!d.invoiceDate.trim())
+    errors.invoiceDate = "The invoice date is still empty. Add it to continue.";
   if (!d.dueDate.trim()) errors.dueDate = "The due date is still empty. Add it to continue.";
-  if (!d.accountCode.trim()) errors.accountCode = "The account code is still empty. Choose one to continue.";
+  if (!d.accountCode.trim())
+    errors.accountCode = "The account code is still empty. Choose one to continue.";
   return Object.keys(errors).length ? errors : null;
 }
 
@@ -154,7 +167,8 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const { showToast } = useToast();
   const [billNoError, setBillNoError] = useState<string | null>(null);
   const [accountCodeError, setAccountCodeError] = useState<string | null>(null);
-  const [submitAttemptFieldErrors, setSubmitAttemptFieldErrors] = useState<DetailSubmitFieldErrors | null>(null);
+  const [submitAttemptFieldErrors, setSubmitAttemptFieldErrors] =
+    useState<DetailSubmitFieldErrors | null>(null);
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
@@ -187,9 +201,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       let merged =
         ensureMerged &&
         mergedId &&
-        !list.some(
-          (c) => (c.xero_contact_id || "").trim().toUpperCase() === mergedId,
-        )
+        !list.some((c) => (c.xero_contact_id || "").trim().toUpperCase() === mergedId)
           ? [...list, ensureMerged]
           : list;
       merged = [...merged].sort((a, b) =>
@@ -221,7 +233,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         applyEntityBillContacts(contacts);
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [applyEntityBillContacts]);
 
   const rollbackToPaymentRequestedIfNoPayments = useCallback(
@@ -244,7 +258,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       const b = await fetchBill(requestId);
       setBill(b);
       onBillUpdated?.();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [requestId, onBillUpdated]);
 
   const loadPayments = useCallback(async () => {
@@ -307,7 +323,11 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       .catch((e) => {
         if (!cancelled) {
           setBill(null);
-          setLoadError(e instanceof ApiError ? e.message : "This payment didn't come through. Mind trying again?");
+          setLoadError(
+            e instanceof ApiError
+              ? e.message
+              : "This payment didn't come through. Mind trying again?",
+          );
           attachmentUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
           attachmentUrlsRef.current = [];
           setAttachments([]);
@@ -579,7 +599,10 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       if (Object.prototype.hasOwnProperty.call(patch, "dueDate")) delete next.dueDate;
       if (Object.prototype.hasOwnProperty.call(patch, "amount")) delete next.amount;
       if (Object.prototype.hasOwnProperty.call(patch, "currencyCode")) delete next.amount;
-      if (Object.prototype.hasOwnProperty.call(patch, "contact") || Object.prototype.hasOwnProperty.call(patch, "xero_contact_id")) {
+      if (
+        Object.prototype.hasOwnProperty.call(patch, "contact") ||
+        Object.prototype.hasOwnProperty.call(patch, "xero_contact_id")
+      ) {
         delete next.contact;
       }
       if (Object.prototype.hasOwnProperty.call(patch, "accountCode")) delete next.accountCode;
@@ -678,7 +701,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         if (isDuplicateBillReferenceError(e)) {
           setBillNoError(e.message);
         } else {
-          setActionError(e instanceof ApiError ? e.message : "Your changes didn't save. Try saving again.");
+          setActionError(
+            e instanceof ApiError ? e.message : "Your changes didn't save. Try saving again.",
+          );
         }
       } finally {
         setIsSaving(false);
@@ -706,7 +731,8 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
 
     const detailErrors = validateDetailRequiredForSubmit(draft);
     if (detailErrors) {
-      setSubmitAttemptFieldErrors(detailErrors); setSubmitAttempt((n) => n + 1);
+      setSubmitAttemptFieldErrors(detailErrors);
+      setSubmitAttempt((n) => n + 1);
       return;
     }
     setSubmitAttemptFieldErrors(null);
@@ -721,10 +747,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       (p) => p.bill_id === requestId && p.payment_status !== "pending",
     );
     if (completedPayments.length > 0) {
-      const totalPaid = completedPayments.reduce(
-        (sum, p) => sum + parseFloat(p.amount || "0"),
-        0,
-      );
+      const totalPaid = completedPayments.reduce((sum, p) => sum + parseFloat(p.amount || "0"), 0);
       const newAmount = parseAmount(draft.amount) ?? NaN;
       if (Number.isFinite(newAmount) && newAmount < totalPaid - 1e-9) {
         setOverpaymentWarningOpen(true);
@@ -733,15 +756,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     }
 
     await executeSave();
-  }, [
-    requestId,
-    bill,
-    draft,
-    payments,
-    attachmentsReady,
-    attachments.length,
-    executeSave,
-  ]);
+  }, [requestId, bill, draft, payments, attachmentsReady, attachments.length, executeSave]);
 
   const handleRequestDeleteBill = useCallback(() => {
     setDeleteBillConfirmOpen(true);
@@ -767,7 +782,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       await loadPayments();
       bumpAudit();
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : "This payment request wasn't voided. Try again.");
+      setActionError(
+        e instanceof ApiError ? e.message : "This payment request wasn't voided. Try again.",
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -782,7 +799,8 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
 
     const detailErrors = validateDetailRequiredForSubmit(info);
     if (detailErrors) {
-      setSubmitAttemptFieldErrors(detailErrors); setSubmitAttempt((n) => n + 1);
+      setSubmitAttemptFieldErrors(detailErrors);
+      setSubmitAttempt((n) => n + 1);
       if (!isEditing && viewData) {
         setDraft({
           ...viewData,
@@ -890,7 +908,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         setSubmitAttemptFieldErrors(null);
       } else {
         setActionError(
-          e instanceof ApiError ? e.message : "This payment request wasn't submitted. Try submitting it again.",
+          e instanceof ApiError
+            ? e.message
+            : "This payment request wasn't submitted. Try submitting it again.",
         );
       }
     } finally {
@@ -952,7 +972,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       showToast(`Returned to the requester${bill.contact ? ` - ${bill.contact}` : ""}.`, "success");
     } catch (e) {
       setReturnConfirmOpen(false);
-      setActionError(e instanceof ApiError ? e.message : "This payment request wasn't returned. Try again.");
+      setActionError(
+        e instanceof ApiError ? e.message : "This payment request wasn't returned. Try again.",
+      );
     } finally {
       setIsReturning(false);
     }
@@ -964,9 +986,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const paymentHistoryRows = useMemo((): PaymentHistoryRow[] => {
     if (!requestId) return [];
     return payments.filter(shouldShowPaymentInHistory).map((p): PaymentHistoryRow => {
-      const shortDate = p.payment_date
-        ? formatDay(p.payment_date.trim().slice(0, 10)) || "—"
-        : "—";
+      const shortDate = p.payment_date ? formatDay(p.payment_date.trim().slice(0, 10)) || "—" : "—";
       const forThisBill = p.bill_id === requestId;
       const dateLabel = shortDate;
       const isPending = (p.payment_status ?? "").trim().toLowerCase() === "pending";
@@ -1000,7 +1020,10 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     [bill?.status],
   );
 
-  const billDisplayStatus = useMemo(() => (bill ? billStatusToDisplayLabel(bill.status) : ""), [bill]);
+  const billDisplayStatus = useMemo(
+    () => (bill ? billStatusToDisplayLabel(bill.status) : ""),
+    [bill],
+  );
   const billStatusNormalized = useMemo(
     () => (bill?.status ?? "").trim().toLowerCase().replace(/-/g, "_"),
     [bill?.status],
@@ -1102,8 +1125,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         continue;
       }
       const match = bill?.attachments?.find(
-        (ba) =>
-          (ba.attachment?.original_name ?? "").trim() === item.name.trim(),
+        (ba) => (ba.attachment?.original_name ?? "").trim() === item.name.trim(),
       );
       if (match) idsToStage.add(match.id);
     }
@@ -1116,7 +1138,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const submittedOn = bill?.created_at ? formatDay(bill.created_at.slice(0, 10)) : "";
   const summaryItems: SummaryItem[] = submitAttemptFieldErrors
     ? (Object.keys(DETAIL_FIELD_IDS) as (keyof typeof DETAIL_FIELD_IDS)[])
-        .filter((k) => k !== "billNo" && submitAttemptFieldErrors[k as keyof DetailSubmitFieldErrors])
+        .filter(
+          (k) => k !== "billNo" && submitAttemptFieldErrors[k as keyof DetailSubmitFieldErrors],
+        )
         .map((k) => ({
           fieldId: DETAIL_FIELD_IDS[k],
           message: submitAttemptFieldErrors[k as keyof DetailSubmitFieldErrors] as string,
@@ -1127,7 +1151,13 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   if (bill && !loadingBill) {
     if (isEditing) {
       primary = (
-        <Button kind="primary" onClick={() => void handleSave()} processing={isSaving} processingLabel="Saving…" disabled={detailToolbarActionsDisabled}>
+        <Button
+          kind="primary"
+          onClick={() => void handleSave()}
+          processing={isSaving}
+          processingLabel="Saving…"
+          disabled={detailToolbarActionsDisabled}
+        >
           Save Changes
         </Button>
       );
@@ -1267,7 +1297,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
                 Saving changes updates it for Treasury - and in Xero once it is published.
               </PageBanner>
             ) : null}
-            {uploadWarning && !isEditing ? <InlineAlert tone="warning">{uploadWarning}</InlineAlert> : null}
+            {uploadWarning && !isEditing ? (
+              <InlineAlert tone="warning">{uploadWarning}</InlineAlert>
+            ) : null}
             {actionError ? <InlineAlert tone="danger">{actionError}</InlineAlert> : null}
             <ErrorSummary items={summaryItems} attempt={submitAttempt} />
           </div>
@@ -1358,9 +1390,17 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
               isEditing={isEditing}
               isSaving={isSaving}
               unpaidAmount={unpaidAmountDisplay}
-              disabled={!bill || bill?.status === "void" || ((bill?.status === "paid" || bill?.status === "authorised") && !isElevated)}
+              disabled={
+                !bill ||
+                bill?.status === "void" ||
+                ((bill?.status === "paid" || bill?.status === "authorised") && !isElevated)
+              }
               billNoError={isEditing ? billNoError : null}
-              accountCodeError={isEditing ? (accountCodeError ?? submitAttemptFieldErrors?.accountCode ?? null) : null}
+              accountCodeError={
+                isEditing
+                  ? (accountCodeError ?? submitAttemptFieldErrors?.accountCode ?? null)
+                  : null
+              }
               invoiceDateError={submitAttemptFieldErrors?.invoiceDate ?? null}
               dueDateError={submitAttemptFieldErrors?.dueDate ?? null}
               amountError={submitAttemptFieldErrors?.amount ?? null}
@@ -1374,7 +1414,11 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
           ) : null}
 
           {!isEditing && !loadingBill && bill ? (
-            <section id="payment-history" aria-labelledby="detail-payments" className="flex scroll-mt-4 flex-col gap-3">
+            <section
+              id="payment-history"
+              aria-labelledby="detail-payments"
+              className="flex scroll-mt-4 flex-col gap-3"
+            >
               <h2 id="detail-payments" className="text-title-l text-text-primary">
                 Payments
               </h2>

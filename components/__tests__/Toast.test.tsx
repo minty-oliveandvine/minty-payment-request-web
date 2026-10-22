@@ -34,7 +34,12 @@ function Harness() {
   );
 }
 
-const show = () => render(<ToastProvider><Harness /></ToastProvider>);
+const show = () =>
+  render(
+    <ToastProvider>
+      <Harness />
+    </ToastProvider>,
+  );
 const cards = () => Array.from(document.querySelectorAll("[data-toast-type]"));
 
 afterEach(() => {
@@ -107,7 +112,9 @@ describe("several toasts", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await userEvent.click(screen.getByRole("button", { name: "Fail" }));
 
-    await userEvent.click(within(cards()[0] as HTMLElement).getByRole("button", { name: "Dismiss" }));
+    await userEvent.click(
+      within(cards()[0] as HTMLElement).getByRole("button", { name: "Dismiss" }),
+    );
 
     expect(cards()).toHaveLength(1);
     expect(cards()[0].getAttribute("data-toast-type")).toBe("error");
@@ -181,7 +188,11 @@ describe("useToast", () => {
         </button>
       );
     }
-    render(<ToastProvider><Bare /></ToastProvider>);
+    render(
+      <ToastProvider>
+        <Bare />
+      </ToastProvider>,
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Go" }));
 

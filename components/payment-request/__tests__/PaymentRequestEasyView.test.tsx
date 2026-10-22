@@ -36,10 +36,30 @@ const ROWS: PaymentRequestRow[] = [
     status: "Payment Requested",
     unpaidAmount: "HKD 6,000.00",
   }),
-  billRow({ id: "r-part", contactTitle: "Half Paid Ltd", status: "Partially Paid", unpaidAmount: "HKD 300.00" }),
-  billRow({ id: "r-paid", contactTitle: "All Square Co", status: "Paid", unpaidAmount: "HKD 0.00" }),
-  billRow({ id: "r-draft", contactTitle: "Draft Supplier", status: "Draft", unpaidAmount: "HKD 450.25" }),
-  billRow({ id: "r-void", contactTitle: "Cancelled Order Inc", status: "Voided", unpaidAmount: "HKD 800.00" }),
+  billRow({
+    id: "r-part",
+    contactTitle: "Half Paid Ltd",
+    status: "Partially Paid",
+    unpaidAmount: "HKD 300.00",
+  }),
+  billRow({
+    id: "r-paid",
+    contactTitle: "All Square Co",
+    status: "Paid",
+    unpaidAmount: "HKD 0.00",
+  }),
+  billRow({
+    id: "r-draft",
+    contactTitle: "Draft Supplier",
+    status: "Draft",
+    unpaidAmount: "HKD 450.25",
+  }),
+  billRow({
+    id: "r-void",
+    contactTitle: "Cancelled Order Inc",
+    status: "Voided",
+    unpaidAmount: "HKD 800.00",
+  }),
 ];
 
 const onSortChange = vi.fn<(key: EasyViewSortKey) => void>();
@@ -126,20 +146,28 @@ describe("a row", () => {
 describe("the one next action (Part 15.17)", () => {
   it("records a payment on a request still to be paid, in the drawer", async () => {
     show();
-    await userEvent.click(within(row("Young Bros Transport")).getByRole("button", { name: /Record payment/ }));
+    await userEvent.click(
+      within(row("Young Bros Transport")).getByRole("button", { name: /Record payment/ }),
+    );
     expect(onRecordPayment).toHaveBeenCalledWith("r-requested", false);
   });
 
   it("views the payments of a paid one, read-only", async () => {
     show();
-    await userEvent.click(within(row("All Square Co")).getByRole("button", { name: /View payments/ }));
+    await userEvent.click(
+      within(row("All Square Co")).getByRole("button", { name: /View payments/ }),
+    );
     expect(onRecordPayment).toHaveBeenCalledWith("r-paid", true);
   });
 
   it("continues a draft and views a voided one, on its page", () => {
     show();
-    expect(within(row("Draft Supplier")).getByRole("link", { name: /Continue/ })).toBeInTheDocument();
-    expect(within(row("Cancelled Order Inc")).getByRole("link", { name: /View/ })).toBeInTheDocument();
+    expect(
+      within(row("Draft Supplier")).getByRole("link", { name: /Continue/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(row("Cancelled Order Inc")).getByRole("link", { name: /View/ }),
+    ).toBeInTheDocument();
   });
 
   it("offers no payment to someone who cannot make one", () => {
@@ -153,7 +181,9 @@ describe("the one next action (Part 15.17)", () => {
       const actions = within(r)
         .queryAllByRole("button")
         .concat(within(r).queryAllByRole("link"))
-        .filter((el) => /Record payment|View payments|Continue|View —/.test(el.getAttribute("aria-label") ?? ""));
+        .filter((el) =>
+          /Record payment|View payments|Continue|View —/.test(el.getAttribute("aria-label") ?? ""),
+        );
       expect(actions).toHaveLength(1);
     }
   });
@@ -173,7 +203,10 @@ describe("sorting", () => {
 
   it("says which way the open column is sorted", () => {
     show({ sort: { key: "contact", dir: "desc" } });
-    expect(screen.getByRole("button", { name: /Sort by supplier, descending/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Sort by supplier, descending/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });
 
@@ -232,12 +265,23 @@ describe("states (Part 15.11 / 15.17)", () => {
     show({
       todayIso: "2026-10-19",
       rows: [
-        billRow({ id: "late", contactTitle: "Late Co", status: "Payment Requested", dueDateIso: "2026-10-16" }),
-        billRow({ id: "soon", contactTitle: "Soon Co", status: "Partially Paid", dueDateIso: "2026-10-21" }),
+        billRow({
+          id: "late",
+          contactTitle: "Late Co",
+          status: "Payment Requested",
+          dueDateIso: "2026-10-16",
+        }),
+        billRow({
+          id: "soon",
+          contactTitle: "Soon Co",
+          status: "Partially Paid",
+          dueDateIso: "2026-10-21",
+        }),
         billRow({ id: "done", contactTitle: "Done Co", status: "Paid", dueDateIso: "2026-10-01" }),
       ],
     });
-    const row = (id: string) => within(document.querySelector(`[data-easy-view-row="${id}"]`) as HTMLElement);
+    const row = (id: string) =>
+      within(document.querySelector(`[data-easy-view-row="${id}"]`) as HTMLElement);
     expect(row("late").getByText("Overdue 3 days")).toBeInTheDocument();
     expect(row("soon").getByText("Due in 2 days")).toBeInTheDocument();
     expect(row("done").queryByText(/Overdue|Due /)).not.toBeInTheDocument();
@@ -249,15 +293,31 @@ describe("a bank slip count that did not load", () => {
     const onRetryBankSlips = vi.fn();
     show({
       rows: [
-        billRow({ id: "e-fail", contactTitle: "Failed Lookup Co", status: "Payment Requested", bankslipState: "error" }),
-        billRow({ id: "e-wait", contactTitle: "Still Loading Co", status: "Payment Requested", bankslipState: "loading" }),
+        billRow({
+          id: "e-fail",
+          contactTitle: "Failed Lookup Co",
+          status: "Payment Requested",
+          bankslipState: "error",
+        }),
+        billRow({
+          id: "e-wait",
+          contactTitle: "Still Loading Co",
+          status: "Payment Requested",
+          bankslipState: "loading",
+        }),
       ],
       onRetryBankSlips,
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "Bank slips didn't load for Failed Lookup Co — try again" }));
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Bank slips didn't load for Failed Lookup Co — try again",
+      }),
+    );
 
     expect(onRetryBankSlips).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("button", { name: /Still Loading Co — try again/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Still Loading Co — try again/ }),
+    ).not.toBeInTheDocument();
   });
 });

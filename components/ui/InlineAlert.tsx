@@ -55,5 +55,7 @@ export function InlineAlert({
 }
 
 export function PageBanner(props: Parameters<typeof InlineAlert>[0]) {
-  return <InlineAlert {...props} className={`w-full${props.className ? ` ${props.className}` : ""}`} />;
+  return (
+    <InlineAlert {...props} className={`w-full${props.className ? ` ${props.className}` : ""}`} />
+  );
 }

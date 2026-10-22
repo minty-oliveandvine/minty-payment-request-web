@@ -59,7 +59,12 @@ afterEach(() => {
 
 describe("Pins the landing page before it moves to @minty/shared (the shared-code refactor, 2026-10-21)", () => {
   it("stores the token and the company, then replaces the address with `next`", async () => {
-    land({ token: TOKEN, entity_id: ENTITY_ID, entity_name: ENTITY_NAME, next: "/entity/360812e1/olive-and-vine/payment-request" });
+    land({
+      token: TOKEN,
+      entity_id: ENTITY_ID,
+      entity_name: ENTITY_NAME,
+      next: "/entity/360812e1/olive-and-vine/payment-request",
+    });
 
     await waitFor(() => expect(nav.replace).toHaveBeenCalledTimes(1));
     expect(nav.replace).toHaveBeenCalledWith("/entity/360812e1/olive-and-vine/payment-request");
@@ -73,10 +78,16 @@ describe("Pins the landing page before it moves to @minty/shared (the shared-cod
   });
 
   it("keeps the query and the hash of a safe `next`", async () => {
-    land({ token: TOKEN, entity_id: ENTITY_ID, next: "/entity/360812e1/olive-and-vine/payment-request?view=easy#top" });
+    land({
+      token: TOKEN,
+      entity_id: ENTITY_ID,
+      next: "/entity/360812e1/olive-and-vine/payment-request?view=easy#top",
+    });
 
     await waitFor(() =>
-      expect(nav.replace).toHaveBeenCalledWith("/entity/360812e1/olive-and-vine/payment-request?view=easy#top"),
+      expect(nav.replace).toHaveBeenCalledWith(
+        "/entity/360812e1/olive-and-vine/payment-request?view=easy#top",
+      ),
     );
   });
 

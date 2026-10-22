@@ -19,7 +19,13 @@ import { BillContactPicker } from "@/components/BillContactPicker";
 import { DateTextField } from "@/components/DateTextField";
 import { ThemedSelect, type ThemedSelectOption } from "@/components/ThemedSelect";
 import { Field, inputClass } from "@/components/ui/Field";
-import { acceptAmountInput, formatAmount, formatMoney, parseAmount, toAmountEditString } from "@minty/shared/money";
+import {
+  acceptAmountInput,
+  formatAmount,
+  formatMoney,
+  parseAmount,
+  toAmountEditString,
+} from "@minty/shared/money";
 import type { EntityBillContact } from "@/lib/api";
 import { mergeSelectOption } from "@/lib/billFormSelectOptions";
 import { formatDay } from "@minty/shared/dates";
@@ -63,7 +69,9 @@ export type PaymentRequestDetailedInfoProps = {
   /** View only: what is still owed (formatted, no currency). */
   unpaidAmount?: string;
   /** Element ids for the error summary to link to, keyed by field. */
-  fieldIds?: Partial<Record<"amount" | "contact" | "accountCode" | "invoiceDate" | "dueDate" | "billNo", string>>;
+  fieldIds?: Partial<
+    Record<"amount" | "contact" | "accountCode" | "invoiceDate" | "dueDate" | "billNo", string>
+  >;
 };
 
 export function formatPaymentRequestDetailLongDate(iso: string): string {
@@ -116,7 +124,16 @@ export function PaymentRequestDetailedInfo({
   unpaidAmount,
   fieldIds,
 }: PaymentRequestDetailedInfoProps) {
-  const { billNo, amount, description, contact, xero_contact_id, accountCode, invoiceDate, dueDate } = data;
+  const {
+    billNo,
+    amount,
+    description,
+    contact,
+    xero_contact_id,
+    accountCode,
+    invoiceDate,
+    dueDate,
+  } = data;
   const patch = onPatchChange ?? (() => {});
   const uid = useId();
   const currency = useEntityCurrency();
@@ -174,12 +191,14 @@ export function PaymentRequestDetailedInfo({
         {(a11y) => (
           <BillContactPicker
             id={a11y.id}
-            ariaDescribedBy={a11y['aria-describedby']}
+            ariaDescribedBy={a11y["aria-describedby"]}
             required
             contacts={entityBillContacts}
             xeroContactId={xero_contact_id}
             contactName={contact}
-            onChange={(next) => patch({ contact: next.contact, xero_contact_id: next.xero_contact_id })}
+            onChange={(next) =>
+              patch({ contact: next.contact, xero_contact_id: next.xero_contact_id })
+            }
             refetchContacts={onRefetchEntityBillContacts ?? (async () => {})}
             disabled={disabled}
             error={!!contactError}
@@ -187,7 +206,12 @@ export function PaymentRequestDetailedInfo({
         )}
       </Field>
 
-      <Field label={`Invoice amount (${currency || "—"})`} required id={ids.amount} error={amountError ?? undefined}>
+      <Field
+        label={`Invoice amount (${currency || "—"})`}
+        required
+        id={ids.amount}
+        error={amountError ?? undefined}
+      >
         {(a11y) => (
           <input
             {...a11y}
@@ -210,7 +234,12 @@ export function PaymentRequestDetailedInfo({
       </Field>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
-        <Field label="Invoice date" required id={ids.invoiceDate} error={invoiceDateError ?? undefined}>
+        <Field
+          label="Invoice date"
+          required
+          id={ids.invoiceDate}
+          error={invoiceDateError ?? undefined}
+        >
           {(a11y) => (
             <DateTextField
               id={a11y.id}
@@ -258,7 +287,12 @@ export function PaymentRequestDetailedInfo({
         )}
       </Field>
 
-      <Field label="Account code" required id={ids.accountCode} error={accountCodeError ?? undefined}>
+      <Field
+        label="Account code"
+        required
+        id={ids.accountCode}
+        error={accountCodeError ?? undefined}
+      >
         {(a11y) => (
           <ThemedSelect
             id={a11y.id}

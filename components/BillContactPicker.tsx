@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ApiError, createEntityBillContact, type EntityBillContact } from "@/lib/api";
 import { useToast } from "@/components/Toast";
@@ -57,9 +50,7 @@ export function BillContactPicker({
 
   const trimmedName = contactName.trim();
   const q = trimmedName.toLowerCase();
-  const filtered = contacts.filter(
-    (c) => !q || c.name.toLowerCase().includes(q),
-  );
+  const filtered = contacts.filter((c) => !q || c.name.toLowerCase().includes(q));
 
   const nameMatchesExisting =
     trimmedName.length > 0 &&
@@ -132,7 +123,9 @@ export function BillContactPicker({
       showToast("Supplier created successfully!", "success");
     } catch (e) {
       setCreateError(
-        e instanceof ApiError ? e.message : "That supplier didn't quite make it over to Xero. Mind trying again?",
+        e instanceof ApiError
+          ? e.message
+          : "That supplier didn't quite make it over to Xero. Mind trying again?",
       );
       setOpen(false);
     } finally {
@@ -143,9 +136,7 @@ export function BillContactPicker({
   const invalid = error || createError !== null;
   const createErrorId = `${listboxId}-create-error`;
 
-  const addRowText = creating
-    ? "Creating supplier…"
-    : `+ Add '${trimmedName}' as a new supplier`;
+  const addRowText = creating ? "Creating supplier…" : `+ Add '${trimmedName}' as a new supplier`;
 
   const menu =
     open && menuHasContent ? (
@@ -183,11 +174,15 @@ export function BillContactPicker({
           <li
             role="option"
             aria-selected={false}
-            aria-label={creating ? "Creating supplier in Xero" : `Add ${trimmedName} as a new supplier`}
+            aria-label={
+              creating ? "Creating supplier in Xero" : `Add ${trimmedName} as a new supplier`
+            }
             className={
               "flex min-h-13 cursor-pointer items-center px-3 text-left text-body-m font-semibold text-text-link transition-colors " +
               (filtered.length > 0 ? "border-t border-border-subtle " : "") +
-              (creating || disabled ? "cursor-not-allowed text-text-disabled" : "hover:bg-state-hover")
+              (creating || disabled
+                ? "cursor-not-allowed text-text-disabled"
+                : "hover:bg-state-hover")
             }
             onMouseDown={(e) => {
               e.preventDefault();
@@ -216,7 +211,10 @@ export function BillContactPicker({
           aria-autocomplete="list"
           aria-invalid={invalid || undefined}
           aria-required={required || undefined}
-          aria-describedby={[ariaDescribedBy, createError ? createErrorId : undefined].filter(Boolean).join(" ") || undefined}
+          aria-describedby={
+            [ariaDescribedBy, createError ? createErrorId : undefined].filter(Boolean).join(" ") ||
+            undefined
+          }
           disabled={disabled || creating}
           value={contactName}
           placeholder="Search or add a supplier"

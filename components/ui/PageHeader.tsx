@@ -65,14 +65,10 @@ export function PageHeader({
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
             {art}
-            <h1 className="min-w-0 break-words text-display-m text-text-primary">
-              {title}
-            </h1>
+            <h1 className="min-w-0 break-words text-display-m text-text-primary">{title}</h1>
             {status}
           </div>
-          {purpose ? (
-            <p className="text-body-m text-text-secondary">{purpose}</p>
-          ) : null}
+          {purpose ? <p className="text-body-m text-text-secondary">{purpose}</p> : null}
           {meta ? <p className="text-body-s text-text-muted">{meta}</p> : null}
         </div>
         {actions || primary || more ? (
@@ -87,9 +83,7 @@ export function PageHeader({
                 {actions}
               </div>
             ) : null}
-            {more ? (
-              <div className="flex shrink-0 md:order-3">{more}</div>
-            ) : null}
+            {more ? <div className="flex shrink-0 md:order-3">{more}</div> : null}
           </div>
         ) : null}
       </div>

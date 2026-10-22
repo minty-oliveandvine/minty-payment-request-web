@@ -71,12 +71,15 @@ describe("toAmountString", () => {
     expect(toAmountString("-0")).toBe("0.00");
   });
 
-  it.each([["", ""], ["a dot alone", "."], ["words", "abc"], ["two dots", "1.2.3"], ["a stray sign", "1-2"]])(
-    "is undefined for %s",
-    (_label, raw) => {
-      expect(toAmountString(raw)).toBeUndefined();
-    },
-  );
+  it.each([
+    ["", ""],
+    ["a dot alone", "."],
+    ["words", "abc"],
+    ["two dots", "1.2.3"],
+    ["a stray sign", "1-2"],
+  ])("is undefined for %s", (_label, raw) => {
+    expect(toAmountString(raw)).toBeUndefined();
+  });
 });
 
 describe("formatAmount", () => {

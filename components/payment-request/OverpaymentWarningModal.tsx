@@ -116,10 +116,15 @@ export function OverpaymentWarningModal({
                 <p className="text-body-m font-semibold text-text-primary">{payerName}</p>
                 <p className="mt-0.5 text-body-s text-text-secondary">
                   Paid {paymentDateFormatted}
-                  {createdAtFormatted ? <span className="text-text-muted"> · Recorded {createdAtFormatted}</span> : null}
+                  {createdAtFormatted ? (
+                    <span className="text-text-muted"> · Recorded {createdAtFormatted}</span>
+                  ) : null}
                 </p>
               </div>
-              <span className="shrink-0 text-body-m font-semibold tabular-nums text-text-primary" translate="no">
+              <span
+                className="shrink-0 text-body-m font-semibold tabular-nums text-text-primary"
+                translate="no"
+              >
                 {formatMoney(amt, currencyLabel)}
               </span>
             </li>
@@ -127,7 +132,8 @@ export function OverpaymentWarningModal({
         })}
       </ul>
       <p className="mt-4 text-body-m text-text-secondary">
-        To lower the amount, remove those payments first. If it was overpaid, your accountant can help sort it out.
+        To lower the amount, remove those payments first. If it was overpaid, your accountant can
+        help sort it out.
       </p>
     </Modal>
   );

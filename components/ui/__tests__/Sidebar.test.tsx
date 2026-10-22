@@ -58,7 +58,9 @@ beforeEach(() => {
   nav.pathname = "/entity/360812e1/olive-and-vine/payment-request";
   vi.stubGlobal("fetch", fetchMock);
   setAuth(unsignedToken({ role: "admin" }), ENTITY_ID, ENTITY_NAME);
-  fetchMock.mockImplementation(async () => answer(200, { petty_cash_enabled: true, billing_enabled: true }));
+  fetchMock.mockImplementation(async () =>
+    answer(200, { petty_cash_enabled: true, billing_enabled: true }),
+  );
 });
 
 afterEach(() => {
@@ -186,7 +188,11 @@ describe("My Profile", () => {
     show({ profile: <p>Olive Vine</p> });
     await openMenu();
 
-    await userEvent.click(within(screen.getByRole("navigation", { name: "Main navigation" })).getByRole("button", { name: /Olive|OV|My Profile/ }));
+    await userEvent.click(
+      within(screen.getByRole("navigation", { name: "Main navigation" })).getByRole("button", {
+        name: /Olive|OV|My Profile/,
+      }),
+    );
     expect(profilePanel()).toBeInTheDocument();
   });
 

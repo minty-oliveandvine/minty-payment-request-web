@@ -7,9 +7,9 @@
 // What it proves is that the screen does not OFFER a write it would then be refused for -
 // the state nothing covered before.
 
-import { expect, test } from '@playwright/test';
+import { expect, test } from "@playwright/test";
 
-import { billListItem } from '../lib/__fixtures__/bills';
+import { billListItem } from "../lib/__fixtures__/bills";
 import {
   expectNoSideScroll,
   handoff,
@@ -19,18 +19,30 @@ import {
   stubCredentials,
   stubFlaskHub,
   viewChoice,
-} from './helpers';
+} from "./helpers";
 
 const creds = () => stubCredentials();
 
-const VIEW_ONLY = { system_role: 'superadmin', is_view_only: true, role: 'admin' };
+const VIEW_ONLY = { system_role: "superadmin", is_view_only: true, role: "admin" };
 
 const ROWS = [
-  billListItem({ id: 'b-1', reference: 'PR-0001', contact: 'Young Bros Transport', status: 'submitted', amount_due: '6000.00' }),
-  billListItem({ id: 'b-2', reference: 'PR-0002', contact: 'ABC Furniture', status: 'paid', amount_due: '0.00' }),
+  billListItem({
+    id: "b-1",
+    reference: "PR-0001",
+    contact: "Young Bros Transport",
+    status: "submitted",
+    amount_due: "6000.00",
+  }),
+  billListItem({
+    id: "b-2",
+    reference: "PR-0002",
+    contact: "ABC Furniture",
+    status: "paid",
+    amount_due: "0.00",
+  }),
 ];
 
-const BANNER = 'Read-only access — you are not a member of this entity.';
+const BANNER = "Read-only access — you are not a member of this entity.";
 
 test.beforeEach(async ({ page }) => {
   await requireNextOnly();
@@ -40,65 +52,74 @@ test.beforeEach(async ({ page }) => {
 
 /** The list in TABLE view: it opens in easy view on a desktop, where the table is the hidden
  *  half (see e2e/08_list_filters.spec.ts). */
-async function openList(page: import('@playwright/test').Page) {
+async function openList(page: import("@playwright/test").Page) {
   await handoff(page, creds(), pagesOf(creds()).list, VIEW_ONLY);
-  await expect(page.getByRole('searchbox')).toBeVisible();
+  await expect(page.getByRole("searchbox")).toBeVisible();
 
-  await viewChoice(page, 'Table view').click();
+  await viewChoice(page, "Table view").click();
   // And wait for a real row: the loading state draws skeleton rows, so a table on screen is
   // not the same as the list having arrived.
-  await expect(page.getByRole('table').getByText('Young Bros Transport')).toBeVisible();
+  await expect(page.getByRole("table").getByText("Young Bros Transport")).toBeVisible();
 }
 
-test('the list says the access is read-only', async ({ page }) => {
+test("the list says the access is read-only", async ({ page }) => {
   await openList(page);
 
   await expect(page.getByText(BANNER)).toBeVisible();
 });
 
-test('the list is perfectly readable', async ({ page }) => {
+test("the list is perfectly readable", async ({ page }) => {
   await openList(page);
 
-  await expect(page.getByRole('table').getByText('Young Bros Transport')).toBeVisible();
-  await expect(page.getByRole('table').getByText('ABC Furniture')).toBeVisible();
+  await expect(page.getByRole("table").getByText("Young Bros Transport")).toBeVisible();
+  await expect(page.getByRole("table").getByText("ABC Furniture")).toBeVisible();
 });
 
-test('Add payment request is dead, and says why', async ({ page }) => {
+test("Add payment request is dead, and says why", async ({ page }) => {
   await openList(page);
 
-  const add = page.getByRole('button', { name: 'Add payment request' });
+  const add = page.getByRole("button", { name: "Add payment request" });
   await expect(add).toBeDisabled();
-  await expect(add).toHaveAttribute('title', "Hmm, I can't let you in there. You have view-only access.");
-  await expect(page.getByText('You have view-only access, so nothing can be added here.')).toBeVisible();
+  await expect(add).toHaveAttribute(
+    "title",
+    "Hmm, I can't let you in there. You have view-only access.",
+  );
+  await expect(
+    page.getByText("You have view-only access, so nothing can be added here."),
+  ).toBeVisible();
 });
 
-test('no row offers a payment to record', async ({ page }) => {
+test("no row offers a payment to record", async ({ page }) => {
   await openList(page);
 
   // Part 15.2: an action the person cannot take is left out, not drawn dead.
-  await expect(page.getByRole('table').getByRole('button', { name: /Record payment/ })).toHaveCount(0);
+  await expect(page.getByRole("table").getByRole("button", { name: /Record payment/ })).toHaveCount(
+    0,
+  );
   // Viewing what was paid is still offered.
-  await expect(page.getByRole('table').getByRole('button', { name: 'View payments for ABC Furniture' })).toBeVisible();
+  await expect(
+    page.getByRole("table").getByRole("button", { name: "View payments for ABC Furniture" }),
+  ).toBeVisible();
 });
 
-test('the request opens, and offers nothing to change', async ({ page }) => {
-  await handoff(page, creds(), pagesOf(creds()).request('b-1', 'PR-0001'), VIEW_ONLY);
+test("the request opens, and offers nothing to change", async ({ page }) => {
+  await handoff(page, creds(), pagesOf(creds()).request("b-1", "PR-0001"), VIEW_ONLY);
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Young Bros Transport' })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Young Bros Transport" })).toBeVisible();
   await expect(page.getByText(BANNER)).toBeVisible();
   // Role-aware header (Part 15.17): nothing to change is offered at all.
-  await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Record payment' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Return to requester' })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Record payment" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Return to requester" })).toHaveCount(0);
 });
 
-test('Payment Settings opens, and its ticks cannot be changed', async ({ page }) => {
+test("Payment Settings opens, and its ticks cannot be changed", async ({ page }) => {
   await handoff(page, creds(), pagesOf(creds()).settings, VIEW_ONLY);
 
-  await expect(page.getByRole('heading', { name: 'Payment Account Code' })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Payment Account Code" })).toBeVisible();
   await expect(page.getByText(BANNER)).toBeVisible();
-  await expect(page.getByRole('button', { name: /Save Changes/ })).toBeDisabled();
-  for (const tick of await page.getByRole('checkbox', { name: /^Include / }).all()) {
+  await expect(page.getByRole("button", { name: /Save Changes/ })).toBeDisabled();
+  for (const tick of await page.getByRole("checkbox", { name: /^Include / }).all()) {
     await expect(tick).toBeDisabled();
   }
 });
@@ -110,7 +131,7 @@ for (const width of [360, 768, 1440]) {
     // Not `openList`: the Easy view | Table view control is shown from 768px only, so choosing
     // is not a thing a phone can do. The banner is what this test is about either way.
     await handoff(page, creds(), pagesOf(creds()).list, VIEW_ONLY);
-    await expect(page.getByRole('searchbox')).toBeVisible();
+    await expect(page.getByRole("searchbox")).toBeVisible();
 
     await expect(page.getByText(BANNER)).toBeVisible();
     await expectNoSideScroll(page, width);

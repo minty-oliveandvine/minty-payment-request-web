@@ -12,7 +12,10 @@ import { useUserRole } from "@/lib/useUserRole";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 const PaymentRequestDetailBody = dynamic(
-  () => import("@/components/payment-request/PaymentRequestDetailBody").then((m) => ({ default: m.PaymentRequestDetailBody })),
+  () =>
+    import("@/components/payment-request/PaymentRequestDetailBody").then((m) => ({
+      default: m.PaymentRequestDetailBody,
+    })),
   { loading: () => <PaymentRequestDetailSkeleton /> },
 );
 
@@ -32,7 +35,9 @@ export function PaymentRequestDetailPageClient() {
     if (!auth?.token) return;
     fetchXeroStatus()
       .then(setXeroConnected)
-      .catch((err: unknown) => console.error("[payment request] the Xero status did not load", err));
+      .catch((err: unknown) =>
+        console.error("[payment request] the Xero status did not load", err),
+      );
   }, [auth?.token]);
 
   const showReadOnlyBanner = isViewOnly && isReadOnly(auth?.entityId ?? "");
@@ -49,7 +54,9 @@ export function PaymentRequestDetailPageClient() {
       />
       {showReadOnlyBanner ? (
         <div className="mx-auto w-full max-w-[1440px] px-4 pt-4 sm:px-6 lg:px-8">
-          <InlineAlert tone="info">Read-only access — you are not a member of this entity.</InlineAlert>
+          <InlineAlert tone="info">
+            Read-only access — you are not a member of this entity.
+          </InlineAlert>
         </div>
       ) : null}
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">

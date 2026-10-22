@@ -69,9 +69,7 @@ export function SubscriptionNoticeModal({ notice, onClose }: SubscriptionNoticeM
   if (!open || !notice || typeof document === "undefined") return null;
 
   const critical = notice.severity === "critical";
-  const settingsHref = notice.settings_path
-    ? buildMintyEnterUrl(notice.settings_path)
-    : null;
+  const settingsHref = notice.settings_path ? buildMintyEnterUrl(notice.settings_path) : null;
 
   return createPortal(
     <div
@@ -91,7 +89,9 @@ export function SubscriptionNoticeModal({ notice, onClose }: SubscriptionNoticeM
         <div className="flex items-start gap-3">
           <span
             className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-              critical ? "bg-status-danger-bg text-status-danger-ink" : "bg-status-warning-bg text-status-warning-ink"
+              critical
+                ? "bg-status-danger-bg text-status-danger-ink"
+                : "bg-status-warning-bg text-status-warning-ink"
             }`}
             aria-hidden
           >
@@ -122,10 +122,9 @@ export function SubscriptionNoticeModal({ notice, onClose }: SubscriptionNoticeM
             here would be a click that fails. Name who to ask instead. */}
         {!notice.can_manage && notice.payer ? (
           <p className="mt-4 text-sm leading-relaxed text-text-muted">
-            Billing for this company is managed by{" "}
-            {notice.payer.name || notice.payer.email}
-            {notice.payer.name && notice.payer.email ? ` <${notice.payer.email}>` : ""} — only
-            they can change its subscription.
+            Billing for this company is managed by {notice.payer.name || notice.payer.email}
+            {notice.payer.name && notice.payer.email ? ` <${notice.payer.email}>` : ""} — only they
+            can change its subscription.
           </p>
         ) : null}
 

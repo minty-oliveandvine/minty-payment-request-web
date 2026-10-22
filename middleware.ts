@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { AUTH_COOKIE_NAME, ENTITY_ID_COOKIE_NAME, ENTITY_NAME_COOKIE_NAME } from "@/lib/auth";
-import { COMPANY_PAGE, companyBase, companyPages, decodeSegment, isCanonicalRef } from "@/lib/companyPages";
+import {
+  COMPANY_PAGE,
+  companyBase,
+  companyPages,
+  decodeSegment,
+  isCanonicalRef,
+} from "@/lib/companyPages";
 import { shortIdOf } from "@minty/shared/companyRef";
 import { hubHandoffUrl } from "@minty/shared/handoff";
 import { previewSetSlug, withReturnOrigin } from "@minty/shared/previewSibling";
@@ -91,7 +97,10 @@ function flaskTrip(request: NextRequest, url: string): NextResponse {
   const attr = url.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
   return new NextResponse(
     `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${attr}"><title>Minty</title>`,
-    { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } },
+    {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+    },
   );
 }
 
@@ -99,7 +108,8 @@ export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   // Every trip to Flask names the origin it came in on, so Flask can hand back into a branch
   // preview set (Minty blueprints/shared/preview_origin.py); Flask ignores it everywhere else.
-  const toFlask = (url: string) => flaskTrip(request, withReturnOrigin(url, request.nextUrl.origin));
+  const toFlask = (url: string) =>
+    flaskTrip(request, withReturnOrigin(url, request.nextUrl.origin));
 
   // Before the cookie check: an old email link arrives with no cookie at all.
   const forward = profileForward(pathname, search, request.nextUrl.origin);

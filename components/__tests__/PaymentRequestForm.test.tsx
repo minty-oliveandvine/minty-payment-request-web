@@ -61,7 +61,8 @@ function serve({
     if (path.endsWith("/auth/entitlements")) return answer(200, { billing_enabled: true });
     if (path.endsWith("/profile/me")) return answer(200, { member_entity_ids: [ENTITY_ID] });
     if (path.endsWith("/entity-bill-contacts/")) return answer(200, SUPPLIERS);
-    if (path.includes("/entity-bill-accounts/")) return answer(200, accounts ?? entityBillAccounts());
+    if (path.includes("/entity-bill-accounts/"))
+      return answer(200, accounts ?? entityBillAccounts());
     if (path.endsWith("/bills/suggested-reference/")) return answer(200, { reference: "MBIOVI-1" });
     if (path.endsWith("/currencies/")) return answer(200, []);
     if (init?.method === "POST") {
@@ -70,9 +71,15 @@ function serve({
         init.body instanceof FormData ? init.body.getAll("files").map((f) => (f as File).name) : [];
       posted.push({
         path,
-        body: typeof init.body === "string" ? JSON.parse(init.body) : init.body instanceof FormData ? names : null,
+        body:
+          typeof init.body === "string"
+            ? JSON.parse(init.body)
+            : init.body instanceof FormData
+              ? names
+              : null,
       });
-      if (/\/bills\/[^/]+\/attachments$/.test(path)) return (upload ?? (() => answer(201, [])))(names);
+      if (/\/bills\/[^/]+\/attachments$/.test(path))
+        return (upload ?? (() => answer(201, [])))(names);
       if (path.endsWith("/bills/draft/")) return (draft ?? (() => answer(201, bill())))();
       if (path.endsWith("/bills/submit/") || path.endsWith("/bills/")) {
         return (submit ?? (() => answer(201, bill())))();
@@ -134,7 +141,9 @@ describe("the form", () => {
       screen.getByRole("combobox", { name: /Account code/ }),
     ];
     for (let i = 1; i < order.length; i += 1) {
-      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(
+        order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
     }
   });
 
@@ -155,7 +164,9 @@ describe("the form", () => {
   it("suggests a Payment No. under More details, so one need not be typed", async () => {
     show();
     await userEvent.click(screen.getByRole("button", { name: "More details" }));
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "Payment No." })).toHaveValue("MBIOVI-1"));
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: "Payment No." })).toHaveValue("MBIOVI-1"),
+    );
   });
 });
 
@@ -176,11 +187,27 @@ describe("a refused submit (Part 15.3)", () => {
     const summary = await screen.findByText(/details need a look before this can be sent/);
     const box = summary.closest("[role='alert']") as HTMLElement;
     expect(box).toHaveFocus();
-    expect(within(box).getByRole("link", { name: "The supplier is still empty. Choose one to continue." })).toBeInTheDocument();
-    expect(within(box).getByRole("link", { name: "The amount is still empty. Add the invoice amount to continue." })).toBeInTheDocument();
-    expect(within(box).getByRole("link", { name: "The due date is still empty. Add it to continue." })).toBeInTheDocument();
-    expect(within(box).getByRole("link", { name: "The account code is still empty. Choose one to continue." })).toBeInTheDocument();
-    expect(within(box).getByRole("link", { name: /The invoice is still missing/ })).toBeInTheDocument();
+    expect(
+      within(box).getByRole("link", {
+        name: "The supplier is still empty. Choose one to continue.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(box).getByRole("link", {
+        name: "The amount is still empty. Add the invoice amount to continue.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(box).getByRole("link", { name: "The due date is still empty. Add it to continue." }),
+    ).toBeInTheDocument();
+    expect(
+      within(box).getByRole("link", {
+        name: "The account code is still empty. Choose one to continue.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(box).getByRole("link", { name: /The invoice is still missing/ }),
+    ).toBeInTheDocument();
 
     await userEvent.click(within(box).getByRole("link", { name: /amount is still empty/ }));
     expect(amountField()).toHaveFocus();
@@ -190,7 +217,9 @@ describe("a refused submit (Part 15.3)", () => {
     show();
     await userEvent.click(submit());
     await waitFor(() => expect(amountField()).toHaveAttribute("aria-invalid", "true"));
-    expect(amountField()).toHaveAccessibleDescription("The amount is still empty. Add the invoice amount to continue.");
+    expect(amountField()).toHaveAccessibleDescription(
+      "The amount is still empty. Add the invoice amount to continue.",
+    );
   });
 
   it("with only ONE problem, puts the person on that field instead of a summary", async () => {
@@ -213,7 +242,9 @@ describe("a refused submit (Part 15.3)", () => {
     show();
     await userEvent.type(amountField(), "0");
     await userEvent.click(submit());
-    await waitFor(() => expect(amountField()).toHaveAccessibleDescription("Enter an amount above zero."));
+    await waitFor(() =>
+      expect(amountField()).toHaveAccessibleDescription("Enter an amount above zero."),
+    );
   });
 
   it("never says 'Invalid', 'Error' or 'Mandatory' (Part 11 §11.17)", async () => {
@@ -264,7 +295,9 @@ describe("saving a draft", () => {
     await waitFor(() => expect(posted.length).toBeGreaterThan(0));
     expect(posted[0].path).toContain("/bills/draft/");
     expect(posted.every((p) => !p.path.endsWith("/bills/submit/"))).toBe(true);
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/entity/360812e1/olive-and-vine/payment-request"));
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/entity/360812e1/olive-and-vine/payment-request"),
+    );
   });
 
   it("is never refused for missing fields - a draft is always allowed", async () => {
@@ -285,7 +318,9 @@ describe("saving a draft", () => {
       serve({ draft: () => answer(500, { detail: "boom" }) });
       show();
       await userEvent.click(saveDraft());
-      expect(await screen.findByText("Something went wrong on my end. Mind trying again?")).toBeInTheDocument();
+      expect(
+        await screen.findByText("Something went wrong on my end. Mind trying again?"),
+      ).toBeInTheDocument();
     } finally {
       consoleError.mockRestore();
     }
@@ -301,7 +336,9 @@ describe("saving a draft", () => {
       });
       show();
       await userEvent.click(saveDraft());
-      expect(await screen.findByText("That draft didn't save. Try saving it again.")).toBeInTheDocument();
+      expect(
+        await screen.findByText("That draft didn't save. Try saving it again."),
+      ).toBeInTheDocument();
     } finally {
       consoleError.mockRestore();
     }
@@ -334,40 +371,51 @@ describe("the invoice upload after the request is created", () => {
     await fillAndSubmit(file("invoice.pdf", "application/pdf"));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(REQUEST_PAGE));
-    expect(posted.find((p) => p.path.endsWith("/bills/bill-new/attachments"))?.body).toEqual(["invoice.pdf"]);
-    expect(toast("success")).toHaveTextContent(`Payment request for ${SUPPLIERS[0].name} sent to Treasury.`);
+    expect(posted.find((p) => p.path.endsWith("/bills/bill-new/attachments"))?.body).toEqual([
+      "invoice.pdf",
+    ]);
+    expect(toast("success")).toHaveTextContent(
+      `Payment request for ${SUPPLIERS[0].name} sent to Treasury.`,
+    );
     expect(toast("warning")).toBeNull();
   });
 
   it.each([
     ["a server failure", () => answer(500, { detail: "boom" })],
     ["a refusal", () => answer(422, { detail: "Files need to be under 10MB." })],
-  ])("names the file that did not upload after %s, and still opens the request", async (_label, upload) => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    try {
-      serve({ submit: () => answer(201, CREATED), upload });
+  ])(
+    "names the file that did not upload after %s, and still opens the request",
+    async (_label, upload) => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        serve({ submit: () => answer(201, CREATED), upload });
 
-      await fillAndSubmit(file("invoice.pdf", "application/pdf"));
+        await fillAndSubmit(file("invoice.pdf", "application/pdf"));
 
-      await waitFor(() => expect(push).toHaveBeenCalledWith(REQUEST_PAGE));
-      expect(toast("warning")).toHaveTextContent(
-        `Payment request for ${SUPPLIERS[0].name} sent to Treasury, but invoice.pdf didn't upload. Edit the request and add it again.`,
-      );
-      expect(toast("success")).toBeNull();
-    } finally {
-      consoleError.mockRestore();
-    }
-  });
+        await waitFor(() => expect(push).toHaveBeenCalledWith(REQUEST_PAGE));
+        expect(toast("warning")).toHaveTextContent(
+          `Payment request for ${SUPPLIERS[0].name} sent to Treasury, but invoice.pdf didn't upload. Edit the request and add it again.`,
+        );
+        expect(toast("success")).toBeNull();
+      } finally {
+        consoleError.mockRestore();
+      }
+    },
+  );
 
   it("uploads each file on its own and names only the one that failed", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       const { posted } = serve({
         submit: () => answer(201, CREATED),
-        upload: (names) => (names.includes("second.pdf") ? answer(500, { detail: "boom" }) : answer(201, [])),
+        upload: (names) =>
+          names.includes("second.pdf") ? answer(500, { detail: "boom" }) : answer(201, []),
       });
 
-      await fillAndSubmit(file("first.pdf", "application/pdf"), file("second.pdf", "application/pdf"));
+      await fillAndSubmit(
+        file("first.pdf", "application/pdf"),
+        file("second.pdf", "application/pdf"),
+      );
 
       await waitFor(() => expect(push).toHaveBeenCalledWith(REQUEST_PAGE));
       const uploads = posted.filter((p) => p.path.endsWith("/attachments")).map((p) => p.body);
@@ -407,11 +455,12 @@ describe("the company's currency", () => {
   // lib/entityCurrency.ts caches the code for the page's life, so each case takes fresh modules.
   async function showFresh() {
     vi.resetModules();
-    const [{ PaymentRequestForm: Form }, { ToastProvider: Toasts }, { setAuth: auth }] = await Promise.all([
-      import("@/components/PaymentRequestForm"),
-      import("@/components/Toast"),
-      import("@/lib/auth"),
-    ]);
+    const [{ PaymentRequestForm: Form }, { ToastProvider: Toasts }, { setAuth: auth }] =
+      await Promise.all([
+        import("@/components/PaymentRequestForm"),
+        import("@/components/Toast"),
+        import("@/lib/auth"),
+      ]);
     auth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
     render(
       <Toasts>
@@ -423,7 +472,9 @@ describe("the company's currency", () => {
   it("is named in the amount's label", async () => {
     serve();
     await showFresh();
-    expect(await screen.findByRole("textbox", { name: /Invoice amount \(HKD\)/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("textbox", { name: /Invoice amount \(HKD\)/ }),
+    ).toBeInTheDocument();
     expect(saveDraft()).toBeEnabled();
   });
 
@@ -432,10 +483,9 @@ describe("the company's currency", () => {
     await showFresh();
 
     expect(await screen.findByText("Your company has no currency yet.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Choose one in Entity & Integration settings" })).toHaveAttribute(
-      "href",
-      expect.stringContaining(`/entity/${ENTITY_ID}/settings/integration`),
-    );
+    expect(
+      screen.getByRole("link", { name: "Choose one in Entity & Integration settings" }),
+    ).toHaveAttribute("href", expect.stringContaining(`/entity/${ENTITY_ID}/settings/integration`));
     expect(submit()).toBeDisabled();
     expect(saveDraft()).toBeDisabled();
     expect(posted).toHaveLength(0);
@@ -446,7 +496,8 @@ describe("the company's currency", () => {
     try {
       let calls = 0;
       serve({
-        currency: () => (++calls === 1 ? answer(500, { detail: "boom" }) : answer(200, { currency_code: "HKD" })),
+        currency: () =>
+          ++calls === 1 ? answer(500, { detail: "boom" }) : answer(200, { currency_code: "HKD" }),
       });
       await showFresh();
 
@@ -455,7 +506,9 @@ describe("the company's currency", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Try again" }));
 
-      expect(await screen.findByRole("textbox", { name: /Invoice amount \(HKD\)/ })).toBeInTheDocument();
+      expect(
+        await screen.findByRole("textbox", { name: /Invoice amount \(HKD\)/ }),
+      ).toBeInTheDocument();
       expect(saveDraft()).toBeEnabled();
     } finally {
       consoleError.mockRestore();
@@ -497,7 +550,9 @@ describe("the invoice files", () => {
   it("says at once, as it is dropped, that a spreadsheet can't be added", async () => {
     show();
     drop(filePicker() as HTMLInputElement, file("books.xlsx", "application/vnd.ms-excel"));
-    expect(await screen.findByText("books.xlsx can't be added. Use a PDF, JPEG, PNG or HTML file.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("books.xlsx can't be added. Use a PDF, JPEG, PNG or HTML file."),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Preview books.xlsx" })).toBeNull();
   });
 
@@ -506,7 +561,9 @@ describe("the invoice files", () => {
     const big = file("huge.pdf", "application/pdf");
     Object.defineProperty(big, "size", { value: 11 * 1024 * 1024 });
     drop(filePicker() as HTMLInputElement, big);
-    expect(await screen.findByText("huge.pdf is over 10 MB. Files up to 10 MB can be added.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("huge.pdf is over 10 MB. Files up to 10 MB can be added."),
+    ).toBeInTheDocument();
   });
 });
 
@@ -515,7 +572,8 @@ describe("previewing a staged file", () => {
   it("shows the file inline with no link out of the app", async () => {
     show();
     await attach(file("receipt.png", "image/png"));
-    const pane = (await screen.findByRole("button", { name: "View full — receipt.png" })).parentElement as HTMLElement;
+    const pane = (await screen.findByRole("button", { name: "View full — receipt.png" }))
+      .parentElement as HTMLElement;
     expect(within(pane).getByAltText("receipt.png")).toBeInTheDocument();
     expect(within(pane).queryAllByRole("link")).toHaveLength(0);
     expect(pane.querySelector('[target="_blank"]')).toBeNull();

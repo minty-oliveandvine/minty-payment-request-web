@@ -55,7 +55,8 @@ function useOverlayBehaviour(
       // A dialog not built on this frame (the bank slip dialog, the file viewer) holds the focus
       // over this one: its own keys are its business.
       const active = document.activeElement;
-      if (active && active !== document.body && panel.current && !panel.current.contains(active)) return;
+      if (active && active !== document.body && panel.current && !panel.current.contains(active))
+        return;
       if (e.key === "Escape") {
         e.stopPropagation();
         close.current();
@@ -194,7 +195,9 @@ export function Drawer({
             <h2 id={titleId} className="text-title-l text-text-primary">
               {title}
             </h2>
-            {description ? <div className="mt-1 text-body-s text-text-secondary">{description}</div> : null}
+            {description ? (
+              <div className="mt-1 text-body-s text-text-secondary">{description}</div>
+            ) : null}
           </div>
           <button
             type="button"

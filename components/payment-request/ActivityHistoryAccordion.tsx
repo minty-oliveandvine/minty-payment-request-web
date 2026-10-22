@@ -43,24 +43,44 @@ const ACTION_MAP: Record<
   string,
   { verb: string | ((detail: string) => string); subject: (detail: string, ref: string) => string }
 > = {
-  created:            { verb: "created",           subject: (_d, r) => `Payment Request ${r}` },
-  edited:             { verb: "updated",           subject: (_d, r) => `Payment Request ${r}` },
-  submitted:          { verb: "submitted",         subject: (_d, r) => `Payment Request ${r}` },
-  marked_paid:        { verb: "marked as paid",    subject: (_d, r) => `Payment Request ${r}` },
-  voided:             { verb: "voided",            subject: (_d, r) => `Payment Request ${r}` },
-  cancelled:          { verb: "cancelled",         subject: (_d, r) => `Payment Request ${r}` },
-  status_changed:     { verb: "updated status of", subject: (_d, r) => `Payment Request ${r}` },
-  published_to_xero:  { verb: publishVerb,         subject: (_d, r) => `Payment Request ${r} to Xero` },
-  attachment_uploaded: { verb: "uploaded",          subject: (d) => d.match(/File '(.+?)'/)?.[1] || "attachment" },
-  attachment_deleted:  { verb: "removed",           subject: (d) => d.match(/Attachment '(.+?)'/)?.[1] || "attachment" },
-  payment_created:    { verb: "recorded",           subject: (d) => { const m = d.match(/Payment of ([\d,.]+)/); return m ? `Payment of ${m[1]}` : "Payment"; } },
-  payment_updated:    { verb: "updated",            subject: () => "Payment" },
-  payment_deleted:    { verb: "deleted",            subject: (d) => { const m = d.match(/Payment of ([\d,.]+)/); return m ? `Payment of ${m[1]}` : "Payment"; } },
+  created: { verb: "created", subject: (_d, r) => `Payment Request ${r}` },
+  edited: { verb: "updated", subject: (_d, r) => `Payment Request ${r}` },
+  submitted: { verb: "submitted", subject: (_d, r) => `Payment Request ${r}` },
+  marked_paid: { verb: "marked as paid", subject: (_d, r) => `Payment Request ${r}` },
+  voided: { verb: "voided", subject: (_d, r) => `Payment Request ${r}` },
+  cancelled: { verb: "cancelled", subject: (_d, r) => `Payment Request ${r}` },
+  status_changed: { verb: "updated status of", subject: (_d, r) => `Payment Request ${r}` },
+  published_to_xero: { verb: publishVerb, subject: (_d, r) => `Payment Request ${r} to Xero` },
+  attachment_uploaded: {
+    verb: "uploaded",
+    subject: (d) => d.match(/File '(.+?)'/)?.[1] || "attachment",
+  },
+  attachment_deleted: {
+    verb: "removed",
+    subject: (d) => d.match(/Attachment '(.+?)'/)?.[1] || "attachment",
+  },
+  payment_created: {
+    verb: "recorded",
+    subject: (d) => {
+      const m = d.match(/Payment of ([\d,.]+)/);
+      return m ? `Payment of ${m[1]}` : "Payment";
+    },
+  },
+  payment_updated: { verb: "updated", subject: () => "Payment" },
+  payment_deleted: {
+    verb: "deleted",
+    subject: (d) => {
+      const m = d.match(/Payment of ([\d,.]+)/);
+      return m ? `Payment of ${m[1]}` : "Payment";
+    },
+  },
 };
 
 function formatTimeLabel(iso: string): string {
   const d = new Date(iso);
-  const day = formatLocalDateForDisplay(d) || d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const day =
+    formatLocalDateForDisplay(d) ||
+    d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
   return `${day} \u2022 ${time}`;
 }
@@ -184,7 +204,9 @@ function parseLastCommaFirst(userName: string): { first: string; last: string } 
 function readAuditStringField(audit: AuditItem, keys: string[]): string {
   const r = audit as unknown as Record<string, unknown>;
   const nested =
-    r.user && typeof r.user === "object" && r.user !== null ? (r.user as Record<string, unknown>) : null;
+    r.user && typeof r.user === "object" && r.user !== null
+      ? (r.user as Record<string, unknown>)
+      : null;
   for (const k of keys) {
     const v = r[k];
     if (typeof v === "string" && v.trim()) return v.trim();
@@ -196,7 +218,11 @@ function readAuditStringField(audit: AuditItem, keys: string[]): string {
   return "";
 }
 
-function mergeCompoundFirstNameFromUserName(fn: string, ln: string, userName: string): { fn: string; ln: string } {
+function mergeCompoundFirstNameFromUserName(
+  fn: string,
+  ln: string,
+  userName: string,
+): { fn: string; ln: string } {
   let outF = fn.trim();
   const outL = ln.trim();
   const u = userName.trim();
@@ -219,7 +245,13 @@ function mergeCompoundFirstNameFromUserName(fn: string, ln: string, userName: st
 function auditDisplayNameAndInitials(audit: AuditItem): { displayName: string; initials: string } {
   const userName =
     (audit.user_name ?? "").trim() ||
-    readAuditStringField(audit, ["display_name", "full_name", "user_display_name", "displayName", "fullName"]);
+    readAuditStringField(audit, [
+      "display_name",
+      "full_name",
+      "user_display_name",
+      "displayName",
+      "fullName",
+    ]);
 
   let fn = readAuditStringField(audit, [
     "user_first_name",
@@ -246,7 +278,8 @@ function auditDisplayNameAndInitials(audit: AuditItem): { displayName: string; i
   }
   const parsed = parseLastCommaFirst(userName);
   if (parsed) {
-    const displayName = [parsed.first, parsed.last].filter(Boolean).join(" ") || userName || "System";
+    const displayName =
+      [parsed.first, parsed.last].filter(Boolean).join(" ") || userName || "System";
     return { displayName, initials: initialsFromFirstLast(parsed.first, parsed.last) };
   }
   const displayName = userName || "System";
@@ -261,7 +294,7 @@ function auditToItem(audit: AuditItem, billRef: string): ActivityHistoryItem {
   const verb =
     typeof mappedVerb === "function"
       ? mappedVerb(audit.detail)
-      : mappedVerb ?? audit.action.replace(/_/g, " ");
+      : (mappedVerb ?? audit.action.replace(/_/g, " "));
   const subject = mapping?.subject(audit.detail, billRef) ?? `Payment Request ${billRef}`;
 
   return {
@@ -321,11 +354,19 @@ function ActivityHistoryTimelineSkeleton() {
   );
 }
 
-export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }: ActivityHistoryAccordionProps) {
+export function ActivityHistoryAccordion({
+  billId,
+  billRef,
+  refreshSignal = 0,
+}: ActivityHistoryAccordionProps) {
   const [open, setOpen] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   /** The last read, keyed by what was asked for: a newer key means that read is still loading. */
-  const [loaded, setLoaded] = useState<{ key: string; items: ActivityHistoryItem[]; failed: boolean } | null>(null);
+  const [loaded, setLoaded] = useState<{
+    key: string;
+    items: ActivityHistoryItem[];
+    failed: boolean;
+  } | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
   const ref = billRef || `#${billId.slice(0, 8)}`;
@@ -340,13 +381,16 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
     let cancelled = false;
     fetchAuditHistory(billId)
       .then((audits) => {
-        if (!cancelled) setLoaded({ key, items: audits.map((a) => auditToItem(a, ref)), failed: false });
+        if (!cancelled)
+          setLoaded({ key, items: audits.map((a) => auditToItem(a, ref)), failed: false });
       })
       .catch((err: unknown) => {
         console.error("[payment request] the history did not load", err);
         if (!cancelled) setLoaded({ key, items: [], failed: true });
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [billId, ref, key]);
 
   /** Where the page was scrolled before History opened, so closing it can go back there. */
@@ -369,13 +413,22 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
   }, [open]);
 
   const toggle = () => {
-    if (!open && sectionRef.current) returnScrollRef.current = scrollPositionsAround(sectionRef.current);
+    if (!open && sectionRef.current)
+      returnScrollRef.current = scrollPositionsAround(sectionRef.current);
     setOpen((v) => !v);
   };
 
   return (
-    <section ref={sectionRef} className="scroll-mt-4 rounded-lg border border-border-default bg-surface-card">
-      <button type="button" className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-3 text-left sm:px-5 sm:py-4" onClick={toggle} aria-expanded={open}>
+    <section
+      ref={sectionRef}
+      className="scroll-mt-4 rounded-lg border border-border-default bg-surface-card"
+    >
+      <button
+        type="button"
+        className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-3 text-left sm:px-5 sm:py-4"
+        onClick={toggle}
+        aria-expanded={open}
+      >
         <h2 className="text-base font-semibold text-text-secondary sm:text-lg">History</h2>
         <span className="material-symbols-rounded text-text-secondary" aria-hidden>
           {open ? "expand_less" : "expand_more"}
@@ -389,7 +442,9 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
             </div>
           ) : failed ? (
             <div className="flex flex-col items-center gap-3 py-6 text-center" role="alert">
-              <p className="text-sm text-text-secondary">I couldn&apos;t load the history. Mind trying again?</p>
+              <p className="text-sm text-text-secondary">
+                I couldn&apos;t load the history. Mind trying again?
+              </p>
               <button
                 type="button"
                 onClick={() => setRetryCount((n) => n + 1)}
@@ -399,7 +454,9 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
               </button>
             </div>
           ) : items.length === 0 ? (
-            <div className="flex items-center justify-center py-6 text-sm text-text-muted">No activity yet</div>
+            <div className="flex items-center justify-center py-6 text-sm text-text-muted">
+              No activity yet
+            </div>
           ) : (
             <div
               className="min-h-0 max-h-[min(14rem,38dvh)] overflow-y-auto overscroll-y-contain pr-1 [scrollbar-gutter:stable] sm:max-h-[min(17.5rem,45vh)]"
@@ -407,12 +464,18 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
               aria-label="Activity history list"
             >
               <div className="relative pb-0.5">
-                <div className="absolute bottom-3 left-[7px] top-3 w-px bg-border-subtle" aria-hidden />
+                <div
+                  className="absolute bottom-3 left-[7px] top-3 w-px bg-border-subtle"
+                  aria-hidden
+                />
                 <ul className="relative flex flex-col gap-3">
                   {items.map((item) => (
                     <li key={item.id} className="relative flex gap-3">
                       <div className="relative z-[1] flex w-4 shrink-0 justify-center pt-[18px]">
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-surface-sunk ring-[3px] ring-surface-card" aria-hidden />
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full bg-surface-sunk ring-[3px] ring-surface-card"
+                          aria-hidden
+                        />
                       </div>
                       <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-surface-sunk px-4 py-3.5 sm:px-5 sm:py-4">
                         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -427,7 +490,9 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
                             <p className="min-w-0 flex-1 text-sm leading-snug">
                               <span className="font-bold text-text-primary">{item.userName}</span>
                               <span className="font-normal text-text-secondary"> {item.verb} </span>
-                              <span className="font-bold text-text-secondary">{item.subjectBold}</span>
+                              <span className="font-bold text-text-secondary">
+                                {item.subjectBold}
+                              </span>
                             </p>
                           </div>
                           <time
@@ -441,9 +506,13 @@ export function ActivityHistoryAccordion({ billId, billRef, refreshSignal = 0 }:
                           <ul className="mt-2 flex flex-col gap-1 pl-10">
                             {item.changes.map((c, i) => (
                               <li key={i} className="text-xs leading-relaxed text-text-muted">
-                                <span className="text-text-secondary">{c.split("→")[0]?.trim()}</span>
+                                <span className="text-text-secondary">
+                                  {c.split("→")[0]?.trim()}
+                                </span>
                                 <span className="mx-1">→</span>
-                                <span className="font-medium text-text-primary">{c.split("→")[1]?.trim()}</span>
+                                <span className="font-medium text-text-primary">
+                                  {c.split("→")[1]?.trim()}
+                                </span>
                               </li>
                             ))}
                           </ul>

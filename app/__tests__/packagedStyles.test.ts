@@ -49,9 +49,7 @@ describe("@minty/shared reaches the stylesheet", () => {
   });
 
   it("has no local font tokens left to override the shared ones", () => {
-    expect(readFileSync(CSS, "utf8")).not.toMatch(
-      /^\s*--font-(sans|brand|mono):/m,
-    );
+    expect(readFileSync(CSS, "utf8")).not.toMatch(/^\s*--font-(sans|brand|mono):/m);
   });
 
   it("emits the shared faces", () => {

@@ -2,15 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/ui/Icon";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 export type ThemedSelectOption = { value: string; label: string };
 
@@ -147,13 +139,12 @@ export function ThemedSelect({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [isOpen]);
 
-  const menuOptions =
-    placeholder !== undefined ? options.filter((o) => o.value !== "") : options;
+  const menuOptions = placeholder !== undefined ? options.filter((o) => o.value !== "") : options;
   const placeholderShowing = placeholder !== undefined && selectedValue === "";
   const selected = options.find((o) => o.value === selectedValue);
   const displayLabel = placeholderShowing
     ? placeholder
-    : selected?.label ?? (options[0]?.label ?? "");
+    : (selected?.label ?? options[0]?.label ?? "");
   const displayTextClass = `${placeholderShowing ? "text-text-muted" : ""} ${centerValue ? "text-center" : ""}`;
 
   const closedInputValue = placeholderShowing ? "" : (selected?.label ?? "");
@@ -163,15 +154,13 @@ export function ThemedSelect({
     const q = searchQuery.trim().toLowerCase();
     if (!q) return menuOptions;
     return menuOptions.filter(
-      (o) =>
-        o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
+      (o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
     );
   }, [searchable, menuOptions, searchQuery]);
 
   const listOptions = searchable ? filteredMenuOptions : menuOptions;
 
-  const inputDisplayValue =
-    searchable && isOpen ? searchQuery : searchable ? closedInputValue : "";
+  const inputDisplayValue = searchable && isOpen ? searchQuery : searchable ? closedInputValue : "";
 
   const handleSearchableFocus = useCallback(() => {
     if (disabled) return;
@@ -192,16 +181,28 @@ export function ThemedSelect({
     "box-border flex h-11 min-w-0 items-center rounded-lg text-left text-body-m font-normal outline-none transition-colors duration-100 disabled:cursor-not-allowed disabled:text-text-disabled ";
 
   const uniformBase =
-    control + "cursor-pointer justify-between gap-2 bg-surface-sunk py-0 pl-3 pr-2 text-text-primary hover:bg-state-hover " + width + ring(false);
+    control +
+    "cursor-pointer justify-between gap-2 bg-surface-sunk py-0 pl-3 pr-2 text-text-primary hover:bg-state-hover " +
+    width +
+    ring(false);
 
   const splitBase =
-    control + "cursor-pointer items-stretch gap-0 overflow-hidden bg-surface-card p-0 text-text-primary " + width + ring(false);
+    control +
+    "cursor-pointer items-stretch gap-0 overflow-hidden bg-surface-card p-0 text-text-primary " +
+    width +
+    ring(false);
 
   const splitSearchableOuter =
-    control + "cursor-default items-stretch gap-0 overflow-hidden bg-surface-card p-0 text-text-primary " + width + ring(true);
+    control +
+    "cursor-default items-stretch gap-0 overflow-hidden bg-surface-card p-0 text-text-primary " +
+    width +
+    ring(true);
 
   const uniformSearchableOuter =
-    control + "cursor-default justify-between gap-2 bg-surface-sunk py-0 pl-3 pr-2 text-text-primary " + width + ring(true);
+    control +
+    "cursor-default justify-between gap-2 bg-surface-sunk py-0 pl-3 pr-2 text-text-primary " +
+    width +
+    ring(true);
 
   const menu = isOpen ? (
     <ul
@@ -233,7 +234,9 @@ export function ThemedSelect({
               aria-selected={isSelected}
               className={
                 "flex min-h-11 cursor-pointer items-center px-3 text-body-m transition-colors " +
-                (isSelected ? "bg-state-selected font-semibold text-text-link" : "text-text-primary hover:bg-state-hover")
+                (isSelected
+                  ? "bg-state-selected font-semibold text-text-link"
+                  : "text-text-primary hover:bg-state-hover")
               }
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -251,7 +254,9 @@ export function ThemedSelect({
     </ul>
   ) : null;
 
-  const chevron = <Icon name={isOpen ? "expand_less" : "expand_more"} size="md" className="text-text-secondary" />;
+  const chevron = (
+    <Icon name={isOpen ? "expand_less" : "expand_more"} size="md" className="text-text-secondary" />
+  );
 
   const inputClassName =
     "min-w-0 flex-1 border-0 bg-transparent p-0 text-body-m text-text-primary outline-none placeholder:text-text-muted " +
@@ -276,8 +281,8 @@ export function ThemedSelect({
               aria-autocomplete="list"
               aria-label={ariaLabel}
               aria-invalid={error}
-          aria-required={required || undefined}
-          aria-describedby={ariaDescribedBy}
+              aria-required={required || undefined}
+              aria-describedby={ariaDescribedBy}
               autoComplete="off"
               disabled={disabled}
               placeholder={placeholder}
@@ -308,8 +313,8 @@ export function ThemedSelect({
                 aria-autocomplete="list"
                 aria-label={ariaLabel}
                 aria-invalid={error}
-          aria-required={required || undefined}
-          aria-describedby={ariaDescribedBy}
+                aria-required={required || undefined}
+                aria-describedby={ariaDescribedBy}
                 autoComplete="off"
                 disabled={disabled}
                 placeholder={placeholder}

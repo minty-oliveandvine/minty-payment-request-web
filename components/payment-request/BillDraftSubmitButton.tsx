@@ -11,7 +11,13 @@ export type BillDraftSubmitButtonProps = {
 /** A draft's (or a returned request's) Primary: "Submit for payment" (Part 15.16; verb + object). */
 export function BillDraftSubmitButton({ onClick, disabled, pending }: BillDraftSubmitButtonProps) {
   return (
-    <Button kind="primary" onClick={onClick} disabled={disabled} processing={pending} processingLabel="Submitting…">
+    <Button
+      kind="primary"
+      onClick={onClick}
+      disabled={disabled}
+      processing={pending}
+      processingLabel="Submitting…"
+    >
       Submit for payment
     </Button>
   );

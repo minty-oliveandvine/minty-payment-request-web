@@ -21,11 +21,11 @@ call to the Payment Request API carries it as a bearer token.
 Every URL is read in one place, [`lib/env.ts`](lib/env.ts) (`@minty/shared/env`'s `envUrl`: trimmed, trailing slashes stripped, a local default in development and tests);
 [`next.config.ts`](next.config.ts) lists them under `env` so Next inlines them.
 
-| What                                            | Service                                    | Variable (default)                                                          |
-| ----------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------- |
-| `/api/*` — bills, payments, Xero                | minty-payment-request-api (Django, port 8020) | `PAYMENT_REQUEST_API_URL` (`http://localhost:8020`), via [`lib/apiBase.ts`](lib/apiBase.ts) |
-| links back to Minty (users, Xero, settings, logout, the `/profile/*` forwards), the subscription notice, My Profile's `/api/me/profile` | Petty Cash — Minty (Flask, port 8000) | `PETTY_CASH_URL` (`http://localhost:8000`), via [`lib/mintyEnv.ts`](lib/mintyEnv.ts) |
-| the sidebar's Subscriptions Overview (`/api/me/subscriptions`) | minty-subscription-api (Django, port 8001) | `SUBSCRIPTION_API_URL` (`http://localhost:8001`), via [`components/ui/sidebarHost.ts`](components/ui/sidebarHost.ts) |
+| What                                                                                                                                    | Service                                       | Variable (default)                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `/api/*` — bills, payments, Xero                                                                                                        | minty-payment-request-api (Django, port 8020) | `PAYMENT_REQUEST_API_URL` (`http://localhost:8020`), via [`lib/apiBase.ts`](lib/apiBase.ts)                          |
+| links back to Minty (users, Xero, settings, logout, the `/profile/*` forwards), the subscription notice, My Profile's `/api/me/profile` | Petty Cash — Minty (Flask, port 8000)         | `PETTY_CASH_URL` (`http://localhost:8000`), via [`lib/mintyEnv.ts`](lib/mintyEnv.ts)                                 |
+| the sidebar's Subscriptions Overview (`/api/me/subscriptions`)                                                                          | minty-subscription-api (Django, port 8001)    | `SUBSCRIPTION_API_URL` (`http://localhost:8001`), via [`components/ui/sidebarHost.ts`](components/ui/sidebarHost.ts) |
 
 These are inlined at build time, so set them in the deployed environment before building; a
 production build with one unset throws, naming it (there is no default in production). One variable per service, no environment-name switch.
@@ -34,16 +34,16 @@ production build with one unset throws, naming it (there is no default in produc
 
 ## Scripts
 
-|                     |                                                                                  |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `npm run dev`       | dev server on 3020                                                               |
-| `npm run build`     | production build                                                                 |
-| `npm run start`     | serve the production build                                                       |
-| `npm run lint`      | eslint                                                                           |
-| `npm run typecheck` | `tsc --noEmit`                                                                   |
-| `npm test`          | Vitest: unit and component tests, no browser and no stack                        |
-| `npm run test:watch`| the same, watching                                                               |
-| `npm run test:e2e`  | Playwright, against a stack that is already running — see [e2e/README.md](e2e/README.md) |
+|                      |                                                                                          |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `npm run dev`        | dev server on 3020                                                                       |
+| `npm run build`      | production build                                                                         |
+| `npm run start`      | serve the production build                                                               |
+| `npm run lint`       | eslint                                                                                   |
+| `npm run typecheck`  | `tsc --noEmit`                                                                           |
+| `npm test`           | Vitest: unit and component tests, no browser and no stack                                |
+| `npm run test:watch` | the same, watching                                                                       |
+| `npm run test:e2e`   | Playwright, against a stack that is already running — see [e2e/README.md](e2e/README.md) |
 
 There is no CI in this repo (the two workflows that used to be here targeted branches that no
 longer exist), so a gate is a command somebody runs: `lint`, `typecheck`, `test` and `build`

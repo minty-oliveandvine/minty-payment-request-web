@@ -13,12 +13,12 @@ The brief was written for a Python repo (pytest, ruff `F821`, isort, black,
 TypeScript/Next.js, so those tools have no analogue. Substitutions agreed with
 the user:
 
-| Brief (Python)                 | Here (TypeScript)                          |
-| ------------------------------ | ------------------------------------------ |
-| pytest baseline + diff         | `tsc --noEmit` + `npm run lint` + `npm run build` |
-| `ruff check --select F821`     | `npx tsc --noEmit` (whole-project undefined-name/type check) |
-| isort / black                  | ESLint (`npm run lint`); no formatter run alongside logic changes |
-| `monkeypatch.setattr` scan     | module-boundary/import-coupling scan (below) |
+| Brief (Python)             | Here (TypeScript)                                                 |
+| -------------------------- | ----------------------------------------------------------------- |
+| pytest baseline + diff     | `tsc --noEmit` + `npm run lint` + `npm run build`                 |
+| `ruff check --select F821` | `npx tsc --noEmit` (whole-project undefined-name/type check)      |
+| isort / black              | ESLint (`npm run lint`); no formatter run alongside logic changes |
+| `monkeypatch.setattr` scan | module-boundary/import-coupling scan (below)                      |
 
 **There is no test suite in this repo** — zero test files, no runner in
 `package.json`. The "no test that passes today may start failing" rail is
@@ -29,11 +29,11 @@ therefore enforced via the three gates above instead.
 Captured in the session scratchpad (`baseline/tsc.txt`, `lint.json`,
 `lint-summary.txt`, `build.txt`).
 
-| Gate               | Result   | Detail                                  |
-| ------------------ | -------- | --------------------------------------- |
-| `npx tsc --noEmit` | ✅ exit 0 | 0 errors                                |
+| Gate               | Result    | Detail                                   |
+| ------------------ | --------- | ---------------------------------------- |
+| `npx tsc --noEmit` | ✅ exit 0 | 0 errors                                 |
 | `npm run lint`     | ❌ exit 1 | **55 problems (29 errors, 26 warnings)** |
-| `npm run build`    | ✅ exit 0 | compiles, 9 static pages                |
+| `npm run build`    | ✅ exit 0 | compiles, 9 static pages                 |
 
 Pre-existing failures **inside `lib/`** — these are the frozen baseline, NOT to
 be fixed as part of this work:
@@ -44,38 +44,38 @@ lib/useUserRole.ts:106:5              error  react-hooks/set-state-in-effect
 ```
 
 Rule from here on: after every step, re-run the three gates and diff against the
-baseline. No message may be *added*. Pre-existing ones stay untouched.
+baseline. No message may be _added_. Pre-existing ones stay untouched.
 
 ## Survey — `lib/`
 
 24 files, 2,817 LOC.
 
-| File                             | LOC |
-| -------------------------------- | --: |
-| `api.ts`                         | 913 |
-| `auth.ts`                        | 223 |
+| File                               | LOC |
+| ---------------------------------- | --: |
+| `api.ts`                           | 913 |
+| `auth.ts`                          | 223 |
 | `paymentRequestAttachmentStore.ts` | 186 |
-| `fileAttachmentPreview.tsx`      | 184 |
-| `useUserRole.ts`                 | 169 |
-| `bankSlipEnrichment.ts`          | 165 |
-| `amountFormat.ts`                | 151 |
-| `dateDisplayFormat.ts`           |  95 |
-| `paymentRequestBillMap.ts`       |  89 |
-| `moduleClaims.ts`                |  89 |
-| `compressImage.ts`               |  69 |
-| `paymentRequestDateSort.ts`      |  66 |
-| `mintyEnv.ts`                    |  60 |
-| `mintyUrls.ts`                   |  58 |
-| `paymentRequestRowSort.ts`       |  55 |
-| `extractEmail.ts`                |  51 |
-| `billFormSelectOptions.ts`       |  50 |
-| `entityCurrency.ts`              |  42 |
-| `billStatusDisplay.ts`           |  40 |
-| `appScrollRoot.ts`               |  23 |
-| `billStatusRollback.ts`          |  15 |
-| `openDatePicker.ts`              |  13 |
-| `paymentHistoryDisplay.ts`       |   6 |
-| `currencyDisplay.ts`             |   5 |
+| `fileAttachmentPreview.tsx`        | 184 |
+| `useUserRole.ts`                   | 169 |
+| `bankSlipEnrichment.ts`            | 165 |
+| `amountFormat.ts`                  | 151 |
+| `dateDisplayFormat.ts`             |  95 |
+| `paymentRequestBillMap.ts`         |  89 |
+| `moduleClaims.ts`                  |  89 |
+| `compressImage.ts`                 |  69 |
+| `paymentRequestDateSort.ts`        |  66 |
+| `mintyEnv.ts`                      |  60 |
+| `mintyUrls.ts`                     |  58 |
+| `paymentRequestRowSort.ts`         |  55 |
+| `extractEmail.ts`                  |  51 |
+| `billFormSelectOptions.ts`         |  50 |
+| `entityCurrency.ts`                |  42 |
+| `billStatusDisplay.ts`             |  40 |
+| `appScrollRoot.ts`                 |  23 |
+| `billStatusRollback.ts`            |  15 |
+| `openDatePicker.ts`                |  13 |
+| `paymentHistoryDisplay.ts`         |   6 |
+| `currencyDisplay.ts`               |   5 |
 
 Only `api.ts` exceeds the ~1000-line reformatter threshold at 913 — under it,
 but close enough that no formatter run will be mixed into its logic commits.
@@ -132,7 +132,7 @@ const payload = JSON.parse(payloadJson) as Record<string, unknown>;
 ```
 
 **Behavioural difference (must be preserved, not merged away):** the two have
-*different fallback shapes and different per-claim defaults* —
+_different fallback shapes and different per-claim defaults_ —
 `moduleClaims` defaults its booleans to `true` (documented backward-compat
 decision: a legacy token must never silently hide nav), while
 `useUserRole` defaults to `""` / `null` / `false`. A naive merge that picked one
@@ -147,14 +147,14 @@ and `useUserRole.ts:118-122`.
 
 **These are NOT interchangeable — do not blind-merge:**
 
-| Site | `Authorization` | `X-Entity-Id` | `Accept` | `Content-Type` | Token absent |
-| ---- | --- | --- | --- | --- | --- |
-| `api.ts:64` (`apiFetch`) | ✅ | ✅ | — | `application/json` unless FormData | throws 401 + redirect |
-| `api.ts:166` | ✅ | ✅ | `application/json` | — | throws 401 + redirect |
-| `api.ts:207` (`authHeaders`) | conditional | conditional | `*/*` | — | **omits headers, no throw** |
+| Site                         | `Authorization` | `X-Entity-Id` | `Accept`           | `Content-Type`                     | Token absent                |
+| ---------------------------- | --------------- | ------------- | ------------------ | ---------------------------------- | --------------------------- |
+| `api.ts:64` (`apiFetch`)     | ✅              | ✅            | —                  | `application/json` unless FormData | throws 401 + redirect       |
+| `api.ts:166`                 | ✅              | ✅            | `application/json` | —                                  | throws 401 + redirect       |
+| `api.ts:207` (`authHeaders`) | conditional     | conditional   | `*/*`              | —                                  | **omits headers, no throw** |
 
 The third deliberately tolerates a missing token and is used for a cross-origin
-storage fetch that must *not* send `Authorization` (comment at `api.ts:224`
+storage fetch that must _not_ send `Authorization` (comment at `api.ts:224`
 explains presigned-URL/CORS breakage). A shared builder is still possible but
 needs flags (`accept`, `requireAuth`) to preserve all three behaviours.
 
@@ -188,7 +188,7 @@ extraction with no behavioural difference found.
     source), build exit 0. `tsc` re-parse of all files OK.
 
 **Lesson / baseline correction:** the original lint baseline was captured
-*before* `npm run build`, so it predated the generated vendor bundle
+_before_ `npm run build`, so it predated the generated vendor bundle
 `public/pdfjs/pdf.worker.min.mjs` (copied out of `node_modules` by
 `next.config.ts`, gitignored). Once built, ESLint lints that minified file and
 emits ~1450 messages. This is pre-existing noise unrelated to any cleanse
@@ -206,7 +206,7 @@ scope here.
   `fetchAttachmentDownloadJson`).
   - **No behavioural difference between the two blocks** — confirmed byte-for-
     byte before merging. Only the guard was hoisted; the header construction
-    *after* the guard differs between the two callers and was left untouched.
+    _after_ the guard differs between the two callers and was left untouched.
   - The helper returns the validated `AuthInfo`, so callers no longer re-call
     `getAuth()`. Error strings / redirect calls preserved exactly.
   - Added `type AuthInfo` to the existing `./auth` import.
@@ -291,6 +291,7 @@ Cross-subfolder change (`lib/`, `app/`, `components/`).
 ## Status — `lib/` subfolder COMPLETE
 
 All planned steps done and verified green:
+
 1. Dead code — removed `openDatePicker.ts` (`b2be8fc`).
 2. Duplication #4 (auth guard) + #2 (JWT decode) — `c51c6ef`.
 3. Duplication #3 (headers) — skipped with reason.
@@ -362,9 +363,10 @@ wrappers; scaffold now lives once in `ConfirmDialog.tsx` (~150 LOC).
 ## Status — `components/` slice 1 complete
 
 **Paused for user review + commit.** Working tree (uncommitted):
-- NEW  `components/payment-request/ConfirmDialog.tsx`
-- MOD  `components/payment-request/{Bulk,Payment,Row,Attachment}DeleteConfirmModal.tsx`
-- MOD  `CODE_CLEANSE_NOTES.md`
+
+- NEW `components/payment-request/ConfirmDialog.tsx`
+- MOD `components/payment-request/{Bulk,Payment,Row,Attachment}DeleteConfirmModal.tsx`
+- MOD `CODE_CLEANSE_NOTES.md`
 
 Committed by user as `e9ea1a0`
 ("components: extract shared ConfirmDialog for delete-confirm modals").
@@ -385,18 +387,18 @@ Why these are NOT the same as the confirm-modal duplication:
   below-threshold call made for `lib/` #3.
 - **`OverpaymentWarningModal` is the closest**, but adopting `ConfirmDialog`
   would require new props (`maxWidth`, a title-icon slot, rich `children`) AND
-  it has *real* differences that must not be silently normalised:
-    - shell width `max-w-[440px]` vs `ConfirmDialog`'s hardcoded `max-w-[400px]`
-      (40px visual difference);
-    - its primary button uses `transition-opacity duration-200 ease-out
-      hover:opacity-80`, whereas `ConfirmDialog`'s primary uses
-      `transition-opacity hover:opacity-90` (different easing + hover opacity);
-    - body is title-with-icon + scrollable payment list + second paragraph, not
-      a single description.
-  Merging would mean generalising `ConfirmDialog` into a broad `Modal` with
-  header/body/footer slots + configurable width/role/button styles — a design
-  decision with drift risk across ~12 call sites that cannot be visually
-  verified in this environment. Out of scope for a mechanical cleanse.
+  it has _real_ differences that must not be silently normalised:
+  - shell width `max-w-[440px]` vs `ConfirmDialog`'s hardcoded `max-w-[400px]`
+    (40px visual difference);
+  - its primary button uses `transition-opacity duration-200 ease-out
+hover:opacity-80`, whereas `ConfirmDialog`'s primary uses
+    `transition-opacity hover:opacity-90` (different easing + hover opacity);
+  - body is title-with-icon + scrollable payment list + second paragraph, not
+    a single description.
+    Merging would mean generalising `ConfirmDialog` into a broad `Modal` with
+    header/body/footer slots + configurable width/role/button styles — a design
+    decision with drift risk across ~12 call sites that cannot be visually
+    verified in this environment. Out of scope for a mechanical cleanse.
 
 **Rule applied:** "never merge functions that only look similar; if they
 genuinely differ, preserve both." Here they genuinely differ, and the honest
@@ -406,9 +408,11 @@ panels.
 ## Status — `components/` cleanse COMPLETE (for this pass)
 
 Done + committed:
+
 - Slice 1: `ConfirmDialog` extracted, 4 confirm modals deduped (`e9ea1a0`).
 
 Deliberately left alone (documented above):
+
 - The 4 larger form/warning modals — genuinely different, not duplication.
 - 0 dead exports in `components/` (nothing to remove).
 - No reformatter run (ESLint gate-only, `--fix` never used); the 900+ LOC files

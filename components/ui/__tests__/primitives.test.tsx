@@ -106,7 +106,10 @@ describe("ErrorSummary", () => {
         <input id="amount" aria-label="Amount" />
         <ErrorSummary
           items={[
-            { fieldId: "amount", message: "The amount is still empty. Add the amount to continue." },
+            {
+              fieldId: "amount",
+              message: "The amount is still empty. Add the amount to continue.",
+            },
             { fieldId: "supplier", message: "Choose a supplier to continue." },
           ]}
           attempt={1}
@@ -123,7 +126,10 @@ describe("ErrorSummary", () => {
 describe("FilterChip and SegmentedControl", () => {
   it("a chip is a toggle with its count", () => {
     render(<FilterChip label="Returned" count={3} selected />);
-    expect(screen.getByRole("button", { name: /Returned/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Returned/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   it("arrow keys move the segmented choice", async () => {
@@ -146,7 +152,10 @@ describe("FilterChip and SegmentedControl", () => {
     expect(easy).toHaveAttribute("aria-checked", "true");
     easy.focus();
     await userEvent.keyboard("{ArrowRight}");
-    expect(screen.getByRole("radio", { name: "Table view" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Table view" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
     expect(screen.getByRole("radio", { name: "Table view" })).toHaveFocus();
   });
 });

@@ -44,12 +44,14 @@ describe("formatDay (was formatIsoDateForDisplay / formatIsoDateAsDdMmmYyyy)", (
     expect(formatIsoDateForDisplay("2025-02-29")).toBe("");
   });
 
-  it.each([["", ""], ["blank", "   "], ["not a date", "03/03/2026"], ["short", "2026-3-3"]])(
-    "is empty for %s",
-    (_label, raw) => {
-      expect(formatIsoDateForDisplay(raw)).toBe("");
-    },
-  );
+  it.each([
+    ["", ""],
+    ["blank", "   "],
+    ["not a date", "03/03/2026"],
+    ["short", "2026-3-3"],
+  ])("is empty for %s", (_label, raw) => {
+    expect(formatIsoDateForDisplay(raw)).toBe("");
+  });
 });
 
 describe("formatLocalDateForDisplay", () => {
@@ -68,11 +70,15 @@ describe("formatLocalDateForDisplay", () => {
 // owner 2026-10-21: one shared module (@minty/shared/dates) - the zone comes FIRST now.
 describe("isoDateInTimeZone(timeZone, date)", () => {
   it("rolls a UTC evening into the next Hong Kong day", () => {
-    expect(isoDateInTimeZone(BILLING_TIME_ZONE, new Date("2026-08-31T18:00:00Z"))).toBe("2026-09-01");
+    expect(isoDateInTimeZone(BILLING_TIME_ZONE, new Date("2026-08-31T18:00:00Z"))).toBe(
+      "2026-09-01",
+    );
   });
 
   it("keeps a UTC morning on the same Hong Kong day", () => {
-    expect(isoDateInTimeZone(BILLING_TIME_ZONE, new Date("2026-08-31T02:00:00Z"))).toBe("2026-08-31");
+    expect(isoDateInTimeZone(BILLING_TIME_ZONE, new Date("2026-08-31T02:00:00Z"))).toBe(
+      "2026-08-31",
+    );
   });
 
   it("is the UTC day when asked for UTC", () => {

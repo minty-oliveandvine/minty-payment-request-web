@@ -82,7 +82,10 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
   // would land them on a screen they can't use. Filter it out when disabled.
   const { pettyCash: pettyCashEnabled } = useEntitlements();
   const pages = useCompanyPages();
-  const entityName = useClientValue(() => getAuth()?.entityName ?? "", () => "");
+  const entityName = useClientValue(
+    () => getAuth()?.entityName ?? "",
+    () => "",
+  );
   const visibleTabs = TABS.filter((t) => t.id !== "entity" || pettyCashEnabled);
 
   return (
@@ -93,7 +96,9 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
           const isActive = activeTab === id;
           const flaskUrl = FLASK_REDIRECT_TABS[id];
           const away =
-            id === "entity" ? pettyCashSettingsUrl(module1Url, entityId, entityName) : flaskUrl?.(module1Url, entityId);
+            id === "entity"
+              ? pettyCashSettingsUrl(module1Url, entityId, entityName)
+              : flaskUrl?.(module1Url, entityId);
 
           // A real link (no token in it), so Payment Settings' "Leave without saving?"
           // (lib/leaveGuard.ts) holds it like any other way out of the page.

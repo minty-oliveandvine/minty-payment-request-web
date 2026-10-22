@@ -35,8 +35,19 @@ beforeEach(() => {
   setAuth(unsignedToken({ role: "admin" }), ENTITY_ID, ENTITY_NAME);
   fetchMock.mockImplementation(async () =>
     answer(200, [
-      audit({ id: "a1", action: "created", detail: "Payment request created", date: "2026-03-03T02:00:00Z" }),
-      audit({ id: "a2", action: "submitted", detail: "", date: "2026-03-04T02:00:00Z", user_name: "Olive Vine" }),
+      audit({
+        id: "a1",
+        action: "created",
+        detail: "Payment request created",
+        date: "2026-03-03T02:00:00Z",
+      }),
+      audit({
+        id: "a2",
+        action: "submitted",
+        detail: "",
+        date: "2026-03-04T02:00:00Z",
+        user_name: "Olive Vine",
+      }),
     ]),
   );
 });
@@ -95,7 +106,9 @@ describe("the read", () => {
     const view = show({ refreshSignal: 0 });
     await waitFor(() => expect(auditCalls()).toHaveLength(1));
 
-    view.rerender(<ActivityHistoryAccordion billId={BILL_ID} billRef="PR-0001" refreshSignal={1} />);
+    view.rerender(
+      <ActivityHistoryAccordion billId={BILL_ID} billRef="PR-0001" refreshSignal={1} />,
+    );
 
     await waitFor(() => expect(auditCalls()).toHaveLength(2));
   });
@@ -124,7 +137,9 @@ describe("what it shows", () => {
     await userEvent.click(header());
 
     await waitFor(() => expect(list()).toBeInTheDocument());
-    expect(within(list()).getAllByText(new RegExp(`#${BILL_ID.slice(0, 8)}`)).length).toBeGreaterThan(0);
+    expect(
+      within(list()).getAllByText(new RegExp(`#${BILL_ID.slice(0, 8)}`)).length,
+    ).toBeGreaterThan(0);
   });
 
   it("says it is loading rather than showing an empty trail", async () => {
@@ -179,7 +194,9 @@ describe("a history that did not load", () => {
       fetchMock.mockImplementation(async () => {
         attempt += 1;
         if (attempt === 1) return answer(500, { detail: "boom" });
-        return answer(200, [audit({ id: "a1", action: "created", detail: "Payment request created" })]);
+        return answer(200, [
+          audit({ id: "a1", action: "created", detail: "Payment request created" }),
+        ]);
       });
       show();
       await userEvent.click(header());

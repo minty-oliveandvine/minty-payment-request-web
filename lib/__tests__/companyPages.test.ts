@@ -74,12 +74,19 @@ describe("pagesUnder", () => {
   // A voided bill's Payment No. can be reused by a live bill, and the API's by-reference lookup
   // prefers the live one, so a void bill is addressed by its id.
   it.each(["void", "Void", "Voided", "  VOIDED  "])("addresses a %j bill by its id", (status) => {
-    expect(pages.request("f47ac10b-58cc", "PR-0001", status)).toBe(`${BASE}/payment-request/f47ac10b-58cc`);
+    expect(pages.request("f47ac10b-58cc", "PR-0001", status)).toBe(
+      `${BASE}/payment-request/f47ac10b-58cc`,
+    );
   });
 
-  it.each(["Submitted", "Draft", "Paid", null, undefined])("keeps the Payment No. for a %j bill", (status) => {
-    expect(pages.request("f47ac10b-58cc", "PR-0001", status)).toBe(`${BASE}/payment-request/PR-0001`);
-  });
+  it.each(["Submitted", "Draft", "Paid", null, undefined])(
+    "keeps the Payment No. for a %j bill",
+    (status) => {
+      expect(pages.request("f47ac10b-58cc", "PR-0001", status)).toBe(
+        `${BASE}/payment-request/PR-0001`,
+      );
+    },
+  );
 
   it("uses the id for a Payment No. of 'new' - that address is the Add page", () => {
     expect(pages.request("f47ac10b-58cc", "new")).toBe(`${BASE}/payment-request/f47ac10b-58cc`);

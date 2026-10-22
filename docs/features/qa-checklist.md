@@ -93,7 +93,7 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
 - [ ] Submit uploads attachments only after the bill itself exists, then opens the new
       request's detail page.
 - [ ] **DB:** `SELECT status, contact_name, amount, xero_account_code FROM pettycashv3.bill
-      WHERE id = '<id>';` plus `SELECT * FROM pettycashv3.bill_line WHERE bill_id = '<id>';`
+WHERE id = '<id>';` plus `SELECT * FROM pettycashv3.bill_line WHERE bill_id = '<id>';`
       — Save as draft inserts `status = 'draft'`; Submit inserts `status = 'submitted'`
       directly (no separate draft row first); either way a matching
       `pettycashv3.bill_audit` row is appended (`action = 'created'`/`'submitted'`).
@@ -135,7 +135,7 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       attachment works from the same card.
 - [ ] **No file ever leaves the app.** On every preview surface — the Add page, the
       upload-invoice modal, a bank slip (staged and saved), the detail page —
-      **View full** opens a full-screen preview *in the same tab*: no new tab opens and
+      **View full** opens a full-screen preview _in the same tab_: no new tab opens and
       nothing downloads. Check at 360, 768 and 1440 px. Try a PNG, a PDF and an HTML file.
 - [ ] In the full-screen viewer: pinch-zoom and **Reset zoom** work, **Close** is at least
       44x44, Tab never escapes the overlay, and **one Escape** closes the viewer and leaves
@@ -169,7 +169,7 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       (`returnBill()`) update `pettycashv3.bill.status` directly with **no**
       `pettycashv3.bill_audit` row — unlike the separate delete-a-bill void path, which does
       log one. After voiding or returning a bill from this screen, check `SELECT * FROM
-      pettycashv3.bill_audit WHERE bill_id = '<id>' ORDER BY created_at DESC;` — if nothing
+pettycashv3.bill_audit WHERE bill_id = '<id>' ORDER BY created_at DESC;` — if nothing
       new appears, that's a silent audit-trail gap to report, not expected behaviour.
 - [ ] **DB:** recording a payment inserts `pettycashv3.payment` (`bill_id`, `amount`,
       `payment_status`, `xero_payment_id`) and a `bill_audit` row; `bill.status` then flips to
@@ -201,7 +201,7 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       here. Petty Cash Settings lands on the Petty Cash app's settings, never Flask's own page.
       They are 44px pills that wrap at 360px, the same look as minty-web's.
 - [ ] **DB:** `SELECT account_type, is_active, is_default, sort_order FROM
-      pettycashv3.entity_bill_account_xero WHERE entity_id = '<id>';` — a save updates only
+pettycashv3.entity_bill_account_xero WHERE entity_id = '<id>';` — a save updates only
       the rows that changed (`is_active`/`is_default`/`sort_order`); this table is entirely
       separate from Petty Cash's `account_info.status` — never touched from this screen.
       Unticking the last active code in any of the 8 `account_type`s is refused 409
@@ -218,7 +218,7 @@ including the ones browsers normally let through silently:
 
 - [ ] Clicking a plain settings-pill link (e.g. to a Minty page) with unsaved ticks shows
       "Leave without saving?" before navigating anywhere.
-- [ ] **Discard changes** restores the saved tick-set, then completes the *original* navigation
+- [ ] **Discard changes** restores the saved tick-set, then completes the _original_ navigation
       the person tried (soft route change vs. full page load vs. drawer close — each by its own
       mechanism).
 - [ ] **Go Back**, Escape, and clicking the backdrop all just close the dialog — the ticks are
@@ -259,12 +259,12 @@ including the ones browsers normally let through silently:
 - [ ] My Profile's Edit → Save sends only the changed fields; a refusal from Flask shows its
       sentence in the card; the header's initials update immediately on a successful save.
 - [ ] **DB:** `SELECT email, first_name, last_name, username FROM pettycashv3.user WHERE id =
-      '<id>';` — same table/route as minty-web's profile (both call the same Flask service);
+'<id>';` — same table/route as minty-web's profile (both call the same Flask service);
       `username` only follows `email` when it currently mirrors the old address.
 - [ ] The Subscriptions Overview card shows the same figures as minty-web's portal; a failed
       read (404 included) shows the card's own error state with a working Try again, not a
       blank card.
-- [ ] *Manage Subscription* from the overview card opens minty-web's portal.
+- [ ] _Manage Subscription_ from the overview card opens minty-web's portal.
 - [ ] A 401 while reading My Profile/overview is retried once via refresh, then — if still
       failing — sends the browser back to Minty; the header initials' own read never redirects
       the page on failure.

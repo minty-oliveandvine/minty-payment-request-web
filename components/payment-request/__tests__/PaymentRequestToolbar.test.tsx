@@ -95,9 +95,11 @@ describe("the status tabs", () => {
   it("are all on screen, in that order - one row, on every width", () => {
     show();
 
-    expect(chips().getAllByRole("button").map((t) => t.textContent)).toEqual([
-      ...PAYMENT_REQUEST_STATUS_FILTERS,
-    ]);
+    expect(
+      chips()
+        .getAllByRole("button")
+        .map((t) => t.textContent),
+    ).toEqual([...PAYMENT_REQUEST_STATUS_FILTERS]);
   });
 
   it("start on All when nothing is filtered", () => {
@@ -145,7 +147,10 @@ describe("the view choice", () => {
     show({ easyView: true, onEasyViewChange });
 
     const group = screen.getByRole("radiogroup", { name: "View" });
-    expect(within(group).getByRole("radio", { name: "Easy view" })).toHaveAttribute("aria-checked", "true");
+    expect(within(group).getByRole("radio", { name: "Easy view" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
 
     await userEvent.click(within(group).getByRole("radio", { name: "Table view" }));
     expect(onEasyViewChange).toHaveBeenCalledWith(false);
@@ -196,7 +201,11 @@ describe("the filter panel", () => {
   });
 
   it("opens showing the filters that are applied", async () => {
-    show({ appliedMinAmount: "100.00", appliedMaxAmount: "900.00", appliedDateType: "Submitted Date" });
+    show({
+      appliedMinAmount: "100.00",
+      appliedMaxAmount: "900.00",
+      appliedDateType: "Submitted Date",
+    });
 
     const panel = await openFilters();
 
@@ -224,7 +233,9 @@ describe("the filter panel", () => {
     await userEvent.type(min, "555");
     // Closed without applying.
     await userEvent.click(screen.getByRole("button", { name: "Filter" }));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument(),
+    );
 
     const reopened = await openFilters();
 
@@ -246,7 +257,11 @@ describe("the filter panel", () => {
   });
 
   it("clears every field on Reset, and says so to the list", async () => {
-    show({ appliedMinAmount: "100.00", appliedMaxAmount: "900.00", appliedXeroStatus: "published" });
+    show({
+      appliedMinAmount: "100.00",
+      appliedMaxAmount: "900.00",
+      appliedXeroStatus: "published",
+    });
     const panel = await openFilters();
 
     await userEvent.click(within(panel).getByRole("button", { name: "Reset" }));

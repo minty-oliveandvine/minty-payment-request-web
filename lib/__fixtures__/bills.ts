@@ -55,9 +55,22 @@ export function bill(overrides: Partial<BillDetail> = {}): BillDetail {
 export function billListItem(overrides: Partial<BillListItem> = {}): BillListItem {
   const full = bill(overrides as Partial<BillDetail>);
   const LIST_FIELDS: (keyof BillListItem)[] = [
-    "id", "entity_id", "contact", "status", "amount", "amount_due", "description",
-    "due_date", "invoice_date", "reference", "currency_code", "xero_account_code",
-    "published", "created_at", "uploaded_by", "paid_at",
+    "id",
+    "entity_id",
+    "contact",
+    "status",
+    "amount",
+    "amount_due",
+    "description",
+    "due_date",
+    "invoice_date",
+    "reference",
+    "currency_code",
+    "xero_account_code",
+    "published",
+    "created_at",
+    "uploaded_by",
+    "paid_at",
   ];
   const row = {} as Record<string, unknown>;
   for (const field of LIST_FIELDS) row[field] = full[field];
@@ -228,8 +241,29 @@ export function billRow(overrides: Partial<PaymentRequestRow> = {}): PaymentRequ
 
 /** The four amounts the search tests turn on: 3,000.00 · 13,000.50 · 300.00 · 1,500.00. */
 export const SEARCH_ROWS: PaymentRequestRow[] = [
-  billRow({ id: "r-3000", contactTitle: "Exact Three Thousand", invoiceTotal: "3,000.00", unpaidAmount: "HKD 3,000.00" }),
-  billRow({ id: "r-13000", contactTitle: "Thirteen Thousand Fifty", invoiceTotal: "13,000.50", unpaidAmount: "HKD 13,000.50" }),
-  billRow({ id: "r-300", contactTitle: "Three Hundred", invoiceTotal: "300.00", unpaidAmount: "HKD 300.00" }),
-  billRow({ id: "r-1500", contactTitle: "3000", contactCaption: "A supplier literally named 3000", invoiceTotal: "1,500.00", unpaidAmount: "HKD 1,500.00" }),
+  billRow({
+    id: "r-3000",
+    contactTitle: "Exact Three Thousand",
+    invoiceTotal: "3,000.00",
+    unpaidAmount: "HKD 3,000.00",
+  }),
+  billRow({
+    id: "r-13000",
+    contactTitle: "Thirteen Thousand Fifty",
+    invoiceTotal: "13,000.50",
+    unpaidAmount: "HKD 13,000.50",
+  }),
+  billRow({
+    id: "r-300",
+    contactTitle: "Three Hundred",
+    invoiceTotal: "300.00",
+    unpaidAmount: "HKD 300.00",
+  }),
+  billRow({
+    id: "r-1500",
+    contactTitle: "3000",
+    contactCaption: "A supplier literally named 3000",
+    invoiceTotal: "1,500.00",
+    unpaidAmount: "HKD 1,500.00",
+  }),
 ];

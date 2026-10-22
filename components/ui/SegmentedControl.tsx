@@ -8,7 +8,12 @@
 import { useRef, type KeyboardEvent } from "react";
 
 /** `disabled` needs its reason shown nearby (Part 15.2) - pass it as `title` and say it in the UI. */
-export type Segment<T extends string> = { value: T; label: string; disabled?: boolean; title?: string };
+export type Segment<T extends string> = {
+  value: T;
+  label: string;
+  disabled?: boolean;
+  title?: string;
+};
 
 export function SegmentedControl<T extends string>({
   label,
@@ -26,7 +31,12 @@ export function SegmentedControl<T extends string>({
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const onKey = (e: KeyboardEvent, i: number) => {
-    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    const step =
+      e.key === "ArrowRight" || e.key === "ArrowDown"
+        ? 1
+        : e.key === "ArrowLeft" || e.key === "ArrowUp"
+          ? -1
+          : 0;
     if (!step) return;
     e.preventDefault();
     for (let k = 1; k < options.length; k += 1) {
@@ -60,7 +70,9 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(o.value)}
             onKeyDown={(e) => onKey(e, i)}
             className={`h-9 min-w-0 flex-1 cursor-pointer truncate rounded-md px-3 text-body-s font-semibold transition-colors duration-100 pointer-coarse:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus disabled:cursor-not-allowed disabled:text-text-disabled ${
-              on ? "bg-surface-card text-text-primary" : "text-text-secondary hover:text-text-primary"
+              on
+                ? "bg-surface-card text-text-primary"
+                : "text-text-secondary hover:text-text-primary"
             }`}
           >
             {o.label}

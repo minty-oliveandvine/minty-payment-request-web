@@ -86,7 +86,9 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   setAuth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
   fetchMock.mockImplementation(async (input) =>
-    String(input).includes("/auth/entity-currency") ? answer(200, { currency_code: "HKD" }) : answer(200, {}),
+    String(input).includes("/auth/entity-currency")
+      ? answer(200, { currency_code: "HKD" })
+      : answer(200, {}),
   );
 });
 
@@ -165,7 +167,9 @@ describe("the rows", () => {
 
     // owner 2026-10-21: one money rule (@minty/shared/money) - code, one space, the places.
     // Every fixture row shares the default 6,000.00 invoice total.
-    expect((await within(screen.getByRole("table")).findAllByText("of HKD 6,000.00")).length).toBeGreaterThan(0);
+    expect(
+      (await within(screen.getByRole("table")).findAllByText("of HKD 6,000.00")).length,
+    ).toBeGreaterThan(0);
   });
 
   it("say so plainly when nothing matches the status", () => {
@@ -206,16 +210,33 @@ describe("the rows", () => {
   it("offer each row as a link too, so it can be opened in a new tab", () => {
     show();
 
-    expect(table().getAllByRole("link", { name: "Open Young Bros Transport" }).length).toBeGreaterThan(0);
+    expect(
+      table().getAllByRole("link", { name: "Open Young Bros Transport" }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("say under the supplier when an unpaid request is overdue or due today", () => {
     show({
       todayIso: "2026-10-19",
       rows: [
-        billRow({ id: "late", contactTitle: "Late Co", status: "Returned", dueDateIso: "2026-10-18" }),
-        billRow({ id: "today", contactTitle: "Today Co", status: "Payment Requested", dueDateIso: "2026-10-19" }),
-        billRow({ id: "later", contactTitle: "Later Co", status: "Payment Requested", dueDateIso: "2026-10-27" }),
+        billRow({
+          id: "late",
+          contactTitle: "Late Co",
+          status: "Returned",
+          dueDateIso: "2026-10-18",
+        }),
+        billRow({
+          id: "today",
+          contactTitle: "Today Co",
+          status: "Payment Requested",
+          dueDateIso: "2026-10-19",
+        }),
+        billRow({
+          id: "later",
+          contactTitle: "Later Co",
+          status: "Payment Requested",
+          dueDateIso: "2026-10-27",
+        }),
       ],
     });
 
@@ -235,7 +256,9 @@ describe("selection", () => {
   it("offers a tick per row, named by its supplier", () => {
     show();
 
-    expect(table().getByRole("checkbox", { name: "Select row Young Bros Transport" })).toBeInTheDocument();
+    expect(
+      table().getByRole("checkbox", { name: "Select row Young Bros Transport" }),
+    ).toBeInTheDocument();
   });
 
   it("reports the row that was ticked", async () => {
@@ -250,7 +273,9 @@ describe("selection", () => {
     show({ selectedIds: new Set(["r-draft"]) });
 
     expect(table().getByRole("checkbox", { name: "Select row Draft Supplier" })).toBeChecked();
-    expect(table().getByRole("checkbox", { name: "Select row Young Bros Transport" })).not.toBeChecked();
+    expect(
+      table().getByRole("checkbox", { name: "Select row Young Bros Transport" }),
+    ).not.toBeChecked();
   });
 
   it("will not let a voided row be selected, and says why", () => {
@@ -305,7 +330,9 @@ describe("the per-row payment action", () => {
       rows: [billRow({ id: "r-paid", contactTitle: "Paid In Full Co", status: "Paid" })],
     });
 
-    await userEvent.click(table().getByRole("button", { name: "View payments for Paid In Full Co" }));
+    await userEvent.click(
+      table().getByRole("button", { name: "View payments for Paid In Full Co" }),
+    );
 
     expect(onRecordPayment).toHaveBeenCalledWith("r-paid", true);
   });
@@ -332,7 +359,9 @@ describe("the per-row payment action", () => {
 
     show();
 
-    expect(await within(screen.getByRole("table")).findByText("Young Bros Transport")).toBeInTheDocument();
+    expect(
+      await within(screen.getByRole("table")).findByText("Young Bros Transport"),
+    ).toBeInTheDocument();
     expect(table().queryByRole("button", { name: /Record payment/ })).not.toBeInTheDocument();
   });
 
@@ -342,7 +371,9 @@ describe("the per-row payment action", () => {
     show({ rows: [billRow({ id: "r-paid", contactTitle: "Paid In Full Co", status: "Paid" })] });
 
     await userEvent.click(
-      await within(screen.getByRole("table")).findByRole("button", { name: "View payments for Paid In Full Co" }),
+      await within(screen.getByRole("table")).findByRole("button", {
+        name: "View payments for Paid In Full Co",
+      }),
     );
     expect(onRecordPayment).toHaveBeenCalledWith("r-paid", true);
   });
@@ -367,20 +398,29 @@ describe("its Part 14 look", () => {
 
   it("names the currency once, in the amount's header", async () => {
     show();
-    expect(await within(screen.getByRole("table")).findByText(/Unpaid \(HKD\)/)).toBeInTheDocument();
+    expect(
+      await within(screen.getByRole("table")).findByText(/Unpaid \(HKD\)/),
+    ).toBeInTheDocument();
   });
 });
 
 describe("the bank slip cell before its count is known", () => {
   // Unknown is not zero: an Upload button here could hide slips that already exist.
   const unknown = (bankslipState: "loading" | "error") => [
-    billRow({ id: "r-unknown", contactTitle: "Young Bros Transport", status: "Payment Requested", bankslipState }),
+    billRow({
+      id: "r-unknown",
+      contactTitle: "Young Bros Transport",
+      status: "Payment Requested",
+      bankslipState,
+    }),
   ];
 
   it("says it is loading, and offers no upload", () => {
     show({ rows: unknown("loading") });
 
-    expect(table().getByRole("status", { name: "Loading bank slips for Young Bros Transport" })).toBeInTheDocument();
+    expect(
+      table().getByRole("status", { name: "Loading bank slips for Young Bros Transport" }),
+    ).toBeInTheDocument();
     expect(table().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
   });
 
@@ -390,11 +430,12 @@ describe("the bank slip cell before its count is known", () => {
 
     expect(table().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
     await userEvent.click(
-      table().getByRole("button", { name: "Bank slips didn't load for Young Bros Transport — try again" }),
+      table().getByRole("button", {
+        name: "Bank slips didn't load for Young Bros Transport — try again",
+      }),
     );
 
     expect(onRetryBankSlips).toHaveBeenCalledTimes(1);
     expect(onRowClick).not.toHaveBeenCalled();
   });
-
 });

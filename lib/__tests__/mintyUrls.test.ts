@@ -43,13 +43,19 @@ describe("buildMintyEnterUrl", () => {
   });
 
   it("falls back to Minty's entity list with no session", () => {
-    expect(buildMintyEnterUrl()).toBe(`${env.PETTY_CASH_URL}/entity?return_origin=${encodeURIComponent(window.location.origin)}`);
-    expect(buildMintyEnterUrl("/anywhere")).toBe(`${env.PETTY_CASH_URL}/entity?return_origin=${encodeURIComponent(window.location.origin)}`);
+    expect(buildMintyEnterUrl()).toBe(
+      `${env.PETTY_CASH_URL}/entity?return_origin=${encodeURIComponent(window.location.origin)}`,
+    );
+    expect(buildMintyEnterUrl("/anywhere")).toBe(
+      `${env.PETTY_CASH_URL}/entity?return_origin=${encodeURIComponent(window.location.origin)}`,
+    );
   });
 
   it("falls back when there is a token but no company", () => {
     setAuth(TOKEN, "", "");
-    expect(buildMintyEnterUrl()).toBe(`${env.PETTY_CASH_URL}/entity?return_origin=${encodeURIComponent(window.location.origin)}`);
+    expect(buildMintyEnterUrl()).toBe(
+      `${env.PETTY_CASH_URL}/entity?return_origin=${encodeURIComponent(window.location.origin)}`,
+    );
   });
 
   // Pins the exact strings before this moves to @minty/shared (the shared-code refactor,
@@ -129,7 +135,10 @@ describe("every way into Minty names this app's origin", () => {
   // `return_origin`: Flask hands back into a branch preview set with it (Minty
   // blueprints/shared/preview_origin.py) and ignores it everywhere else.
   it.each([
-    ["the company entry", () => (setAuth(TOKEN, ENTITY_ID, ENTITY_NAME), buildMintyEnterUrl("/entity"))],
+    [
+      "the company entry",
+      () => (setAuth(TOKEN, ENTITY_ID, ENTITY_NAME), buildMintyEnterUrl("/entity")),
+    ],
     ["the entity list fallback", () => buildMintyEnterUrl()],
     ["My Profile", () => (setAuth(TOKEN, ENTITY_ID, ENTITY_NAME), buildMintyProfileUrl())],
     ["My Profile with no company", () => buildMintyProfileUrl()],

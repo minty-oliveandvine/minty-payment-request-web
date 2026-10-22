@@ -17,8 +17,7 @@ const ELLIPSIS = "…";
 const pageButtonBase =
   "box-border inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-body-s font-medium tabular-nums transition-colors duration-100 pointer-coarse:size-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
 
-const chevronButtonClass =
-  `${pageButtonBase} border border-border-default text-text-secondary hover:bg-state-hover disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent`;
+const chevronButtonClass = `${pageButtonBase} border border-border-default text-text-secondary hover:bg-state-hover disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent`;
 
 export type PaymentRequestPaginationProps = {
   /** 1-based. */

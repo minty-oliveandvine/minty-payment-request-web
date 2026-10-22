@@ -51,12 +51,9 @@ function getPermissionClaims(): JwtClaims {
     return {
       role: typeof payload.role === "string" ? payload.role : "",
       systemRole: typeof payload.system_role === "string" ? payload.system_role : "",
-      isViewOnly:
-        typeof payload.is_view_only === "boolean" ? payload.is_view_only : null,
+      isViewOnly: typeof payload.is_view_only === "boolean" ? payload.is_view_only : null,
       isSystemSuperuser:
-        typeof payload.is_system_superuser === "boolean"
-          ? payload.is_system_superuser
-          : false,
+        typeof payload.is_system_superuser === "boolean" ? payload.is_system_superuser : false,
     };
   } catch {
     return empty;

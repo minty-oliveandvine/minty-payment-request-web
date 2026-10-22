@@ -12,7 +12,15 @@ export function formatFileSize(bytes: number): string {
 export function isImageFile(file: File): boolean {
   if (file.type.startsWith("image/")) return true;
   const ext = file.name.trim().split(".").pop()?.toLowerCase() ?? "";
-  return ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "heic" || ext === "heif" || ext === "webp" || ext === "gif";
+  return (
+    ext === "jpg" ||
+    ext === "jpeg" ||
+    ext === "png" ||
+    ext === "heic" ||
+    ext === "heif" ||
+    ext === "webp" ||
+    ext === "gif"
+  );
 }
 
 export function isPdfFile(file: File): boolean {
@@ -52,7 +60,8 @@ export const ATTACHMENT_MIME_TYPES = [
   "text/html",
 ] as const;
 /** `accept` value for file inputs restricted to PDF/JPEG/PNG/HTML. */
-export const ATTACHMENT_ACCEPT = ".pdf,.jpg,.jpeg,.png,.html,.htm,application/pdf,image/jpeg,image/png,text/html";
+export const ATTACHMENT_ACCEPT =
+  ".pdf,.jpg,.jpeg,.png,.html,.htm,application/pdf,image/jpeg,image/png,text/html";
 
 export function isAllowedAttachment(file: File): boolean {
   return isAllowedFileType(file, ATTACHMENT_EXTENSIONS, ATTACHMENT_MIME_TYPES);

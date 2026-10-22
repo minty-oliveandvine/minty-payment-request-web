@@ -41,7 +41,10 @@ const answer = (status: number, body: unknown) =>
  * Answers by path. `pages` is consulted in order for each `/bills/?page=N` the loop asks for,
  * so a test states the WHOLE conversation rather than queueing responses blind.
  */
-function serve({ pages = [ALL_STATUSES], onBills }: { pages?: unknown[][]; onBills?: (page: number) => void } = {}) {
+function serve({
+  pages = [ALL_STATUSES],
+  onBills,
+}: { pages?: unknown[][]; onBills?: (page: number) => void } = {}) {
   const billsCalls: number[] = [];
   fetchMock.mockImplementation(async (input) => {
     const url = new URL(String(input));
@@ -183,7 +186,9 @@ describe("the rows it shows", () => {
   });
 
   it("show the amount due with the company's currency", async () => {
-    serve({ pages: [[billListItem({ id: "b1", contact: "One Supplier", amount_due: "6000.00" })]] });
+    serve({
+      pages: [[billListItem({ id: "b1", contact: "One Supplier", amount_due: "6000.00" })]],
+    });
 
     show();
 
@@ -226,7 +231,8 @@ describe("a list that did not load", () => {
       const path = new URL(String(input)).pathname;
       if (path.endsWith("/auth/entitlements")) return answer(200, { billing_enabled: true });
       if (path.endsWith("/auth/entity-currency")) return answer(200, { currency_code: "HKD" });
-      if (path.endsWith("/bills/")) return answer(403, { detail: "You don't have access to that." });
+      if (path.endsWith("/bills/"))
+        return answer(403, { detail: "You don't have access to that." });
       return answer(200, {});
     });
 
@@ -289,10 +295,20 @@ describe("bank slip counts that did not load", () => {
         if (path.endsWith("/attachments")) {
           return answer(200, [
             {
-              id: "att-1", attachment_role: "bank_slip", sort_order: 0, note: "", created_at: "2026-10-12T02:00:00Z",
+              id: "att-1",
+              attachment_role: "bank_slip",
+              sort_order: 0,
+              note: "",
+              created_at: "2026-10-12T02:00:00Z",
               attachment: {
-                id: "f-1", original_name: "slip.pdf", mime_type: "application/pdf", file_size: 10,
-                file_extension: "pdf", storage_provider: "s3", created_at: "2026-10-12T02:00:00Z", download_url: "",
+                id: "f-1",
+                original_name: "slip.pdf",
+                mime_type: "application/pdf",
+                file_size: 10,
+                file_extension: "pdf",
+                storage_provider: "s3",
+                created_at: "2026-10-12T02:00:00Z",
+                download_url: "",
               },
             },
           ]);
@@ -301,11 +317,21 @@ describe("bank slip counts that did not load", () => {
           if (!paymentsUp) return answer(500, { detail: "boom" });
           return answer(200, {
             paid_total: "0.00",
-            payments: [{ id: "pay-1", bill_id: "b1", payment_status: "completed", amount: "1.00", currency_code: "HKD" }],
+            payments: [
+              {
+                id: "pay-1",
+                bill_id: "b1",
+                payment_status: "completed",
+                amount: "1.00",
+                currency_code: "HKD",
+              },
+            ],
           });
         }
         if (path.endsWith("/bills/")) {
-          return answer(200, [billListItem({ id: "b1", contact: "One Supplier", status: "submitted" })]);
+          return answer(200, [
+            billListItem({ id: "b1", contact: "One Supplier", status: "submitted" }),
+          ]);
         }
         return answer(200, {});
       });
@@ -320,7 +346,9 @@ describe("bank slip counts that did not load", () => {
       paymentsUp = true;
       await userEvent.click(retry);
 
-      expect(await table().findByRole("button", { name: /View bank slip — 1 file uploaded/ })).toBeInTheDocument();
+      expect(
+        await table().findByRole("button", { name: /View bank slip — 1 file uploaded/ }),
+      ).toBeInTheDocument();
     } finally {
       consoleError.mockRestore();
     }
@@ -349,12 +377,49 @@ describe("what needs attention", () => {
   // Due dates relative to now, so the fixture never drifts: the strip reckons "today" in Hong
   // Kong, and moving an instant by whole days moves its Hong Kong date by the same days.
   const ATTENTION = [
-    billListItem({ id: "a-late", contact: "Late Supplier", status: "submitted", amount_due: "6000.00", due_date: inDays(-3) }),
-    billListItem({ id: "a-part", contact: "Part Paid Late", status: "partially_paid", amount: "13000.50", amount_due: "1500.00", due_date: inDays(-1) }),
-    billListItem({ id: "a-soon", contact: "Soon Supplier", status: "submitted", amount_due: "300.00", due_date: inDays(2) }),
-    billListItem({ id: "a-later", contact: "Later Supplier", status: "submitted", amount_due: "50.00", due_date: inDays(20) }),
-    billListItem({ id: "a-returned", contact: "Returned Supplier", status: "returned", amount_due: "80.00", due_date: inDays(20) }),
-    billListItem({ id: "a-paid", contact: "Paid Supplier", status: "paid", amount_due: "0.00", due_date: inDays(-9) }),
+    billListItem({
+      id: "a-late",
+      contact: "Late Supplier",
+      status: "submitted",
+      amount_due: "6000.00",
+      due_date: inDays(-3),
+    }),
+    billListItem({
+      id: "a-part",
+      contact: "Part Paid Late",
+      status: "partially_paid",
+      amount: "13000.50",
+      amount_due: "1500.00",
+      due_date: inDays(-1),
+    }),
+    billListItem({
+      id: "a-soon",
+      contact: "Soon Supplier",
+      status: "submitted",
+      amount_due: "300.00",
+      due_date: inDays(2),
+    }),
+    billListItem({
+      id: "a-later",
+      contact: "Later Supplier",
+      status: "submitted",
+      amount_due: "50.00",
+      due_date: inDays(20),
+    }),
+    billListItem({
+      id: "a-returned",
+      contact: "Returned Supplier",
+      status: "returned",
+      amount_due: "80.00",
+      due_date: inDays(20),
+    }),
+    billListItem({
+      id: "a-paid",
+      contact: "Paid Supplier",
+      status: "paid",
+      amount_due: "0.00",
+      due_date: inDays(-9),
+    }),
   ];
   const strip = () => within(screen.getByRole("region", { name: "Needs attention" }));
   const tile = (name: string) => strip().getByRole("button", { name: new RegExp(`^${name}`) });
@@ -374,7 +439,9 @@ describe("what needs attention", () => {
   });
 
   it("collapses to one calm line when nothing is overdue, due this week or returned", async () => {
-    serve({ pages: [[billListItem({ id: "calm", contact: "Calm Supplier", due_date: inDays(30) })]] });
+    serve({
+      pages: [[billListItem({ id: "calm", contact: "Calm Supplier", due_date: inDays(30) })]],
+    });
     show();
     await loaded();
 
@@ -402,7 +469,9 @@ describe("what needs attention", () => {
     expect(tile("Overdue")).toHaveAttribute("aria-pressed", "false");
     await waitFor(() => expect(bodyRows()).toHaveLength(ATTENTION.length));
     // A client-side filter: the list already in memory is narrowed, never fetched again.
-    expect(fetchMock.mock.calls.some(([u]) => new URL(String(u)).pathname.endsWith("/bills/"))).toBe(false);
+    expect(
+      fetchMock.mock.calls.some(([u]) => new URL(String(u)).pathname.endsWith("/bills/")),
+    ).toBe(false);
   });
 
   it("presses the Returned chip for the Returned tile, and keeps its figures from the whole list", async () => {

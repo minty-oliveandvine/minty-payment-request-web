@@ -31,7 +31,8 @@ export function AttachmentDeleteConfirmModal({
         acknowledgeOnly
         title="I need at least one attachment on a payment, so this one has to stay."
       >
-        Any payment must have at least one supporting document. You may refresh the page to restore the last saved document.
+        Any payment must have at least one supporting document. You may refresh the page to restore
+        the last saved document.
       </ConfirmDialog>
     );
   }
@@ -39,7 +40,11 @@ export function AttachmentDeleteConfirmModal({
   const n = Math.max(0, Math.floor(count));
   const isBankSlip = variant === "bankSlip";
   const titleText =
-    isBankSlip && n <= 1 ? "Delete bank slip?" : n > 1 ? "Delete attachments?" : "Delete attachment?";
+    isBankSlip && n <= 1
+      ? "Delete bank slip?"
+      : n > 1
+        ? "Delete attachments?"
+        : "Delete attachment?";
 
   return (
     <ConfirmDialog

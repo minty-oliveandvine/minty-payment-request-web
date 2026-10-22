@@ -33,7 +33,11 @@ export const SUPPLIERS: EntityBillContact[] = [
  */
 export const WITH_DUPLICATES: EntityBillContact[] = [
   ...SUPPLIERS,
-  entityBillContact({ id: "c-1-dup", xero_contact_id: "xero-1  ", name: "Different Name, Same Xero Id" }),
+  entityBillContact({
+    id: "c-1-dup",
+    xero_contact_id: "xero-1  ",
+    name: "Different Name, Same Xero Id",
+  }),
   entityBillContact({ id: "c-2-dup", xero_contact_id: "XERO-9", name: "ABC   Furniture" }),
   entityBillContact({ id: "c-blank", xero_contact_id: "", name: "" }),
 ];

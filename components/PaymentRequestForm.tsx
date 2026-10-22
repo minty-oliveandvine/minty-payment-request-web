@@ -60,7 +60,11 @@ import {
 import { joinFileNames, uploadEachAttachment } from "@/lib/attachmentUploads";
 import { getEntityIdSnapshot } from "@/lib/auth";
 import { useEntityCurrencyState } from "@/lib/entityCurrency";
-import { ATTACHMENT_ACCEPT, formatFileSize, isAllowedAttachment } from "@/lib/fileAttachmentPreview";
+import {
+  ATTACHMENT_ACCEPT,
+  formatFileSize,
+  isAllowedAttachment,
+} from "@/lib/fileAttachmentPreview";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
 import { saveAttachmentBlobs } from "@/lib/paymentRequestAttachmentStore";
 import { useClientValue } from "@minty/shared/clientValue";
@@ -68,10 +72,19 @@ import { useCompanyPages } from "@/lib/useCompanyPages";
 
 type UploadedEntry = { id: string; file: File };
 
-type ValidatedField = "billNo" | "amount" | "contact" | "accountCode" | "invoiceDate" | "dueDate" | "attachments";
+type ValidatedField =
+  "billNo" | "amount" | "contact" | "accountCode" | "invoiceDate" | "dueDate" | "attachments";
 
 /** The order fields are checked and listed in the error summary - the screen's order. */
-const FIELD_ORDER: ValidatedField[] = ["attachments", "contact", "amount", "invoiceDate", "dueDate", "accountCode", "billNo"];
+const FIELD_ORDER: ValidatedField[] = [
+  "attachments",
+  "contact",
+  "amount",
+  "invoiceDate",
+  "dueDate",
+  "accountCode",
+  "billNo",
+];
 
 const FIELD_ID: Record<ValidatedField, string> = {
   attachments: "pr-attachments",
@@ -121,14 +134,18 @@ function validatePaymentRequestForm(values: {
   attachmentCount: number;
 }): Partial<Record<ValidatedField, string>> {
   const e: Partial<Record<ValidatedField, string>> = {};
-  if (values.attachmentCount < 1) e.attachments = "The invoice is still missing. Add a photo or PDF of it to continue.";
+  if (values.attachmentCount < 1)
+    e.attachments = "The invoice is still missing. Add a photo or PDF of it to continue.";
   if (!values.contact.trim()) e.contact = "The supplier is still empty. Choose one to continue.";
-  if (isBlankAmount(values.amount)) e.amount = "The amount is still empty. Add the invoice amount to continue.";
+  if (isBlankAmount(values.amount))
+    e.amount = "The amount is still empty. Add the invoice amount to continue.";
   else if (amountLimitError(values.amount)) e.amount = amountLimitError(values.amount) ?? undefined;
   else if (!isPositiveAmount(values.amount)) e.amount = "Enter an amount above zero.";
-  if (!values.invoiceDate.trim()) e.invoiceDate = "The invoice date is still empty. Add it to continue.";
+  if (!values.invoiceDate.trim())
+    e.invoiceDate = "The invoice date is still empty. Add it to continue.";
   if (!values.dueDate.trim()) e.dueDate = "The due date is still empty. Add it to continue.";
-  if (!values.accountCode.trim()) e.accountCode = "The account code is still empty. Choose one to continue.";
+  if (!values.accountCode.trim())
+    e.accountCode = "The account code is still empty. Choose one to continue.";
   return e;
 }
 
@@ -153,7 +170,9 @@ export function PaymentRequestForm() {
   const [previewFileId, setPreviewFileId] = useState<string | null>(null);
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
-  const previewFile = previewFileId ? uploadedFiles.find((x) => x.id === previewFileId)?.file ?? null : null;
+  const previewFile = previewFileId
+    ? (uploadedFiles.find((x) => x.id === previewFileId)?.file ?? null)
+    : null;
   const [billNo, setBillNo] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -182,7 +201,10 @@ export function PaymentRequestForm() {
         setAccountOptions(
           accounts
             .filter((a) => a.is_active)
-            .map((a) => ({ value: `${a.account_code} - ${a.account_name}`, label: `${a.account_code} - ${a.account_name}` })),
+            .map((a) => ({
+              value: `${a.account_code} - ${a.account_name}`,
+              label: `${a.account_code} - ${a.account_name}`,
+            })),
         );
         const defaultAcct = accounts.find((a) => a.is_default && a.is_active);
         if (defaultAcct) {
@@ -190,7 +212,9 @@ export function PaymentRequestForm() {
           setAccountCode((prev) => prev || defaultVal);
         }
       })
-      .catch((err: unknown) => console.error("[add payment request] the account codes did not load", err));
+      .catch((err: unknown) =>
+        console.error("[add payment request] the account codes did not load", err),
+      );
     fetchEntityBillContacts()
       .then((contacts) => {
         if (cancelled) return;
@@ -198,7 +222,9 @@ export function PaymentRequestForm() {
         setContactsMap(new Map(deduped.map((c) => [c.xero_contact_id, c])));
         setContactsList(deduped);
       })
-      .catch((err: unknown) => console.error("[add payment request] the suppliers did not load", err));
+      .catch((err: unknown) =>
+        console.error("[add payment request] the suppliers did not load", err),
+      );
     fetchSuggestedBillReference()
       .then((r) => {
         if (!cancelled) setBillNo(r.reference);
@@ -270,13 +296,16 @@ export function PaymentRequestForm() {
     e.target.value = "";
   };
 
-  const removeFile = (entryId: string) => setUploadedFiles((prev) => prev.filter((x) => x.id !== entryId));
+  const removeFile = (entryId: string) =>
+    setUploadedFiles((prev) => prev.filter((x) => x.id !== entryId));
 
   const refetchEntityBillContacts = async (ensureMerged?: EntityBillContact) => {
     const list = await fetchEntityBillContacts();
     const mergedId = (ensureMerged?.xero_contact_id || "").trim().toUpperCase();
     let merged =
-      ensureMerged && mergedId && !list.some((c) => (c.xero_contact_id || "").trim().toUpperCase() === mergedId)
+      ensureMerged &&
+      mergedId &&
+      !list.some((c) => (c.xero_contact_id || "").trim().toUpperCase() === mergedId)
         ? [...list, ensureMerged]
         : list;
     merged = dedupeEntityBillContactsForPicker(
@@ -288,9 +317,15 @@ export function PaymentRequestForm() {
 
   /** Uploads the staged files to the new request; returns the names of any that did not upload. */
   const storeAttachments = async (billId: string): Promise<string[]> => {
-    const failed = await uploadEachAttachment(billId, uploadedFiles.map((x) => x.file));
+    const failed = await uploadEachAttachment(
+      billId,
+      uploadedFiles.map((x) => x.file),
+    );
     try {
-      await saveAttachmentBlobs(billId, uploadedFiles.map((x) => x.file));
+      await saveAttachmentBlobs(
+        billId,
+        uploadedFiles.map((x) => x.file),
+      );
     } catch (err) {
       console.error("[add payment request] the attachments were not kept for preview", err);
     }
@@ -344,7 +379,10 @@ export function PaymentRequestForm() {
       const failed = await storeAttachments(bill.id);
       if (failed.length > 0) {
         // The draft exists but a file does not: open it, where the file can be added again.
-        showToast(`Draft saved, but ${joinFileNames(failed)} didn't upload. Edit the draft and add it again.`, "warning");
+        showToast(
+          `Draft saved, but ${joinFileNames(failed)} didn't upload. Edit the draft and add it again.`,
+          "warning",
+        );
         router.push(pages.request(bill.id, bill.reference, bill.status));
         return;
       }
@@ -373,7 +411,8 @@ export function PaymentRequestForm() {
       setFieldErrors(next);
       setSubmitAttempt((n) => n + 1);
       // One problem: put the person on it. Two or more: the summary takes focus (ErrorSummary).
-      if (keys.length === 1) requestAnimationFrame(() => document.getElementById(FIELD_ID[keys[0]])?.focus());
+      if (keys.length === 1)
+        requestAnimationFrame(() => document.getElementById(FIELD_ID[keys[0]])?.focus());
       return;
     }
     setFieldErrors({});
@@ -395,7 +434,13 @@ export function PaymentRequestForm() {
         reference: billNo,
         xero_account_code: acctCode || undefined,
         line_items: [
-          { description, quantity: 1, unit_amount: amountStr, line_amount: amountStr, account_code: acctCode },
+          {
+            description,
+            quantity: 1,
+            unit_amount: amountStr,
+            line_amount: amountStr,
+            account_code: acctCode,
+          },
         ],
       });
       const failed = await storeAttachments(bill.id);
@@ -474,7 +519,9 @@ export function PaymentRequestForm() {
                       aria-label={`Preview ${file.name}`}
                     >
                       <Icon name={fileIcon(file.name)} size="md" className="text-text-secondary" />
-                      <span className="min-w-0 truncate text-body-m text-text-primary">{file.name}</span>
+                      <span className="min-w-0 truncate text-body-m text-text-primary">
+                        {file.name}
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -507,14 +554,18 @@ export function PaymentRequestForm() {
             />
             <div
               className={`pointer-events-none flex min-h-[132px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-5 text-center ${
-                fieldErrors.attachments ? "border-action-danger bg-status-danger-bg" : "border-border-input bg-surface-sunk"
+                fieldErrors.attachments
+                  ? "border-action-danger bg-status-danger-bg"
+                  : "border-border-input bg-surface-sunk"
               }`}
             >
               <Icon name="upload_file" size="lg" className="text-text-secondary" />
               <p className="text-body-m font-semibold text-text-primary">
                 {uploadedFiles.length > 0 ? "Add another photo or PDF" : "Add invoice photo or PDF"}
               </p>
-              <p className="text-caption text-text-muted">PDF, JPEG, PNG or HTML · files up to 10 MB</p>
+              <p className="text-caption text-text-muted">
+                PDF, JPEG, PNG or HTML · files up to 10 MB
+              </p>
             </div>
           </div>
           <p
@@ -607,7 +658,12 @@ export function PaymentRequestForm() {
 
         {/* 4. Dates */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-4">
-          <Field label="Invoice date" required id={FIELD_ID.invoiceDate} error={fieldErrors.invoiceDate}>
+          <Field
+            label="Invoice date"
+            required
+            id={FIELD_ID.invoiceDate}
+            error={fieldErrors.invoiceDate}
+          >
             {(a11y) => (
               <DateTextField
                 id={a11y.id}
@@ -660,7 +716,12 @@ export function PaymentRequestForm() {
         </Field>
 
         {/* 6. Account code - required, so never hidden behind More details. */}
-        <Field label="Account code" required id={FIELD_ID.accountCode} error={fieldErrors.accountCode}>
+        <Field
+          label="Account code"
+          required
+          id={FIELD_ID.accountCode}
+          error={fieldErrors.accountCode}
+        >
           {(a11y) => (
             <ThemedSelect
               id={a11y.id}
@@ -755,7 +816,10 @@ export function PaymentRequestForm() {
       {/* Guarded on the live object URL: removing the file being viewed revokes it, and this
           unmounts the viewer in the same commit rather than drawing a dead blob. */}
       {viewerOpen && previewFile && previewObjectUrl ? (
-        <AttachmentFullScreenViewer item={fileToPreviewItem(previewFile, previewObjectUrl)} onClose={() => setViewerOpen(false)} />
+        <AttachmentFullScreenViewer
+          item={fileToPreviewItem(previewFile, previewObjectUrl)}
+          onClose={() => setViewerOpen(false)}
+        />
       ) : null}
     </div>
   );

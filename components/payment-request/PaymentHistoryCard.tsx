@@ -34,14 +34,26 @@ export function PaymentHistoryListPanel({ rows }: PaymentHistoryListPanelProps) 
     return <p className="text-body-m text-text-secondary">No payments recorded yet.</p>;
   }
   return (
-    <div className="overflow-x-auto rounded-lg border border-border-subtle" role="region" aria-label="Payment history list">
+    <div
+      className="overflow-x-auto rounded-lg border border-border-subtle"
+      role="region"
+      aria-label="Payment history list"
+    >
       <table className="w-full min-w-0 border-collapse text-body-m">
         <thead className="hidden bg-surface-sunk sm:table-header-group">
           <tr className="h-10 text-left text-label text-text-secondary">
-            <th scope="col" className="px-4 font-semibold">Payment date</th>
-            <th scope="col" className="px-4 font-semibold">Status</th>
-            <th scope="col" className="px-4 text-right font-semibold">Amount</th>
-            <th scope="col" className="px-4 font-semibold">Payment No.</th>
+            <th scope="col" className="px-4 font-semibold">
+              Payment date
+            </th>
+            <th scope="col" className="px-4 font-semibold">
+              Status
+            </th>
+            <th scope="col" className="px-4 text-right font-semibold">
+              Amount
+            </th>
+            <th scope="col" className="px-4 font-semibold">
+              Payment No.
+            </th>
           </tr>
         </thead>
         <tbody>

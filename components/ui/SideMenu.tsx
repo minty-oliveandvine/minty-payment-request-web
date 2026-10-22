@@ -7,8 +7,4 @@
 
 import "@/components/ui/sidebarHost";
 
-export {
-  SideMenu,
-  type MenuContext,
-  type SideMenuProps,
-} from "@minty/shared/sidebar";
+export { SideMenu, type MenuContext, type SideMenuProps } from "@minty/shared/sidebar";

@@ -7,7 +7,10 @@ export {
 export { PaymentRequestDetailBody } from "./PaymentRequestDetailBody";
 export { PaymentRequestDetailSkeleton } from "./PaymentRequestDetailSkeleton";
 export { InvoiceAttachmentToolbar } from "./InvoiceAttachmentToolbar";
-export { InvoiceAttachmentPreview, type InvoiceAttachmentPreviewItem } from "./InvoiceAttachmentPreview";
+export {
+  InvoiceAttachmentPreview,
+  type InvoiceAttachmentPreviewItem,
+} from "./InvoiceAttachmentPreview";
 export { BillActionBar } from "./BillActionBar";
 export { BillDraftSubmitButton, type BillDraftSubmitButtonProps } from "./BillDraftSubmitButton";
 export {

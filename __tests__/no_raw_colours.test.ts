@@ -21,7 +21,8 @@ const ALLOWED: Record<string, { pattern: RegExp; why: string }> = {
 
 const PALETTE =
   "gray|red|amber|rose|sky|orange|stone|emerald|green|blue|yellow|slate|zinc|neutral|teal|cyan|indigo|purple|pink|lime|violet|fuchsia|black|white";
-const UTIL = "bg|text|border|ring|from|to|via|outline|fill|stroke|decoration|divide|placeholder|accent|caret|shadow";
+const UTIL =
+  "bg|text|border|ring|from|to|via|outline|fill|stroke|decoration|divide|placeholder|accent|caret|shadow";
 const RAW = new RegExp(
   [
     String.raw`#[0-9a-fA-F]{3,8}\b`,
@@ -62,12 +63,13 @@ describe("the guard itself", () => {
     expect(sample.match(RAW)).not.toBeNull();
   });
 
-  it.each(['className="bg-action-primary text-action-on-primary"', 'className="text-text-primary"', 'className="bg-status-info-bg"'])(
-    "lets the token %s through",
-    (sample) => {
-      expect(sample.match(RAW)).toBeNull();
-    },
-  );
+  it.each([
+    'className="bg-action-primary text-action-on-primary"',
+    'className="text-text-primary"',
+    'className="bg-status-info-bg"',
+  ])("lets the token %s through", (sample) => {
+    expect(sample.match(RAW)).toBeNull();
+  });
 });
 
 describe("Part 13 V-01: no raw colours in the source", () => {
@@ -84,6 +86,9 @@ describe("Part 13 V-01: no raw colours in the source", () => {
         }
       }
     }
-    expect(offences, `raw colours (use a Part 13 token from @minty/shared/tokens.css):\n${offences.join("\n")}`).toEqual([]);
+    expect(
+      offences,
+      `raw colours (use a Part 13 token from @minty/shared/tokens.css):\n${offences.join("\n")}`,
+    ).toEqual([]);
   });
 });

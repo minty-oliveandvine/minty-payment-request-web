@@ -50,7 +50,9 @@ describe("no file ever leaves the app", () => {
     for (const path of NOT_A_FILE_LINK) {
       const f = FILES.find((x) => x.path === path);
       expect(f, `${path} is excused but no longer exists`).toBeDefined();
-      expect(f!.text, `${path} is excused but no longer links out`).toMatch(/target=["']_blank["']/);
+      expect(f!.text, `${path} is excused but no longer links out`).toMatch(
+        /target=["']_blank["']/,
+      );
     }
   });
 

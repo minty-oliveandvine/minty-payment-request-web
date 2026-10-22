@@ -47,7 +47,9 @@ export default function Home() {
     if (!auth?.token) return;
     fetchXeroStatus()
       .then(setXeroConnected)
-      .catch((err: unknown) => console.error("[payment requests] the Xero status did not load", err));
+      .catch((err: unknown) =>
+        console.error("[payment requests] the Xero status did not load", err),
+      );
   }, [auth?.token]);
 
   // Subscription notice — once per entity per session, so the claim is checked
@@ -82,48 +84,55 @@ export default function Home() {
       Add payment request
     </Link>
   ) : (
-    <Button kind="primary" full disabled title={isViewOnly ? "Hmm, I can't let you in there. You have view-only access." : undefined}>
+    <Button
+      kind="primary"
+      full
+      disabled
+      title={isViewOnly ? "Hmm, I can't let you in there. You have view-only access." : undefined}
+    >
       Add payment request
     </Button>
   );
 
   return (
     <ModuleGate>
-    <div className="flex min-h-dvh min-h-screen min-w-0 max-w-full flex-col overflow-x-clip bg-surface-page pb-[env(safe-area-inset-bottom,0px)]">
-      <Header
-        title="Payment Request"
-        companyName={auth?.entityName || "Loading…"}
-        xeroConnected={xeroConnected}
-      />
-      <div className="mx-auto w-full max-w-[1200px]">
-        <PageHeader
-          title="Payment Requests"
-          art={
-            // Part 13 §13.10 module art on the Payment Request wash - the sidebar's module chip, at 40px.
-            <span
-              className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-module-payment-wash"
-              aria-hidden
-            >
-              <Image src="/menu/payment-request.svg" alt="" width={40} height={40} unoptimized />
-            </span>
-          }
-          purpose="Supplier bills waiting to be paid, and what has been paid."
-          primary={createButton}
-          below={
-            isViewOnly ? (
-              <p className="text-body-s text-text-secondary">You have view-only access, so nothing can be added here.</p>
-            ) : null
-          }
+      <div className="flex min-h-dvh min-h-screen min-w-0 max-w-full flex-col overflow-x-clip bg-surface-page pb-[env(safe-area-inset-bottom,0px)]">
+        <Header
+          title="Payment Request"
+          companyName={auth?.entityName || "Loading…"}
+          xeroConnected={xeroConnected}
         />
+        <div className="mx-auto w-full max-w-[1200px]">
+          <PageHeader
+            title="Payment Requests"
+            art={
+              // Part 13 §13.10 module art on the Payment Request wash - the sidebar's module chip, at 40px.
+              <span
+                className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-module-payment-wash"
+                aria-hidden
+              >
+                <Image src="/menu/payment-request.svg" alt="" width={40} height={40} unoptimized />
+              </span>
+            }
+            purpose="Supplier bills waiting to be paid, and what has been paid."
+            primary={createButton}
+            below={
+              isViewOnly ? (
+                <p className="text-body-s text-text-secondary">
+                  You have view-only access, so nothing can be added here.
+                </p>
+              ) : null
+            }
+          />
+        </div>
+        <div className="h-4" aria-hidden />
+        <PaymentRequestView
+          easyView={easyView}
+          onEasyViewChange={setEasyView}
+          createAction={canCreate ? createButton : undefined}
+        />
+        <SubscriptionNoticeModal notice={notice} onClose={() => setNotice(null)} />
       </div>
-      <div className="h-4" aria-hidden />
-      <PaymentRequestView
-        easyView={easyView}
-        onEasyViewChange={setEasyView}
-        createAction={canCreate ? createButton : undefined}
-      />
-      <SubscriptionNoticeModal notice={notice} onClose={() => setNotice(null)} />
-    </div>
-  </ModuleGate>
+    </ModuleGate>
   );
 }

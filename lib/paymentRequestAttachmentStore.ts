@@ -14,7 +14,8 @@ function openDb(): Promise<IDBDatabase> {
       }
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error ?? new Error("I couldn't get to your saved attachments just now."));
+    req.onerror = () =>
+      reject(req.error ?? new Error("I couldn't get to your saved attachments just now."));
   });
 }
 
@@ -27,7 +28,7 @@ export function uniquifyFileName(original: string, used: Set<string>): string {
   for (;;) {
     const candidate = `${base} (${n})${ext}`;
     if (!used.has(candidate)) return candidate;
-    n += 1; 
+    n += 1;
   }
 }
 
@@ -160,7 +161,10 @@ export async function replaceAttachmentBlobsFromPreviewItems(
   }
 }
 
-export async function removeAttachmentBlobs(requestId: string, namesToRemove: string[]): Promise<void> {
+export async function removeAttachmentBlobs(
+  requestId: string,
+  namesToRemove: string[],
+): Promise<void> {
   if (namesToRemove.length === 0) return;
   const remove = new Set(namesToRemove);
   const db = await openDb();

@@ -149,7 +149,12 @@ export function BillActionBar({
 
   const voidBillButton =
     showVoidBill !== false ? (
-      <button type="button" onClick={onDeleteBill} disabled={deleteDisabled} className={buttonClass("danger")}>
+      <button
+        type="button"
+        onClick={onDeleteBill}
+        disabled={deleteDisabled}
+        className={buttonClass("danger")}
+      >
         {removePrimaryLabel}
       </button>
     ) : null;
@@ -158,7 +163,11 @@ export function BillActionBar({
     <>
       {endRowPrefix}
       {draftSubmit?.show ? (
-        <BillDraftSubmitButton onClick={draftSubmit.onClick} disabled={draftSubmit.disabled} pending={draftSubmit.pending} />
+        <BillDraftSubmitButton
+          onClick={draftSubmit.onClick}
+          disabled={draftSubmit.disabled}
+          pending={draftSubmit.pending}
+        />
       ) : null}
       {useActionsOverflowMenu ? (
         <>
@@ -171,7 +180,10 @@ export function BillActionBar({
               aria-live="polite"
               className="inline-flex items-center gap-1.5 whitespace-nowrap text-body-m text-text-secondary"
             >
-              <span className="material-symbols-rounded animate-spin text-[20px]! leading-none text-text-link motion-reduce:animate-none" aria-hidden>
+              <span
+                className="material-symbols-rounded animate-spin text-[20px]! leading-none text-text-link motion-reduce:animate-none"
+                aria-hidden
+              >
                 progress_activity
               </span>
               {overflowShowRepublish ? "Republishing…" : "Publishing…"}
@@ -204,7 +216,11 @@ export function BillActionBar({
           type="button"
           onClick={isPublished || publishDisabled ? undefined : onPublishToXero}
           disabled={isPublished || publishPending || publishDisabled}
-          title={publishDisabled ? "This payment's been voided, so there's nothing to publish." : undefined}
+          title={
+            publishDisabled
+              ? "This payment's been voided, so there's nothing to publish."
+              : undefined
+          }
           className={
             isPublished
               ? "inline-flex h-11 max-w-full shrink-0 cursor-default items-center gap-2 rounded-lg bg-status-success-bg px-4 text-button text-status-success-ink"
@@ -226,7 +242,9 @@ export function BillActionBar({
             alt=""
             width={40}
             height={40}
-            className={"h-10 w-10 shrink-0 object-contain" + (publishDisabled ? " grayscale opacity-40" : "")}
+            className={
+              "h-10 w-10 shrink-0 object-contain" + (publishDisabled ? " grayscale opacity-40" : "")
+            }
             aria-hidden
           />
         </button>
@@ -248,7 +266,9 @@ export function BillActionBar({
       className={`flex w-full min-w-0 flex-row items-center gap-2 sm:gap-3 ${showVoidBill === false ? "justify-end" : "justify-between"}`}
     >
       {voidBillButton}
-      <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center justify-end gap-2 sm:gap-3">{centerActions}</div>
+      <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center justify-end gap-2 sm:gap-3">
+        {centerActions}
+      </div>
     </div>
   );
 }

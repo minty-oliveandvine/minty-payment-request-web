@@ -53,7 +53,11 @@ function payment(overrides: Partial<PaymentItem> = {}): PaymentItem {
   };
 }
 
-function slip(id: string, linkCreatedAt: string, fileCreatedAt = "2026-01-01T00:00:00Z"): PaymentAttachment {
+function slip(
+  id: string,
+  linkCreatedAt: string,
+  fileCreatedAt = "2026-01-01T00:00:00Z",
+): PaymentAttachment {
   return {
     id,
     attachment_role: "bank_slip",
@@ -127,7 +131,11 @@ describe("When - the payment date, read with no timezone at all", () => {
 
   it.each([
     ["an ISO date", "2026-03-03", "03 Mar 2026"],
-    ["a timestamp - its first ten characters, NOT the Hong Kong day", "2026-03-03T23:00:00Z", "03 Mar 2026"],
+    [
+      "a timestamp - its first ten characters, NOT the Hong Kong day",
+      "2026-03-03T23:00:00Z",
+      "03 Mar 2026",
+    ],
     ["an impossible ISO date - kept as it came", "2026-02-30", "2026-02-30"],
     ["words - kept as they came", "garbage", "garbage"],
   ])("shows %s", async (_label, paymentDate, shown) => {
@@ -136,11 +144,16 @@ describe("When - the payment date, read with no timezone at all", () => {
 
   it("reads a non-ISO date on the LOCAL calendar", async () => {
     // Built from a string Date parses as local midnight, so it is the same day in any timezone.
-    expect((await detailsFor(payment({ payment_date: "2026/03/03 00:00" }))).when).toBe("03 Mar 2026");
+    expect((await detailsFor(payment({ payment_date: "2026/03/03 00:00" }))).when).toBe(
+      "03 Mar 2026",
+    );
   });
 
   it("uses the row's paid date when the payment has none", async () => {
-    const details = await detailsFor(payment({ payment_date: null }), { ...ROW, paidDate: " 05 Mar 2026 " });
+    const details = await detailsFor(payment({ payment_date: null }), {
+      ...ROW,
+      paidDate: " 05 Mar 2026 ",
+    });
     expect(details.when).toBe("05 Mar 2026");
   });
 
@@ -155,23 +168,44 @@ describe("the rest of the details", () => {
 
     const details = await detailsFor(payment({ created_by: "  " }));
 
-    expect(details).toMatchObject({ createdBy: "—", toName: "Young Bros Transport", fromName: "—" });
+    expect(details).toMatchObject({
+      createdBy: "—",
+      toName: "Young Bros Transport",
+      fromName: "—",
+    });
   });
 
   it("counts each attachment once across the bill's payments, and ignores other bills' payments", async () => {
-    attachmentsAre([slip("slip-1", "2026-03-02T18:05:00Z"), slip("slip-2", "2026-03-02T18:05:00Z")]);
+    attachmentsAre([
+      slip("slip-1", "2026-03-02T18:05:00Z"),
+      slip("slip-2", "2026-03-02T18:05:00Z"),
+    ]);
 
     const built = await buildBankSlipDetailsFromPaymentList(
       BILL_ID,
-      [payment({ id: "pay-1" }), payment({ id: "pay-2" }), payment({ id: "pay-3", bill_id: "other-bill" })],
+      [
+        payment({ id: "pay-1" }),
+        payment({ id: "pay-2" }),
+        payment({ id: "pay-3", bill_id: "other-bill" }),
+      ],
       ROW,
     );
 
     expect(built.count).toBe(2);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(built.bankSlipDetails?.files.map((f) => f.fetchSource)).toEqual([
-      { billId: BILL_ID, paymentId: "pay-1", attachmentId: "slip-1", fileAttachmentId: "file-slip-1" },
-      { billId: BILL_ID, paymentId: "pay-1", attachmentId: "slip-2", fileAttachmentId: "file-slip-2" },
+      {
+        billId: BILL_ID,
+        paymentId: "pay-1",
+        attachmentId: "slip-1",
+        fileAttachmentId: "file-slip-1",
+      },
+      {
+        billId: BILL_ID,
+        paymentId: "pay-1",
+        attachmentId: "slip-2",
+        fileAttachmentId: "file-slip-2",
+      },
     ]);
   });
 
@@ -203,6 +237,8 @@ describe("fetchBillBankSlipEnrichment", () => {
   it("is a plain zero when the bill has no payments", async () => {
     fetchMock.mockResolvedValueOnce(answer(200, { paid_total: "0.00", payments: [] }));
 
-    await expect(fetchBillBankSlipEnrichment(BILL_ID, ROW)).resolves.toEqual({ bankslipFileCount: 0 });
+    await expect(fetchBillBankSlipEnrichment(BILL_ID, ROW)).resolves.toEqual({
+      bankslipFileCount: 0,
+    });
   });
 });

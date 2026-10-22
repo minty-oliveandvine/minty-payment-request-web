@@ -10,10 +10,7 @@ const bar = () => within(screen.getByRole("banner"));
 describe("the App bar", () => {
   it("shows the Minty mark, as the hub does, not the module name as text", () => {
     render(<Header companyName="Shop" />);
-    expect(bar().getByRole("img", { name: "Minty" })).toHaveAttribute(
-      "src",
-      "/minty-mark.png",
-    );
+    expect(bar().getByRole("img", { name: "Minty" })).toHaveAttribute("src", "/minty-mark.png");
     // The module name is still there for a screen reader, just not drawn.
     expect(bar().getByText("Payment Request")).toHaveClass("sr-only");
   });
@@ -24,15 +21,10 @@ describe("the App bar", () => {
   });
 
   it("offers the way back in a drill-down", () => {
-    render(
-      <Header
-        companyName="Shop"
-        backHref="/list"
-        backLabel="Payment Requests"
-      />,
+    render(<Header companyName="Shop" backHref="/list" backLabel="Payment Requests" />);
+    expect(bar().getByRole("link", { name: "Back to Payment Requests" })).toHaveAttribute(
+      "href",
+      "/list",
     );
-    expect(
-      bar().getByRole("link", { name: "Back to Payment Requests" }),
-    ).toHaveAttribute("href", "/list");
   });
 });

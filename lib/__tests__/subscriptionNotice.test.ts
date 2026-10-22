@@ -203,7 +203,8 @@ describe("fetchSubscriptionNotice", () => {
 
   // Pins the token handling and the timeout before this moves to @minty/shared (the shared-code
   // refactor, 2026-10-21).
-  const bearerOf = (call: number) => new Headers(fetchMock.mock.calls[call][1]?.headers).get("Authorization");
+  const bearerOf = (call: number) =>
+    new Headers(fetchMock.mock.calls[call][1]?.headers).get("Authorization");
 
   it("sends only the bearer - no company header, the company is in the path", async () => {
     fetchMock.mockResolvedValueOnce(answer(200, NOTICE));
@@ -234,7 +235,9 @@ describe("fetchSubscriptionNotice", () => {
 
     await expect(fetchSubscriptionNotice()).resolves.toEqual(NOTICE);
 
-    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PAYMENT_REQUEST_API_URL}/api/v1/auth/token/refresh`);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      `${env.PAYMENT_REQUEST_API_URL}/api/v1/auth/token/refresh`,
+    );
     expect(bearerOf(1)).toBe(`Bearer ${fresh}`);
   });
 
@@ -276,7 +279,9 @@ describe("fetchSubscriptionNotice", () => {
       fetchMock.mockImplementationOnce(
         (_url, init) =>
           new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+            init?.signal?.addEventListener("abort", () =>
+              reject(new DOMException("aborted", "AbortError")),
+            );
           }),
       );
 

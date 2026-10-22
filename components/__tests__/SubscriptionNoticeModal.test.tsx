@@ -74,7 +74,12 @@ describe("the dialog", () => {
   });
 
   it("reads less alarmingly when nothing is critical", () => {
-    show(notice({ severity: "warning", items: [item({ severity: "warning", kind: "pending_cancel" })] }));
+    show(
+      notice({
+        severity: "warning",
+        items: [item({ severity: "warning", kind: "pending_cancel" })],
+      }),
+    );
 
     expect(dialog()).toHaveAccessibleName("Your subscription");
   });
@@ -163,7 +168,9 @@ describe("anyone who is not the payer", () => {
   it("gets no button, because the server would refuse the click", () => {
     show(notice({ can_manage: false }));
 
-    expect(screen.queryByRole("link", { name: "Go to subscription settings" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Go to subscription settings" }),
+    ).not.toBeInTheDocument();
   });
 
   it("is told who to ask, by name and address", () => {

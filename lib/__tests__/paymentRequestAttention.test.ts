@@ -137,9 +137,17 @@ describe("the attention figures", () => {
 
 describe("the due filter", () => {
   it("keeps only the overdue rows, or only the rows due within a week", () => {
-    const rows = [due("2026-10-18", { id: "late" }), due("2026-10-22", { id: "soon" }), due("2026-11-30", { id: "later" })];
-    expect(rows.filter((r) => rowMatchesDueFilter(r, "overdue", TODAY)).map((r) => r.id)).toEqual(["late"]);
-    expect(rows.filter((r) => rowMatchesDueFilter(r, "dueSoon", TODAY)).map((r) => r.id)).toEqual(["soon"]);
+    const rows = [
+      due("2026-10-18", { id: "late" }),
+      due("2026-10-22", { id: "soon" }),
+      due("2026-11-30", { id: "later" }),
+    ];
+    expect(rows.filter((r) => rowMatchesDueFilter(r, "overdue", TODAY)).map((r) => r.id)).toEqual([
+      "late",
+    ]);
+    expect(rows.filter((r) => rowMatchesDueFilter(r, "dueSoon", TODAY)).map((r) => r.id)).toEqual([
+      "soon",
+    ]);
   });
 });
 

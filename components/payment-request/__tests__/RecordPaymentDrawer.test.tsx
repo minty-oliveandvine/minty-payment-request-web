@@ -101,7 +101,9 @@ const partPay = () => within(drawer()).getByRole("radio", { name: "Part payment"
 
 /** The drawer reads its payments on open; wait for that before acting. */
 const loadedPayments = () =>
-  waitFor(() => expect(screen.queryByRole("status", { name: "Loading payments" })).not.toBeInTheDocument());
+  waitFor(() =>
+    expect(screen.queryByRole("status", { name: "Loading payments" })).not.toBeInTheDocument(),
+  );
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
@@ -135,7 +137,10 @@ describe("the drawer", () => {
   });
 
   it("reads the payments already on the request", async () => {
-    serve({ payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00" })], paidTotal: "1500.00" });
+    serve({
+      payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00" })],
+      paidTotal: "1500.00",
+    });
 
     show();
 
@@ -154,7 +159,11 @@ describe("paying in full", () => {
     await userEvent.click(record());
 
     await waitFor(() => expect(posted).toHaveLength(1));
-    expect(posted[0].body).toMatchObject({ amount: 6000, currency_code: "HKD", payment_status: "completed" });
+    expect(posted[0].body).toMatchObject({
+      amount: 6000,
+      currency_code: "HKD",
+      payment_status: "completed",
+    });
   });
 
   it("tells the page a payment was saved, and says so in a toast", async () => {
@@ -165,7 +174,9 @@ describe("paying in full", () => {
     await userEvent.click(record());
 
     await waitFor(() => expect(onPaymentSaved).toHaveBeenCalled());
-    expect(await screen.findByText("Payment of HKD 6,000.00 recorded for Young Bros Transport.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Payment of HKD 6,000.00 recorded for Young Bros Transport."),
+    ).toBeInTheDocument();
   });
 
   it("cannot be sent twice while the first is in flight", async () => {
@@ -196,7 +207,9 @@ describe("paying in full", () => {
 
     expect(fullPay()).toBeDisabled();
     expect(partPay()).toHaveAttribute("aria-checked", "true");
-    expect(drawer()).toHaveTextContent("Part of this is paid already, so record the rest as a part payment.");
+    expect(drawer()).toHaveTextContent(
+      "Part of this is paid already, so record the rest as a part payment.",
+    );
   });
 });
 
@@ -222,7 +235,9 @@ describe("paying part of it", () => {
     await userEvent.click(partPay());
 
     await userEvent.type(amountField(), "9000");
-    expect(amountField()).toHaveAccessibleDescription("Enter HKD\u00a06,000.00 or less - that is what is unpaid.");
+    expect(amountField()).toHaveAccessibleDescription(
+      "Enter HKD\u00a06,000.00 or less - that is what is unpaid.",
+    );
     expect(amountField()).toHaveAttribute("aria-invalid", "true");
     expect(record()).toBeDisabled();
 
@@ -242,7 +257,9 @@ describe("paying part of it", () => {
 
     await userEvent.type(amountField(), "2000");
 
-    expect(amountField()).toHaveAccessibleDescription("Enter HKD\u00a01,000.00 or less - that is what is unpaid.");
+    expect(amountField()).toHaveAccessibleDescription(
+      "Enter HKD\u00a01,000.00 or less - that is what is unpaid.",
+    );
   });
 
   it("asks for an amount when there is none, after the attempt - not before", async () => {
@@ -297,7 +314,9 @@ describe("a payment that would not save", () => {
 
     await userEvent.click(record());
 
-    expect(await within(drawer()).findByRole("alert")).toHaveTextContent("Someone else paid this a moment ago.");
+    expect(await within(drawer()).findByRole("alert")).toHaveTextContent(
+      "Someone else paid this a moment ago.",
+    );
     expect(document.querySelector("[data-toast-type='error']")).toBeNull();
   });
 
@@ -321,7 +340,9 @@ describe("a payment that would not save", () => {
 describe("the payments already recorded", () => {
   it("are listed", async () => {
     serve({
-      payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00", payment_date: "2026-03-10" })],
+      payments: [
+        payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00", payment_date: "2026-03-10" }),
+      ],
       paidTotal: "1500.00",
     });
 
@@ -353,7 +374,9 @@ describe("the payments already recorded", () => {
     show({ billStatus: "partially_paid" });
 
     await loadedPayments();
-    expect(within(drawer()).queryByRole("button", { name: "Remove this payment" })).not.toBeInTheDocument();
+    expect(
+      within(drawer()).queryByRole("button", { name: "Remove this payment" }),
+    ).not.toBeInTheDocument();
   });
 });
 

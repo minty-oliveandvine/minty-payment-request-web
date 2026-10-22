@@ -180,7 +180,7 @@ codes — follows these:
   to continue." Never "Error", "Invalid", "Mandatory" or "required field". Optional fields never
   warn.
 - In the bank-slip dialog, pressing Upload with nothing staged is **not reachable** — the button
-  is disabled until a file is staged — so the red there comes from a *refused* file (wrong type
+  is disabled until a file is staged — so the red there comes from a _refused_ file (wrong type
   or too big). That dialog and the upload-invoice one red-line off `uploadError && <staged> === 0`,
   never `uploadError` alone, since that also carries **API failures**.
 
@@ -208,7 +208,7 @@ gone). What it holds:
   d", and the actions — Edit, **Return to requester** (Secondary, through a confirm), View
   payments, the Primary (**Record payment**; **Submit for payment** for a draft or a returned
   request; **Save Changes** while editing) and More (`BillActionBar.tsx`: `aria-label="More
-  payment actions"` → `role="menu"` "Payment actions" with **Publish** / **Republish** and
+payment actions"` → `role="menu"` "Payment actions" with **Publish** / **Republish** and
   **Void** / Delete; while a publish runs a `role="status"` "Publishing…" shows and the trigger
   is disabled). Elevated roles only for publish, void, return and payments (`useUserRole`).
   Under it: the Returned banner ("Edit and resubmit"), or - for a request with **no invoice

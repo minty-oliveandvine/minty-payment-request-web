@@ -20,7 +20,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
   usePathname: () => "/entity/360812e1/olive-and-vine/payment-request",
 }));
-vi.mock("@/components/ModuleGate", () => ({ ModuleGate: ({ children }: { children: ReactNode }) => <>{children}</> }));
+vi.mock("@/components/ModuleGate", () => ({
+  ModuleGate: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
 vi.mock("@/components/payment-request", () => ({ PaymentRequestView: () => <p>the list</p> }));
 vi.mock("@/components/SubscriptionNoticeModal", () => ({ SubscriptionNoticeModal: () => null }));
 vi.mock("@/components/ui/NavMenu", () => ({ NavMenu: () => null }));
@@ -50,7 +52,9 @@ describe("the list page's header", () => {
   it("names the page once, as its only h1", () => {
     setAuth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
     show();
-    expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["Payment Requests"]);
+    expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual([
+      "Payment Requests",
+    ]);
   });
 
   it("offers a member the Add page", async () => {
@@ -65,16 +69,27 @@ describe("the list page's header", () => {
   it("is dead for somebody with no role on the company", async () => {
     setAuth(unsignedToken({ role: "" }), ENTITY_ID, ENTITY_NAME);
     show();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Add payment request" })).toBeDisabled());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Add payment request" })).toBeDisabled(),
+    );
     expect(screen.queryByRole("link", { name: "Add payment request" })).not.toBeInTheDocument();
   });
 
   it("is dead, with the reason beside it, for a view-only superuser", async () => {
-    setAuth(unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }), ENTITY_ID, ENTITY_NAME);
+    setAuth(
+      unsignedToken({ role: "admin", system_role: "superadmin", is_view_only: true }),
+      ENTITY_ID,
+      ENTITY_NAME,
+    );
     show();
     const button = await screen.findByRole("button", { name: "Add payment request" });
     await waitFor(() => expect(button).toBeDisabled());
-    expect(button).toHaveAttribute("title", "Hmm, I can't let you in there. You have view-only access.");
-    expect(screen.getByText("You have view-only access, so nothing can be added here.")).toBeInTheDocument();
+    expect(button).toHaveAttribute(
+      "title",
+      "Hmm, I can't let you in there. You have view-only access.",
+    );
+    expect(
+      screen.getByText("You have view-only access, so nothing can be added here."),
+    ).toBeInTheDocument();
   });
 });

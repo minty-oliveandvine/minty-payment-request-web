@@ -47,7 +47,8 @@ export function rowNextAction(displayStatus: string, ctx: ActionContext): Reques
 /** The detail header's extra actions for this status (besides the Primary). */
 export function detailActions(displayStatus: string, ctx: ActionContext): RequestAction[] {
   const canPay = ctx.isElevated && !ctx.isViewOnly;
-  if (!canPay) return displayStatus === "Paid" || displayStatus === "Partially Paid" ? ["viewPayments"] : [];
+  if (!canPay)
+    return displayStatus === "Paid" || displayStatus === "Partially Paid" ? ["viewPayments"] : [];
   switch (displayStatus) {
     case "Payment Requested":
       return ["return", "void"];

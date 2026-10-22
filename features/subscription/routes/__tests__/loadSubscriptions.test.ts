@@ -70,7 +70,9 @@ describe("loadSubscriptions", () => {
     fetchMock.mockResolvedValueOnce(
       answer(200, { payer, transfer_outcomes: [outcome], entities: [company(1)], pages: 2 }),
     );
-    fetchMock.mockResolvedValueOnce(answer(200, { transfer_outcomes: [], entities: [company(2)], pages: 2 }));
+    fetchMock.mockResolvedValueOnce(
+      answer(200, { transfer_outcomes: [], entities: [company(2)], pages: 2 }),
+    );
 
     const all = await fetchAllPayerSubscriptions();
 
@@ -82,7 +84,10 @@ describe("loadSubscriptions", () => {
   it("reads one page when there is one, with no company header", async () => {
     fetchMock.mockResolvedValueOnce(answer(200, { entities: [company(1)], pages: 1 }));
 
-    await expect(fetchAllPayerSubscriptions()).resolves.toEqual({ ...EMPTY_EXTRAS, entities: [company(1)] });
+    await expect(fetchAllPayerSubscriptions()).resolves.toEqual({
+      ...EMPTY_EXTRAS,
+      entities: [company(1)],
+    });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(calledUrl(0)).toBe(`${SUBSCRIPTIONS_URL}?page=1&per_page=100`);
@@ -98,7 +103,12 @@ describe("loadSubscriptions", () => {
 
     const { entities } = await fetchAllPayerSubscriptions();
 
-    expect(entities.map((e) => e.entity_id)).toEqual(["entity-1", "entity-2", "entity-3", "entity-4"]);
+    expect(entities.map((e) => e.entity_id)).toEqual([
+      "entity-1",
+      "entity-2",
+      "entity-3",
+      "entity-4",
+    ]);
     expect([0, 1, 2].map(calledUrl)).toEqual([
       `${SUBSCRIPTIONS_URL}?page=1&per_page=100`,
       `${SUBSCRIPTIONS_URL}?page=2&per_page=100`,

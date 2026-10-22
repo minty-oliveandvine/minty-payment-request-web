@@ -15,13 +15,13 @@ the menu; 440 px for My Profile from 640 px up and the whole screen on a phone.
 It was a **copy** of minty-web's from 2026-09-30 ("build it now and transfer later to shared").
 The copies are gone. The components now come from the package, pinned by git tag:
 
-| Path here | What it is now |
-|---|---|
-| `components/ui/Sidebar.tsx` | a 17-line shim re-exporting `@minty/shared/sidebar` |
-| `components/ui/SideMenu.tsx` | a shim |
-| `components/ui/ViewerBadge.tsx` | a shim |
-| `components/ui/NavMenu.tsx` | a shim (it replaced this app's `components/layout/NavMenu.tsx`) |
-| `lib/viewer.ts` | a shim over `@minty/shared/viewer` |
+| Path here                                                                          | What it is now                                                                                                                                                                                                          |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/ui/Sidebar.tsx`                                                        | a 17-line shim re-exporting `@minty/shared/sidebar`                                                                                                                                                                     |
+| `components/ui/SideMenu.tsx`                                                       | a shim                                                                                                                                                                                                                  |
+| `components/ui/ViewerBadge.tsx`                                                    | a shim                                                                                                                                                                                                                  |
+| `components/ui/NavMenu.tsx`                                                        | a shim (it replaced this app's `components/layout/NavMenu.tsx`)                                                                                                                                                         |
+| `lib/viewer.ts`                                                                    | a shim over `@minty/shared/viewer`                                                                                                                                                                                      |
 | `features/profile/*`, `features/subscription/routes/SubscriptionsOverviewCard.tsx` | **the package's since v0.6** (`@minty/shared/profile`, the redesign here): this app keeps only its Flask calls (`features/profile/api/profile.ts` `profileApi`), its subscriptions read and its toast. No PASSWORD row. |
 
 Each shim's first line is `import "@/components/ui/sidebarHost";`, and that is load-bearing: it
@@ -79,15 +79,15 @@ out of `node_modules`. `app/__tests__/packagedAssets.test.ts` asserts the packag
 
 ## The menu from this app
 
-| Item | Goes to |
-|---|---|
-| the person | My Profile, in place |
-| Select Entity | Minty's `/entity` (minty-web's list wherever the hub is on), through `/entity/<id>/enter` |
-| Manage subscriptions (always; no switch since 2026-10-01) | minty-web's portal, through Minty's `/handoff/minty-web` |
-| Petty Cash › Dashboard, Reports (company has Petty Cash) | Minty, through `/entity/<id>/enter` |
-| Payment Request › Bills | the company's list, `/entity/<shortid>/<name>/payment-request` |
-| **Settings** | **this app's own Payment Request Settings** (`/entity/<shortid>/<name>/settings/payment-request`) — Settings opens the settings of the app it is pressed in (the user's call, 2026-09-30); minty-web's menu keeps its module page |
-| Logout | ends the session everywhere: `POST /api/auth/logout` (presence), the cookies and the Easy view choice go, then Minty's `/logout` (the user's call, 2026-09-30 — it used to leave Minty signed in on its entity list). While Payment Request Settings has unsaved ticks it **asks first** ("Leave without saving?"): nothing runs until Discard changes; Go Back stays, signed in ([settings.md](settings.md)) |
+| Item                                                      | Goes to                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the person                                                | My Profile, in place                                                                                                                                                                                                                                                                                                                                                                                          |
+| Select Entity                                             | Minty's `/entity` (minty-web's list wherever the hub is on), through `/entity/<id>/enter`                                                                                                                                                                                                                                                                                                                     |
+| Manage subscriptions (always; no switch since 2026-10-01) | minty-web's portal, through Minty's `/handoff/minty-web`                                                                                                                                                                                                                                                                                                                                                      |
+| Petty Cash › Dashboard, Reports (company has Petty Cash)  | Minty, through `/entity/<id>/enter`                                                                                                                                                                                                                                                                                                                                                                           |
+| Payment Request › Bills                                   | the company's list, `/entity/<shortid>/<name>/payment-request`                                                                                                                                                                                                                                                                                                                                                |
+| **Settings**                                              | **this app's own Payment Request Settings** (`/entity/<shortid>/<name>/settings/payment-request`) — Settings opens the settings of the app it is pressed in (the user's call, 2026-09-30); minty-web's menu keeps its module page                                                                                                                                                                             |
+| Logout                                                    | ends the session everywhere: `POST /api/auth/logout` (presence), the cookies and the Easy view choice go, then Minty's `/logout` (the user's call, 2026-09-30 — it used to leave Minty signed in on its entity list). While Payment Request Settings has unsaved ticks it **asks first** ("Leave without saving?"): nothing runs until Discard changes; Go Back stays, signed in ([settings.md](settings.md)) |
 
 ## My Profile
 
@@ -102,7 +102,7 @@ The same reads minty-web makes, with this app's token:
 - The **Subscriptions Overview**: minty-subscription-api's `GET /api/me/subscriptions`
   (`SUBSCRIPTION_API_URL`, default `http://localhost:8000`), the same figures as
   minty-web's portal; a failed read (a 404 included - there is no dark switch since 2026-10-01)
-  shows the card's error with Try again; *Manage Subscription* goes to minty-web's portal. The
+  shows the card's error with Try again; _Manage Subscription_ goes to minty-web's portal. The
   walk and its types (`PortalEntity`, `PortalModule`) are `@minty/shared/portal`'s
   (`fetchAllSubscriptions`), called by `loadSubscriptions` in
   `features/subscription/routes/SubscriptionsOverviewCard.tsx`; a page of the wrong shape is a 502
@@ -122,7 +122,7 @@ menu's name are drawn outside the drawer, they are plain links to Minty's `/prof
 ## Tests
 
 `e2e/05_sidebar.spec.ts` (Flask's profile and the billing API stubbed): the initials open My
-Profile (440 px, plan line, role, the overview's figures, *Manage Subscription*'s way), ‹ and
+Profile (440 px, plan line, role, the overview's figures, _Manage Subscription_'s way), ‹ and
 Escape; the menu's links from here, Settings = this app's Payment Request Settings; a save sends only what changed and
 the header follows; a refusal shown in the card; a failed subscriptions read shows the card's
 error and Try again re-reads; Logout clears the cookies and leaves for Minty's `/logout`.

@@ -74,7 +74,9 @@ export function PaymentRequestTotalsBanner({
 
   // An empty result set still renders a zeroed box rather than collapsing to nothing.
   const groups =
-    totals.length > 0 ? totals.slice(0, MAX_CURRENCY_GROUPS) : [{ code: "HKD", invoice: 0, unpaid: 0 }];
+    totals.length > 0
+      ? totals.slice(0, MAX_CURRENCY_GROUPS)
+      : [{ code: "HKD", invoice: 0, unpaid: 0 }];
   const hiddenCount = Math.max(0, totals.length - MAX_CURRENCY_GROUPS);
   const mixed = totals.length > 1;
 
@@ -84,7 +86,9 @@ export function PaymentRequestTotalsBanner({
       role="status"
       aria-live="polite"
     >
-      {subtitle ? <span className="text-caption text-text-muted tabular-nums">{subtitle}</span> : null}
+      {subtitle ? (
+        <span className="text-caption text-text-muted tabular-nums">{subtitle}</span>
+      ) : null}
       {groups.map((g) => (
         <div key={g.code} className="flex flex-col">
           {mixed ? (

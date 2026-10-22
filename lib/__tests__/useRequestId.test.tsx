@@ -34,9 +34,7 @@ const answer = (status: number, body: unknown) =>
 /** Renders the hook's three fields as text, so nothing here reads internal state. */
 function Probe({ label = "probe" }: { label?: string }) {
   const { requestId, pending, error } = useRequestId();
-  return (
-    <p aria-label={label}>{`id=${requestId} pending=${pending} error=${error ?? ""}`}</p>
-  );
+  return <p aria-label={label}>{`id=${requestId} pending=${pending} error=${error ?? ""}`}</p>;
 }
 
 const shown = (label = "probe") => screen.getByLabelText(label).textContent;
@@ -234,7 +232,9 @@ describe("a Payment No. that names nothing", () => {
     render(<Probe />);
 
     await waitFor(() =>
-      expect(shown()).toBe("id= pending=false error=Something went wrong on my end. Mind trying again?"),
+      expect(shown()).toBe(
+        "id= pending=false error=Something went wrong on my end. Mind trying again?",
+      ),
     );
   });
 

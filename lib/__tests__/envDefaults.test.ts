@@ -51,14 +51,21 @@ describe("url(raw, fallback), through env", () => {
   });
 
   it("keeps a path, and does not validate the value at all", async () => {
-    const env = await freshEnv({ PETTY_CASH_URL: "https://minty.test/base/", SUBSCRIPTION_API_URL: "not a url" });
+    const env = await freshEnv({
+      PETTY_CASH_URL: "https://minty.test/base/",
+      SUBSCRIPTION_API_URL: "not a url",
+    });
     expect(env.PETTY_CASH_URL).toBe("https://minty.test/base");
     expect(env.SUBSCRIPTION_API_URL).toBe("not a url");
   });
 
   it("is a plain object of exactly the three URLs", async () => {
     const env = await freshEnv({});
-    expect(Object.keys(env)).toEqual(["PETTY_CASH_URL", "PAYMENT_REQUEST_API_URL", "SUBSCRIPTION_API_URL"]);
+    expect(Object.keys(env)).toEqual([
+      "PETTY_CASH_URL",
+      "PAYMENT_REQUEST_API_URL",
+      "SUBSCRIPTION_API_URL",
+    ]);
   });
 });
 
@@ -79,7 +86,12 @@ describe("envUrl's two rules the old url() did not have", () => {
 
   it("throws in a production build, naming the variable that is missing", async () => {
     await expect(
-      freshEnv({ NODE_ENV: "production", PETTY_CASH_URL: "https://a.test", PAYMENT_REQUEST_API_URL: "", SUBSCRIPTION_API_URL: "https://s.test" }),
+      freshEnv({
+        NODE_ENV: "production",
+        PETTY_CASH_URL: "https://a.test",
+        PAYMENT_REQUEST_API_URL: "",
+        SUBSCRIPTION_API_URL: "https://s.test",
+      }),
     ).rejects.toThrow(/PAYMENT_REQUEST_API_URL is not set/);
   });
 });

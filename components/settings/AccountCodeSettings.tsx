@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ApiError, fetchEntityBillAccounts, fetchXeroStatus, updateEntityBillAccount } from "@/lib/api";
+import {
+  ApiError,
+  fetchEntityBillAccounts,
+  fetchXeroStatus,
+  updateEntityBillAccount,
+} from "@/lib/api";
 import { useLeaveGuard } from "@minty/shared/leaveGuard";
 import { useUserRole } from "@/lib/useUserRole";
 import { useToast } from "@/components/Toast";
@@ -14,7 +19,8 @@ import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 // Part 14 Checkbox: 20px box, checked fill = border/selected (D14-02); the whole 44px row is the target.
-const CHECKBOX_CLASS = "checkbox-secondary-white-tick size-5 shrink-0 cursor-pointer rounded-sm border border-border-input disabled:cursor-not-allowed disabled:opacity-40";
+const CHECKBOX_CLASS =
+  "checkbox-secondary-white-tick size-5 shrink-0 cursor-pointer rounded-sm border border-border-input disabled:cursor-not-allowed disabled:opacity-40";
 
 export type AccountCodeRow = { id: string; label: string };
 
@@ -68,8 +74,12 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
         console.error("[payment settings] the account codes did not load", err);
         if (!cancelled) setLoadFailed(true);
       })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const hasChanges = useMemo(() => {
@@ -111,7 +121,9 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
       const turningOn = changedIds.filter((c) => c.is_active);
       const turningOff = changedIds.filter((c) => !c.is_active);
       const send = (batch: typeof changedIds) =>
-        Promise.allSettled(batch.map(({ id, is_active }) => updateEntityBillAccount(id, { is_active })));
+        Promise.allSettled(
+          batch.map(({ id, is_active }) => updateEntityBillAccount(id, { is_active })),
+        );
       const onResults = await send(turningOn);
       const offResults = await send(turningOff);
       const sent = [...turningOn, ...turningOff];
@@ -126,7 +138,9 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
         else next.delete(id);
       });
       setSavedIds(next);
-      const failed = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
+      const failed = results.filter(
+        (result): result is PromiseRejectedResult => result.status === "rejected",
+      );
       if (failed.length === 0) {
         showToast("Payment settings updated successfully", "success");
       } else {
@@ -135,7 +149,9 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
         // is shown in its own words; anything else gets the generic retry line.
         const refused = failed.find((f) => f.reason instanceof ApiError && f.reason.status === 409);
         setSaveError(
-          refused ? (refused.reason as ApiError).message : "Some of those changes didn't save. Try saving again.",
+          refused
+            ? (refused.reason as ApiError).message
+            : "Some of those changes didn't save. Try saving again.",
         );
       }
     } finally {
@@ -149,8 +165,7 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
     return rows.filter((r) => r.label.toLowerCase().includes(q));
   }, [rows, search]);
 
-  const allFilteredSelected =
-    filtered.length > 0 && filtered.every((r) => selectedIds.has(r.id));
+  const allFilteredSelected = filtered.length > 0 && filtered.every((r) => selectedIds.has(r.id));
   const someFilteredSelected = filtered.some((r) => selectedIds.has(r.id)) && !allFilteredSelected;
 
   useEffect(() => {
@@ -163,7 +178,8 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
   const toggleRow = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -202,7 +218,9 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
             : "You have view-only access to these settings. Ask an Accountant or Admin to make changes."}
         </InlineAlert>
       ) : null}
-      <section className={`overflow-hidden rounded-lg border border-border-default ${readOnly ? "bg-surface-sunk" : "bg-surface-card"}`}>
+      <section
+        className={`overflow-hidden rounded-lg border border-border-default ${readOnly ? "bg-surface-sunk" : "bg-surface-card"}`}
+      >
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
@@ -211,7 +229,9 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
         >
           <div className="min-w-0 flex-1">
             <h2 className="text-title-m text-text-primary">Payment Account Code</h2>
-            <p className="text-body-s text-text-secondary">Only the codes you tick here are offered when someone adds a payment request.</p>
+            <p className="text-body-s text-text-secondary">
+              Only the codes you tick here are offered when someone adds a payment request.
+            </p>
           </div>
           <Icon
             name="expand_more"
@@ -260,7 +280,9 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
             {loading ? (
               <>
                 <div className="flex items-center justify-between gap-3 px-3 sm:px-4">
-                  <span className="min-w-0 flex-1 text-right text-body-m text-text-primary">Select all</span>
+                  <span className="min-w-0 flex-1 text-right text-body-m text-text-primary">
+                    Select all
+                  </span>
                   <input
                     ref={selectAllRef}
                     type="checkbox"
@@ -285,11 +307,15 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
                 Refresh the page to try again.
               </InlineAlert>
             ) : rows.length === 0 ? (
-              <p className="py-8 text-center text-body-m text-text-secondary">No account codes yet. They show here once Xero is connected.</p>
+              <p className="py-8 text-center text-body-m text-text-secondary">
+                No account codes yet. They show here once Xero is connected.
+              </p>
             ) : filtered.length === 0 ? (
               <>
                 <div className="flex items-center justify-between gap-3 px-3 sm:px-4">
-                  <span className="min-w-0 flex-1 text-right text-body-m text-text-primary">Select all</span>
+                  <span className="min-w-0 flex-1 text-right text-body-m text-text-primary">
+                    Select all
+                  </span>
                   <input
                     ref={selectAllRef}
                     type="checkbox"
@@ -300,15 +326,21 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
                     aria-label="Select all visible account codes"
                   />
                 </div>
-                <p className="text-center text-body-m text-text-secondary">No codes match your search.</p>
+                <p className="text-center text-body-m text-text-secondary">
+                  No codes match your search.
+                </p>
               </>
             ) : (
               <ul
                 className="visible-scrollbar max-h-[min(24rem,50vh)] overflow-y-auto overscroll-contain rounded-b-lg border-b border-r border-border-subtle [scrollbar-gutter:stable]"
                 aria-label="Account codes"
               >
-                <li className={`sticky top-0 z-10 flex min-h-11 items-center justify-between gap-3 ${readOnly ? "bg-surface-sunk" : "bg-surface-card"} px-3 py-3 sm:px-4`}>
-                  <span className="min-w-0 flex-1 text-right text-body-m text-text-primary">Select all</span>
+                <li
+                  className={`sticky top-0 z-10 flex min-h-11 items-center justify-between gap-3 ${readOnly ? "bg-surface-sunk" : "bg-surface-card"} px-3 py-3 sm:px-4`}
+                >
+                  <span className="min-w-0 flex-1 text-right text-body-m text-text-primary">
+                    Select all
+                  </span>
                   <input
                     ref={selectAllRef}
                     type="checkbox"
@@ -322,15 +354,26 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
                 {filtered.map((row, index) => {
                   const isChecked = selectedIds.has(row.id);
                   return (
-                    <li key={row.id} className={`flex min-h-11 items-center justify-between gap-3 px-3 py-3 sm:px-4 ${index > 0 ? "border-t border-border-subtle" : ""}`}>
-                      <span className="min-w-0 flex-1 text-body-m text-text-primary" translate="no">{row.label}</span>
-                      <input type="checkbox" checked={isChecked} onChange={() => toggleRow(row.id)} disabled={readOnly} className={CHECKBOX_CLASS} aria-label={`Include ${row.label} in payment account dropdown`}/>
+                    <li
+                      key={row.id}
+                      className={`flex min-h-11 items-center justify-between gap-3 px-3 py-3 sm:px-4 ${index > 0 ? "border-t border-border-subtle" : ""}`}
+                    >
+                      <span className="min-w-0 flex-1 text-body-m text-text-primary" translate="no">
+                        {row.label}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleRow(row.id)}
+                        disabled={readOnly}
+                        className={CHECKBOX_CLASS}
+                        aria-label={`Include ${row.label} in payment account dropdown`}
+                      />
                     </li>
                   );
                 })}
               </ul>
             )}
-
           </div>
         ) : null}
       </section>
@@ -351,12 +394,22 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
             processing={saving}
             processingLabel="Saving…"
             aria-describedby={noneTicked && !readOnly ? "settings-account-none-ticked" : undefined}
-            title={loading ? undefined : isViewOnly ? "Hmm, I can't let you in there. You have view-only access." : readOnly ? "That task is reserved for our Accountants and Admins." : undefined}
+            title={
+              loading
+                ? undefined
+                : isViewOnly
+                  ? "Hmm, I can't let you in there. You have view-only access."
+                  : readOnly
+                    ? "That task is reserved for our Accountants and Admins."
+                    : undefined
+            }
           >
             Save Changes
           </Button>
           {noneTicked && !readOnly ? (
-            <p id="settings-account-none-ticked" className="-mt-1 text-body-s text-text-secondary">Pick at least one account code.</p>
+            <p id="settings-account-none-ticked" className="-mt-1 text-body-s text-text-secondary">
+              Pick at least one account code.
+            </p>
           ) : null}
         </div>
       ) : null}

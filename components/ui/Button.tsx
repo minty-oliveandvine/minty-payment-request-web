@@ -90,7 +90,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ) : (
         icon
       )}
-      <span className="min-w-0 truncate">{processing ? (processingLabel ?? children) : children}</span>
+      <span className="min-w-0 truncate">
+        {processing ? (processingLabel ?? children) : children}
+      </span>
     </button>
   );
 });

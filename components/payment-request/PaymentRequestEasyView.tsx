@@ -36,11 +36,19 @@ import { HEADER_CHECKBOX_CLASS } from "./paymentRequestCheckboxClasses";
 import type { PaymentRequestRow } from "./PaymentRequestTable";
 
 /** Sortable columns exposed in easy view (same `compareRows` as the main table). */
-export type EasyViewSortKey = Extract<SortKey, "contact" | "submittedDate" | "unpaidAmount" | "status">;
+export type EasyViewSortKey = Extract<
+  SortKey,
+  "contact" | "submittedDate" | "unpaidAmount" | "status"
+>;
 
 const SORTS: { key: EasyViewSortKey; label: string; name: string; title: string }[] = [
   { key: "contact", label: "Supplier", name: "supplier", title: "Sort A-Z" },
-  { key: "submittedDate", label: "Submitted", name: "submitted date", title: "Sort Newest - Oldest" },
+  {
+    key: "submittedDate",
+    label: "Submitted",
+    name: "submitted date",
+    title: "Sort Newest - Oldest",
+  },
   { key: "unpaidAmount", label: "Unpaid", name: "unpaid amount", title: "Sort Highest - Lowest" },
   { key: "status", label: "Status", name: "status", title: "Sort Status" },
 ];
@@ -157,7 +165,8 @@ export function PaymentRequestEasyView({
 
   /** "Select all" means everything selectable on this page — selection spans pages. */
   const selectableRows = rows.filter((r) => r.status !== "Voided");
-  const allSelected = selectableRows.length > 0 && selectableRows.every((r) => selectedIds.has(r.id));
+  const allSelected =
+    selectableRows.length > 0 && selectableRows.every((r) => selectedIds.has(r.id));
   const someSelected = selectableRows.some((r) => selectedIds.has(r.id)) && !allSelected;
 
   return (
@@ -172,7 +181,12 @@ export function PaymentRequestEasyView({
             ref={(el) => {
               if (el) el.indeterminate = someSelected;
             }}
-            onChange={() => onToggleAll(selectableRows.map((r) => r.id), !allSelected)}
+            onChange={() =>
+              onToggleAll(
+                selectableRows.map((r) => r.id),
+                !allSelected,
+              )
+            }
             disabled={loading || selectableRows.length === 0}
             className={`${HEADER_CHECKBOX_CLASS} disabled:cursor-not-allowed disabled:opacity-40`}
             aria-label="Select all rows"
@@ -274,14 +288,23 @@ export function PaymentRequestEasyView({
                         </span>
                       ) : null}
                       {todayIso ? <PaymentRequestDueMeta row={row} todayIso={todayIso} /> : null}
-                      <BankSlipMeta row={row} onOpen={onOpenBankSlipUpload} onRetry={onRetryBankSlips} />
+                      <BankSlipMeta
+                        row={row}
+                        onOpen={onOpenBankSlipUpload}
+                        onRetry={onRetryBankSlips}
+                      />
                     </div>
                   </div>
                 </div>
 
                 {/* Amount track: 160 wide, right-aligned from lg (Part 14 Record row). */}
-                <div className="flex min-w-0 flex-col pl-11 lg:w-40 lg:shrink-0 lg:items-end lg:pl-0" translate="no">
-                  <span className="whitespace-nowrap text-title-m tabular-nums text-text-primary">{row.unpaidAmount}</span>
+                <div
+                  className="flex min-w-0 flex-col pl-11 lg:w-40 lg:shrink-0 lg:items-end lg:pl-0"
+                  translate="no"
+                >
+                  <span className="whitespace-nowrap text-title-m tabular-nums text-text-primary">
+                    {row.unpaidAmount}
+                  </span>
                   {row.invoiceTotal ? (
                     <span className="whitespace-nowrap text-caption tabular-nums text-text-muted">
                       of {formatMoney(row.invoiceTotal, row.currencyCode)}

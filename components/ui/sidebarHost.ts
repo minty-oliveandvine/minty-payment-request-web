@@ -23,11 +23,7 @@
 
 import { usePathname } from "next/navigation";
 
-import {
-  setSidebarHost,
-  type SidebarHost,
-  type Viewer,
-} from "@minty/shared/sidebar";
+import { setSidebarHost, type SidebarHost, type Viewer } from "@minty/shared/sidebar";
 import { createBearerClient, type UnauthorizedContext } from "@minty/shared/apiClient";
 import { isTokenExpiringSoon, moduleClaims } from "@minty/shared/auth";
 import { HUB_HANDOFF_ROUTE, hubHandoffUrl } from "@minty/shared/handoff";
@@ -38,11 +34,7 @@ import { pushAppScrollLock } from "@minty/shared/scrollLock";
 import { logoutSession } from "@/lib/api";
 import { env } from "@/lib/env";
 import { clearAuth, getAuth, redirectToLogin, refreshToken } from "@/lib/auth";
-import {
-  buildMintyEnterUrl,
-  buildMintyProfileUrl,
-  MINTY_MODULE_URL,
-} from "@/lib/mintyUrls";
+import { buildMintyEnterUrl, buildMintyProfileUrl, MINTY_MODULE_URL } from "@/lib/mintyUrls";
 import { cookieCompanyPages } from "@/lib/useCompanyPages";
 
 /** minty-subscription-api - the Subscriptions Overview's read (`SUBSCRIPTION_API_URL`, lib/env.ts). */
@@ -92,8 +84,7 @@ export const links = {
   entities: () => buildMintyEnterUrl("/entity"),
   subscriptions: () => handoff(MINTY_WEB_SUBSCRIPTIONS),
   pettyCashDashboard: () => buildMintyEnterUrl(),
-  pettyCashReports: (id: string) =>
-    buildMintyEnterUrl(`/entity/${id}/petty-cash/reports`),
+  pettyCashReports: (id: string) => buildMintyEnterUrl(`/entity/${id}/petty-cash/reports`),
   /** The company's list - `/` (the middleware sends it there) when the cookie names none. */
   bills: () => cookieCompanyPages()?.list ?? "/",
   /**

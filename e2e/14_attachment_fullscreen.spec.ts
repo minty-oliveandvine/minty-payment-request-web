@@ -13,7 +13,7 @@
 // At a PHONE viewport throughout - the overlay stacks over the Add page, which is where
 // clipping and trapped scroll would show up first.
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from "@playwright/test";
 
 import {
   addRequestLink,
@@ -24,7 +24,7 @@ import {
   stubApi,
   stubCredentials,
   stubFlaskHub,
-} from './helpers';
+} from "./helpers";
 
 const creds = () => stubCredentials();
 
@@ -33,39 +33,40 @@ const PHONE = { width: 360, height: 740 };
 // A real one-page PDF, xref and all: pdf.js refuses a `%PDF-1.4 e2e` stub, and the point of
 // this spec is to see it actually draw.
 const PDF = {
-  name: 'invoice.pdf',
-  mimeType: 'application/pdf',
+  name: "invoice.pdf",
+  mimeType: "application/pdf",
   buffer: Buffer.from(
-    'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5' +
-      'cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVu' +
-      'dCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMjAwXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCA+PiA+PgplbmRv' +
-      'YmoKNCAwIG9iago8PCAvTGVuZ3RoIDQ0ID4+CnN0cmVhbQoxIDAgMCBSRyAxMCB3IDIwIDIwIG0gMTgwIDE4MCBsIFMKZW5k' +
-      'c3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1' +
-      'OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyMTkgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9S' +
-      'b290IDEgMCBSID4+CnN0YXJ0eHJlZgozMDIKJSVFT0YK',
-    'base64',
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5" +
+      "cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVu" +
+      "dCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMjAwXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCA+PiA+PgplbmRv" +
+      "YmoKNCAwIG9iago8PCAvTGVuZ3RoIDQ0ID4+CnN0cmVhbQoxIDAgMCBSRyAxMCB3IDIwIDIwIG0gMTgwIDE4MCBsIFMKZW5k" +
+      "c3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1" +
+      "OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyMTkgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9S" +
+      "b290IDEgMCBSID4+CnN0YXJ0eHJlZgozMDIKJSVFT0YK",
+    "base64",
   ),
 };
 const JPG = {
-  name: 'receipt.jpg',
-  mimeType: 'image/jpeg',
-  buffer: Buffer.from('ffd8ffdb0000ffd9', 'hex'),
+  name: "receipt.jpg",
+  mimeType: "image/jpeg",
+  buffer: Buffer.from("ffd8ffdb0000ffd9", "hex"),
 };
 
 /** A staged file's row in the list, named unambiguously (the name also shows in the preview
  *  header and inside a refusal message, so a bare getByText matches more than one thing). */
-const stagedRow = (page: Page, name: string) => page.getByRole('button', { name: `Preview ${name}` });
+const stagedRow = (page: Page, name: string) =>
+  page.getByRole("button", { name: `Preview ${name}` });
 
 /** Watch for every way a file could escape the page. */
 function watchForEscapes(page: Page) {
   const popups: string[] = [];
   const downloads: string[] = [];
-  page.context().on('page', (p) => popups.push(p.url()));
-  page.on('download', (d) => downloads.push(d.suggestedFilename()));
+  page.context().on("page", (p) => popups.push(p.url()));
+  page.on("download", (d) => downloads.push(d.suggestedFilename()));
   return {
     expectNone: () => {
-      expect(popups, 'a new tab was opened').toEqual([]);
-      expect(downloads, 'a file was downloaded').toEqual([]);
+      expect(popups, "a new tab was opened").toEqual([]);
+      expect(downloads, "a file was downloaded").toEqual([]);
     },
   };
 }
@@ -74,12 +75,12 @@ function watchForEscapes(page: Page) {
 async function openAddPage(page: Page) {
   await stubFlaskHub(page);
   await stubApi(page, {
-    extra: { '/bills/suggested-reference/': { body: { reference: 'PR-E2E-14' } } },
+    extra: { "/bills/suggested-reference/": { body: { reference: "PR-E2E-14" } } },
   });
   await handoff(page, creds(), pagesOf(creds()).list);
   await addRequestLink(page).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'New payment request' })).toBeVisible();
-  return page.locator('form');
+  await expect(page.getByRole("heading", { level: 1, name: "New payment request" })).toBeVisible();
+  return page.locator("form");
 }
 
 test.beforeEach(async ({ page }) => {
@@ -87,20 +88,20 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize(PHONE);
 });
 
-test('a staged image enlarges full screen, with no new tab and no download', async ({ page }) => {
+test("a staged image enlarges full screen, with no new tab and no download", async ({ page }) => {
   const escapes = watchForEscapes(page);
   const form = await openAddPage(page);
 
   await form.locator('input[type="file"]').first().setInputFiles(JPG);
-  await form.getByRole('button', { name: 'View full — receipt.jpg' }).click();
+  await form.getByRole("button", { name: "View full — receipt.jpg" }).click();
 
-  const viewer = page.getByRole('dialog', { name: 'receipt.jpg' });
+  const viewer = page.getByRole("dialog", { name: "receipt.jpg" });
   await expect(viewer).toBeVisible();
-  await expect(viewer.getByAltText('receipt.jpg')).toBeVisible();
+  await expect(viewer.getByAltText("receipt.jpg")).toBeVisible();
   // It fills the window rather than sitting inside the form's 720px column.
   const box = await viewer.boundingBox();
   expect(box?.width).toBeGreaterThanOrEqual(PHONE.width - 1);
-  await expect(viewer.getByRole('link')).toHaveCount(0);
+  await expect(viewer.getByRole("link")).toHaveCount(0);
   escapes.expectNone();
 
   // CLAUDE.md's sweep: the overlay must fill the window and never scroll sideways at any width.
@@ -113,111 +114,121 @@ test('a staged image enlarges full screen, with no new tab and no download', asy
   }
 });
 
-test('a staged PDF is drawn by pdf.js inside the overlay, not handed to the browser', async ({ page }) => {
+test("a staged PDF is drawn by pdf.js inside the overlay, not handed to the browser", async ({
+  page,
+}) => {
   const escapes = watchForEscapes(page);
   const form = await openAddPage(page);
 
   await form.locator('input[type="file"]').first().setInputFiles(PDF);
-  await form.getByRole('button', { name: 'View full — invoice.pdf' }).click();
+  await form.getByRole("button", { name: "View full — invoice.pdf" }).click();
 
-  const viewer = page.getByRole('dialog', { name: 'invoice.pdf' });
-  await expect(viewer.locator('canvas').first()).toBeVisible({ timeout: 30_000 });
+  const viewer = page.getByRole("dialog", { name: "invoice.pdf" });
+  await expect(viewer.locator("canvas").first()).toBeVisible({ timeout: 30_000 });
   escapes.expectNone();
 });
 
-test('Close is a real tap target, and one Escape closes the viewer and nothing else', async ({ page }) => {
+test("Close is a real tap target, and one Escape closes the viewer and nothing else", async ({
+  page,
+}) => {
   const form = await openAddPage(page);
   await form.locator('input[type="file"]').first().setInputFiles(JPG);
-  await form.getByRole('button', { name: 'View full — receipt.jpg' }).click();
+  await form.getByRole("button", { name: "View full — receipt.jpg" }).click();
 
-  const close = page.getByRole('button', { name: 'Close preview' });
+  const close = page.getByRole("button", { name: "Close preview" });
   const box = await close.boundingBox();
   expect(box?.width).toBeGreaterThanOrEqual(44);
   expect(box?.height).toBeGreaterThanOrEqual(44);
 
   // One Escape, one layer: the viewer goes, and the page and its staged file stay.
-  await page.keyboard.press('Escape');
+  await page.keyboard.press("Escape");
 
   await expect(close).toBeHidden();
-  await expect(page.getByRole('heading', { level: 1, name: 'New payment request' })).toBeVisible();
-  await expect(stagedRow(page, 'receipt.jpg')).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "New payment request" })).toBeVisible();
+  await expect(stagedRow(page, "receipt.jpg")).toBeVisible();
   await expect(page).toHaveURL(/\/payment-request\/new$/);
 });
 
-test('the page still scrolls after the viewer has been opened and closed', async ({ page }) => {
+test("the page still scrolls after the viewer has been opened and closed", async ({ page }) => {
   // The scroll lock is reference counted; a stacked overlay used to be able to leave
   // `overflow: hidden` behind for good.
   const form = await openAddPage(page);
   await form.locator('input[type="file"]').first().setInputFiles(JPG);
-  await form.getByRole('button', { name: 'View full — receipt.jpg' }).click();
-  await page.getByRole('button', { name: 'Close preview' }).click();
-  await expect(page.getByRole('dialog', { name: 'receipt.jpg' })).toBeHidden();
+  await form.getByRole("button", { name: "View full — receipt.jpg" }).click();
+  await page.getByRole("button", { name: "Close preview" }).click();
+  await expect(page.getByRole("dialog", { name: "receipt.jpg" })).toBeHidden();
 
   const overflow = await page.evaluate(
-    () => getComputedStyle(document.getElementById('app-scroll-root') ?? document.body).overflow,
+    () => getComputedStyle(document.getElementById("app-scroll-root") ?? document.body).overflow,
   );
-  expect(overflow).not.toBe('hidden');
+  expect(overflow).not.toBe("hidden");
 });
 
-test('a spreadsheet is not offered, and is refused if forced past the picker', async ({ page }) => {
+test("a spreadsheet is not offered, and is refused if forced past the picker", async ({ page }) => {
   const form = await openAddPage(page);
   const input = form.locator('input[type="file"]').first();
 
-  expect(await input.getAttribute('accept')).not.toContain('xls');
+  expect(await input.getAttribute("accept")).not.toContain("xls");
 
   await input.setInputFiles({
-    name: 'books.xlsx',
-    mimeType: 'application/vnd.ms-excel',
-    buffer: Buffer.from('PK'),
+    name: "books.xlsx",
+    mimeType: "application/vnd.ms-excel",
+    buffer: Buffer.from("PK"),
   });
 
   // The refusal names the file and what to use instead (Part 11), so "is it staged?" is a
   // question for the list, not the text.
-  await expect(form.getByText(/books\.xlsx can't be added\. Use a PDF, JPEG, PNG or HTML file\./)).toBeVisible();
+  await expect(
+    form.getByText(/books\.xlsx can't be added\. Use a PDF, JPEG, PNG or HTML file\./),
+  ).toBeVisible();
   await expect(form.getByText(/Excel/)).toHaveCount(0);
-  await expect(stagedRow(page, 'books.xlsx')).toHaveCount(0);
+  await expect(stagedRow(page, "books.xlsx")).toHaveCount(0);
 });
 
-test('the page keeps the staged list usable behind the viewer', async ({ page }) => {
+test("the page keeps the staged list usable behind the viewer", async ({ page }) => {
   const form = await openAddPage(page);
   const input = form.locator('input[type="file"]').first();
   await input.setInputFiles(JPG);
   await input.setInputFiles(PDF);
 
   // The newest file is the one previewed, and both stay in the list.
-  await form.getByRole('button', { name: 'View full — invoice.pdf' }).click();
-  await expect(page.getByRole('dialog', { name: 'invoice.pdf' })).toBeVisible();
+  await form.getByRole("button", { name: "View full — invoice.pdf" }).click();
+  await expect(page.getByRole("dialog", { name: "invoice.pdf" })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Close preview' }).click();
+  await page.getByRole("button", { name: "Close preview" }).click();
 
-  await expect(stagedRow(page, 'receipt.jpg')).toBeVisible();
-  await expect(stagedRow(page, 'invoice.pdf')).toBeVisible();
+  await expect(stagedRow(page, "receipt.jpg")).toBeVisible();
+  await expect(stagedRow(page, "invoice.pdf")).toBeVisible();
 });
 
 // The upload is mandatory: a red asterisk from the start, and the drop zone red-lined only once
 // a submit has actually been refused (the 2026-10-09 rule).
-test('the upload says it is mandatory, and red-lines only after a refused submit', async ({ page }) => {
+test("the upload says it is mandatory, and red-lines only after a refused submit", async ({
+  page,
+}) => {
   const form = await openAddPage(page);
 
-  await expect(form.getByRole('heading', { name: /Invoice/ })).toContainText('*');
+  await expect(form.getByRole("heading", { name: /Invoice/ })).toContainText("*");
   const input = form.locator('input[type="file"]').first();
-  await expect(input).toHaveAttribute('aria-required', 'true');
+  await expect(input).toHaveAttribute("aria-required", "true");
 
   // The drawn zone under the (invisible) file input; its words change once a file is in.
   const zone = form.locator('input[aria-label="Choose files to attach"] + div');
   const before = await zone.evaluate((el) => getComputedStyle(el).borderColor);
-  const note = form.locator('#pr-attachments-note');
+  const note = form.locator("#pr-attachments-note");
 
-  await form.getByRole('button', { name: 'Submit for payment' }).click();
+  await form.getByRole("button", { name: "Submit for payment" }).click();
 
-  await expect(note).toHaveText('The invoice is still missing. Add a photo or PDF of it to continue.');
-  await expect(input).toHaveAttribute('aria-invalid', 'true');
+  await expect(note).toHaveText(
+    "The invoice is still missing. Add a photo or PDF of it to continue.",
+  );
+  await expect(input).toHaveAttribute("aria-invalid", "true");
   const after = await zone.evaluate((el) => getComputedStyle(el).borderColor);
   expect(after).not.toBe(before);
 
   // and it clears itself the moment a file arrives
   await input.setInputFiles(JPG);
-  await expect(note).not.toContainText('The invoice is still missing.');
-  await expect(input).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(note).not.toContainText("The invoice is still missing.");
+  await expect(input).not.toHaveAttribute("aria-invalid", "true");
   expect(await zone.evaluate((el) => getComputedStyle(el).borderColor)).toBe(before);
 });

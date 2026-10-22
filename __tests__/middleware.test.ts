@@ -120,7 +120,9 @@ describe("the old /profile addresses", () => {
   });
 
   it("drops every from on /profile, not just from=bills, and re-encodes what is left", () => {
-    expect(run("/profile?from=elsewhere&entity_id=e%201").location).toBe(`${MINTY}/profile?entity_id=e+1`);
+    expect(run("/profile?from=elsewhere&entity_id=e%201").location).toBe(
+      `${MINTY}/profile?entity_id=e+1`,
+    );
   });
 });
 
@@ -135,7 +137,11 @@ describe("a company's own page", () => {
   });
 
   it.each([
-    ["the list", `${BASE}/payment-request`, `${MINTY}/entity/360812e1/olive-and-vine/payment-request`],
+    [
+      "the list",
+      `${BASE}/payment-request`,
+      `${MINTY}/entity/360812e1/olive-and-vine/payment-request`,
+    ],
     [
       "one request",
       `${BASE}/payment-request/PR-0001`,
@@ -158,9 +164,9 @@ describe("a company's own page", () => {
   });
 
   it("hands it to Flask when the token is gone but the company cookie is not", () => {
-    expect(run(`${BASE}/payment-request`, { entityId: ENTITY_ID, entityName: ENTITY_NAME }).location).toBe(
-      `${MINTY}/entity/360812e1/olive-and-vine/payment-request`,
-    );
+    expect(
+      run(`${BASE}/payment-request`, { entityId: ENTITY_ID, entityName: ENTITY_NAME }).location,
+    ).toBe(`${MINTY}/entity/360812e1/olive-and-vine/payment-request`);
   });
 
   it("hands another company's Add page to that company's LIST - 'new' is not a request", () => {
@@ -182,7 +188,9 @@ describe("a company's own page", () => {
   });
 
   it("corrects a capital in the short id, keeping the query", () => {
-    expect(run("/entity/360812E1/olive-and-vine/payment-request?status=Draft", SIGNED_IN)).toMatchObject({
+    expect(
+      run("/entity/360812E1/olive-and-vine/payment-request?status=Draft", SIGNED_IN),
+    ).toMatchObject({
       status: 307,
       location: `${APP}${BASE}/payment-request?status=Draft`,
     });
@@ -215,7 +223,9 @@ describe("the addresses from before company addresses", () => {
   });
 
   it("keeps the query", () => {
-    expect(run("/?status=Draft", SIGNED_IN).location).toBe(`${APP}${BASE}/payment-request?status=Draft`);
+    expect(run("/?status=Draft", SIGNED_IN).location).toBe(
+      `${APP}${BASE}/payment-request?status=Draft`,
+    );
   });
 
   it("sends an unknown legacy page back into Minty when there is no cookie", () => {
@@ -234,7 +244,9 @@ describe("the addresses from before company addresses", () => {
 describe("/landing", () => {
   it("always passes, token or no token - it is where the token arrives", () => {
     expect(run("/landing", {})).toMatchObject({ rewritten: true, location: null });
-    expect(run("/landing?token=a.b.c&next=/payment-request", {})).toMatchObject({ rewritten: true });
+    expect(run("/landing?token=a.b.c&next=/payment-request", {})).toMatchObject({
+      rewritten: true,
+    });
     expect(run("/landing/anything", {})).toMatchObject({ rewritten: true });
     expect(run("/landing", SIGNED_IN)).toMatchObject({ rewritten: true });
   });
@@ -271,7 +283,11 @@ describe("every trip to Flask names this app's origin", () => {
     ["an old profile address", "/profile/billing", {}],
     ["/profile", "/profile", {}],
     ["a company page without a cookie", `${BASE}/payment-request`, {}],
-    ["another company's page", `${BASE}/payment-request`, { ...SIGNED_IN, entityId: "99999999-0000-0000-0000-000000000000" }],
+    [
+      "another company's page",
+      `${BASE}/payment-request`,
+      { ...SIGNED_IN, entityId: "99999999-0000-0000-0000-000000000000" },
+    ],
     ["a legacy page without a cookie", "/", {}],
     ["anything else without a token", "/whatever", {}],
   ])("%s", (_label, path, jar) => {
@@ -282,13 +298,17 @@ describe("every trip to Flask names this app's origin", () => {
   // cross-site (a link from GitHub or an email) and Flask - which names a set only on a
   // same-site navigation - hands back to the configured hosts instead of the set (2026-10-13).
   it("on a preview-set host, forwards from a page of its own naming the set's origin", async () => {
-    const response = middleware(new NextRequest(new URL("/whatever", "https://pr-feat-x-payment-request.dailyminty.com")));
+    const response = middleware(
+      new NextRequest(new URL("/whatever", "https://pr-feat-x-payment-request.dailyminty.com")),
+    );
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
     expect(response.headers.get("cache-control")).toBe("no-store");
     const html = await response.text();
     const target = new URL(/url=([^"]+)"/.exec(html)![1].replaceAll("&amp;", "&"));
     expect(target.pathname).toBe("/entity");
-    expect(target.searchParams.get("return_origin")).toBe("https://pr-feat-x-payment-request.dailyminty.com");
+    expect(target.searchParams.get("return_origin")).toBe(
+      "https://pr-feat-x-payment-request.dailyminty.com",
+    );
   });
 });

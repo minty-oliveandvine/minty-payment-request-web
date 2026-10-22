@@ -124,7 +124,11 @@ export function PaymentRequestAttentionStrip({
 }: PaymentRequestAttentionStripProps) {
   if (!attention) {
     return (
-      <section aria-label="Needs attention" aria-busy="true" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <section
+        aria-label="Needs attention"
+        aria-busy="true"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+      >
         {Array.from({ length: 3 }, (_, i) => (
           <Skeleton key={i} className="h-24 rounded-lg" />
         ))}

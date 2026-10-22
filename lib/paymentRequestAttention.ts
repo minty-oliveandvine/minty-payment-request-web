@@ -41,7 +41,11 @@ export function billingToday(now: Date = new Date()): string {
 
 function isoToUtcDay(iso: string): number | null {
   if (!ISO_DATE_RE.test(iso)) return null;
-  const t = Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
+  const t = Date.UTC(
+    Number(iso.slice(0, 4)),
+    Number(iso.slice(5, 7)) - 1,
+    Number(iso.slice(8, 10)),
+  );
   return Number.isNaN(t) ? null : t / 86_400_000;
 }
 
@@ -66,7 +70,11 @@ export function dueMetaLabel(row: PaymentRequestRow, todayIso: string): string |
   return `Due in ${days} ${days === 1 ? "day" : "days"}`;
 }
 
-export function rowMatchesDueFilter(row: PaymentRequestRow, filter: DueFilter, todayIso: string): boolean {
+export function rowMatchesDueFilter(
+  row: PaymentRequestRow,
+  filter: DueFilter,
+  todayIso: string,
+): boolean {
   const days = dueInDays(row, todayIso);
   if (days === null) return false;
   return filter === "overdue" ? days < 0 : days >= 0 && days <= DUE_SOON_DAYS;
@@ -82,7 +90,10 @@ function addUnpaid(group: AttentionGroup, row: PaymentRequestRow) {
 }
 
 /** The strip's three figures. Unpaid totals are per currency, the largest first. */
-export function computeAttention(rows: PaymentRequestRow[], todayIso: string): PaymentRequestAttention {
+export function computeAttention(
+  rows: PaymentRequestRow[],
+  todayIso: string,
+): PaymentRequestAttention {
   const overdue: AttentionGroup = { count: 0, unpaid: [] };
   const dueSoon: AttentionGroup = { count: 0, unpaid: [] };
   let returned = 0;

@@ -175,7 +175,10 @@ export function RecordPaymentDrawer({
     return { ...bankSlipDetails, toName: hint };
   }, [bankSlipDetails, contactTitle]);
 
-  const paymentsForBill = useMemo(() => payments.filter((p) => p.bill_id === billId), [payments, billId]);
+  const paymentsForBill = useMemo(
+    () => payments.filter((p) => p.bill_id === billId),
+    [payments, billId],
+  );
   const paymentsForHistoryList = useMemo(
     () => paymentsForBill.filter(shouldShowPaymentInHistory),
     [paymentsForBill],
@@ -213,7 +216,8 @@ export function RecordPaymentDrawer({
   );
 
   const paymentHistoryReadyForBill = !!(billId && paymentsFetchedBillId === billId);
-  const showPaymentHistoryPlaceholder = loadingPayments || (open && !!billId && !paymentHistoryReadyForBill);
+  const showPaymentHistoryPlaceholder =
+    loadingPayments || (open && !!billId && !paymentHistoryReadyForBill);
 
   const syncSubmittedIfNoPaymentsLeft = useCallback(
     async (paymentsList: PaymentItem[]): Promise<boolean> => {
@@ -234,10 +238,15 @@ export function RecordPaymentDrawer({
     setLoadingPayments(true);
     try {
       const data = await fetchPayments(requestBillId);
-      if (requestBillId !== billIdRef.current || loadGen !== paymentsLoadGenerationRef.current) return;
+      if (requestBillId !== billIdRef.current || loadGen !== paymentsLoadGenerationRef.current)
+        return;
       setPayments(data.payments);
       try {
-        const built = await buildBankSlipDetailsFromPaymentList(requestBillId, data.payments, bankSlipRowForEnrichment);
+        const built = await buildBankSlipDetailsFromPaymentList(
+          requestBillId,
+          data.payments,
+          bankSlipRowForEnrichment,
+        );
         setBankSlipFileCount(built.count);
         setBankSlipDetails(built.bankSlipDetails ?? EMPTY_BANK_SLIP_DETAILS);
       } catch {
@@ -247,7 +256,8 @@ export function RecordPaymentDrawer({
       const rolled = await syncSubmittedIfNoPaymentsLeft(data.payments);
       if (rolled) onPaymentSaved?.();
     } catch {
-      if (requestBillId !== billIdRef.current || loadGen !== paymentsLoadGenerationRef.current) return;
+      if (requestBillId !== billIdRef.current || loadGen !== paymentsLoadGenerationRef.current)
+        return;
       setPayments([]);
       setBankSlipFileCount(0);
       setBankSlipDetails(EMPTY_BANK_SLIP_DETAILS);
@@ -305,14 +315,18 @@ export function RecordPaymentDrawer({
           (p) => p.bill_id === billId && p.payment_status === "pending" && ids.has(p.id),
         );
         if (toComplete.length === 0) return;
-        await Promise.all(toComplete.map((p) => updatePayment(p.bill_id, p.id, { payment_status: "completed" })));
+        await Promise.all(
+          toComplete.map((p) => updatePayment(p.bill_id, p.id, { payment_status: "completed" })),
+        );
         if (cancelled) return;
         await loadPayments();
         onPaymentSaved?.();
       } catch (err) {
         if (!cancelled) {
           setActionError(
-            err instanceof ApiError ? err.message : "Those payments didn't finish updating. Try again in a moment.",
+            err instanceof ApiError
+              ? err.message
+              : "Those payments didn't finish updating. Try again in a moment.",
           );
         }
       } finally {
@@ -322,7 +336,15 @@ export function RecordPaymentDrawer({
     return () => {
       cancelled = true;
     };
-  }, [open, readOnly, billId, pendingIdsKey, bankSlipRequiredForPending, loadPayments, onPaymentSaved]);
+  }, [
+    open,
+    readOnly,
+    billId,
+    pendingIdsKey,
+    bankSlipRequiredForPending,
+    loadPayments,
+    onPaymentSaved,
+  ]);
 
   // As-you-type range check (CLAUDE.md "Validation while typing"; Part 11 wording): over the
   // unpaid amount says the allowed value at once, and clears the moment it fits again.
@@ -332,7 +354,10 @@ export function RecordPaymentDrawer({
     ? `Enter ${formatMoney(remaining, iso)} or less - that is what is unpaid.`
     : submitError;
   const recordAmount = payMode === "full" ? remaining : (typedAmount ?? 0);
-  const unpaidAfter = Math.max(0, Math.round((remaining - (payMode === "full" ? remaining : typedAmount ?? 0)) * 100) / 100);
+  const unpaidAfter = Math.max(
+    0,
+    Math.round((remaining - (payMode === "full" ? remaining : (typedAmount ?? 0))) * 100) / 100,
+  );
   const dirty = !effectiveReadOnly && payMode === "partial" && draftAmount.trim() !== "";
 
   const requestClose = () => {
@@ -376,7 +401,9 @@ export function RecordPaymentDrawer({
       if (payMode === "partial") setDraftAmount("");
     } catch (err) {
       setActionError(
-        err instanceof ApiError ? err.message : "That payment didn't go through. Try recording it again.",
+        err instanceof ApiError
+          ? err.message
+          : "That payment didn't go through. Try recording it again.",
       );
     } finally {
       setAdding(false);
@@ -390,7 +417,11 @@ export function RecordPaymentDrawer({
     const isPending = p.payment_status === "pending";
     const isPartialPayment = amt > 0 && amt + 1e-9 < invoiceAmount;
     const dateBit = formatPaymentDateLabel(p.payment_date);
-    const kind = isPending ? `Pending on ${dateBit}` : isPartialPayment ? `Partial pay on ${dateBit}` : `Paid on ${dateBit}`;
+    const kind = isPending
+      ? `Pending on ${dateBit}`
+      : isPartialPayment
+        ? `Partial pay on ${dateBit}`
+        : `Paid on ${dateBit}`;
     return `${kind} · ${formatMoney(amt, iso)}`;
   }, [paymentPendingDelete, invoiceAmount, iso]);
 
@@ -403,7 +434,11 @@ export function RecordPaymentDrawer({
       const pruned = data.payments.filter((x) => x.id !== p.id);
       setPayments(pruned);
       try {
-        const built = await buildBankSlipDetailsFromPaymentList(billId, pruned, bankSlipRowForEnrichment);
+        const built = await buildBankSlipDetailsFromPaymentList(
+          billId,
+          pruned,
+          bankSlipRowForEnrichment,
+        );
         setBankSlipFileCount(built.count);
         setBankSlipDetails(built.bankSlipDetails ?? EMPTY_BANK_SLIP_DETAILS);
       } catch {
@@ -413,7 +448,9 @@ export function RecordPaymentDrawer({
       await syncSubmittedIfNoPaymentsLeft(pruned);
       onPaymentSaved?.();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "That payment wasn't removed. Try again.");
+      setActionError(
+        err instanceof ApiError ? err.message : "That payment wasn't removed. Try again.",
+      );
     } finally {
       setDeletingId(null);
     }
@@ -470,18 +507,27 @@ export function RecordPaymentDrawer({
             <dd className="text-right tabular-nums text-text-primary">{money(invoiceAmount)}</dd>
             <dt className="text-text-secondary">Paid so far</dt>
             <dd className="text-right tabular-nums text-text-primary">
-              {showPaymentHistoryPlaceholder ? <Skeleton className="ml-auto h-4 w-24" /> : money(totalPaid)}
+              {showPaymentHistoryPlaceholder ? (
+                <Skeleton className="ml-auto h-4 w-24" />
+              ) : (
+                money(totalPaid)
+              )}
             </dd>
             <dt className="font-semibold text-text-primary">Unpaid</dt>
             <dd className="text-right text-title-m tabular-nums text-text-primary">
-              {showPaymentHistoryPlaceholder ? <Skeleton className="ml-auto h-5 w-28" /> : money(remaining)}
+              {showPaymentHistoryPlaceholder ? (
+                <Skeleton className="ml-auto h-5 w-28" />
+              ) : (
+                money(remaining)
+              )}
             </dd>
           </dl>
 
           {actionError ? <InlineAlert tone="danger">{actionError}</InlineAlert> : null}
           {bankSlipRequiredForPending ? (
             <InlineAlert tone="warning" title="A bank slip is needed.">
-              Add at least one bank slip to finish the pending payments. Draft requests don&apos;t need one.
+              Add at least one bank slip to finish the pending payments. Draft requests don&apos;t
+              need one.
             </InlineAlert>
           ) : null}
           {finalizingPending ? (
@@ -506,7 +552,9 @@ export function RecordPaymentDrawer({
                       value: "full",
                       label: "Pay in full",
                       disabled: fullPayLocked,
-                      title: fullPayLocked ? "Part of this is paid already, so record the rest as a part payment." : undefined,
+                      title: fullPayLocked
+                        ? "Part of this is paid already, so record the rest as a part payment."
+                        : undefined,
                     },
                     { value: "partial", label: "Part payment" },
                   ]}
@@ -549,8 +597,13 @@ export function RecordPaymentDrawer({
                   />
                 )}
               </Field>
-              <p className="-mt-2 text-body-s text-text-secondary" aria-live="polite" translate="no">
-                Unpaid after this payment: <span className="tabular-nums text-text-primary">{money(unpaidAfter)}</span>
+              <p
+                className="-mt-2 text-body-s text-text-secondary"
+                aria-live="polite"
+                translate="no"
+              >
+                Unpaid after this payment:{" "}
+                <span className="tabular-nums text-text-primary">{money(unpaidAfter)}</span>
               </p>
 
               <Field label="Payment date" required>
@@ -590,7 +643,12 @@ export function RecordPaymentDrawer({
               Payments recorded
             </h3>
             {showPaymentHistoryPlaceholder ? (
-              <div role="status" aria-busy="true" aria-label="Loading payments" className="flex flex-col gap-2">
+              <div
+                role="status"
+                aria-busy="true"
+                aria-label="Loading payments"
+                className="flex flex-col gap-2"
+              >
                 <Skeleton className="h-12" />
               </div>
             ) : paymentsForHistoryList.length === 0 ? (
@@ -604,14 +662,27 @@ export function RecordPaymentDrawer({
                   const dateLabel = formatPaymentDateLabel(p.payment_date);
                   return (
                     <li key={p.id} className="flex min-h-12 items-center gap-3 px-3 py-2">
-                      <Icon name={isPending ? "schedule" : "check_circle"} size="md" className="text-text-muted" />
+                      <Icon
+                        name={isPending ? "schedule" : "check_circle"}
+                        size="md"
+                        className="text-text-muted"
+                      />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-body-m text-text-primary">
-                          {isPending ? `Pending on ${dateLabel}` : isPartialPayment ? `Partial Pay on ${dateLabel}` : `Paid on ${dateLabel}`}
+                          {isPending
+                            ? `Pending on ${dateLabel}`
+                            : isPartialPayment
+                              ? `Partial Pay on ${dateLabel}`
+                              : `Paid on ${dateLabel}`}
                         </p>
-                        {isPending ? <p className="text-caption text-status-warning-ink">Pending</p> : null}
+                        {isPending ? (
+                          <p className="text-caption text-status-warning-ink">Pending</p>
+                        ) : null}
                       </div>
-                      <span className="shrink-0 text-body-m font-semibold tabular-nums text-text-primary" translate="no">
+                      <span
+                        className="shrink-0 text-body-m font-semibold tabular-nums text-text-primary"
+                        translate="no"
+                      >
                         {money(amt)}
                       </span>
                       {canDeletePayments ? (
@@ -622,7 +693,10 @@ export function RecordPaymentDrawer({
                           className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-text-secondary hover:bg-state-hover hover:text-action-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label="Remove this payment"
                         >
-                          <Icon name={deletingId === p.id ? "progress_activity" : "delete"} size="md" />
+                          <Icon
+                            name={deletingId === p.id ? "progress_activity" : "delete"}
+                            size="md"
+                          />
                         </button>
                       ) : null}
                     </li>

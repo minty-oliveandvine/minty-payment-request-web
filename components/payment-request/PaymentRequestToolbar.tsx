@@ -40,11 +40,20 @@ const iconButtonClass =
   "box-border inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border-default bg-surface-card text-text-secondary transition-colors duration-100 hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
 
 /** The menus the toolbar opens: elevation 1 on the raised surface. */
-const menuPanelClass = "fixed z-[400] rounded-lg border border-border-default bg-surface-raised py-1 shadow-overlay";
+const menuPanelClass =
+  "fixed z-[400] rounded-lg border border-border-default bg-surface-raised py-1 shadow-overlay";
 const menuItemClass =
   "block min-h-11 w-full cursor-pointer px-3 py-2.5 text-left text-body-m text-text-primary transition-colors hover:bg-state-hover focus-visible:bg-state-hover focus-visible:outline-none";
 
-export const PAYMENT_REQUEST_STATUS_FILTERS = ["All", "Payment Requested", "Partially Paid", "Returned", "Paid", "Draft", "Voided"] as const;
+export const PAYMENT_REQUEST_STATUS_FILTERS = [
+  "All",
+  "Payment Requested",
+  "Partially Paid",
+  "Returned",
+  "Paid",
+  "Draft",
+  "Voided",
+] as const;
 export type PaymentRequestStatusFilter = (typeof PAYMENT_REQUEST_STATUS_FILTERS)[number];
 
 type AdvancedFilters = {
@@ -181,7 +190,10 @@ export function PaymentRequestToolbar({
       const rect = trigger.getBoundingClientRect();
       const viewportPadding = 8;
       const maxWidth = Math.min(416, window.innerWidth - viewportPadding * 2);
-      const left = Math.max(viewportPadding, Math.min(rect.right - maxWidth, window.innerWidth - maxWidth - viewportPadding));
+      const left = Math.max(
+        viewportPadding,
+        Math.min(rect.right - maxWidth, window.innerWidth - maxWidth - viewportPadding),
+      );
       const top = rect.bottom + 8;
       setFilterMenu({ top, left, width: maxWidth });
     };
@@ -258,19 +270,28 @@ export function PaymentRequestToolbar({
     setStartDate("");
     setEndDate("");
     setXeroStatus("");
-    onApplyFilters?.({ minAmount: "", maxAmount: "", dateType: DEFAULT_FILTER_DATE_TYPE, startDate: "", endDate: "", xeroStatus: "" });
+    onApplyFilters?.({
+      minAmount: "",
+      maxAmount: "",
+      dateType: DEFAULT_FILTER_DATE_TYPE,
+      startDate: "",
+      endDate: "",
+      xeroStatus: "",
+    });
     setFilterOpen(true);
     if (filterButtonRef.current) {
       // Use filterButtonRef instead of trigger parameter
       const rect = filterButtonRef.current.getBoundingClientRect();
       const viewportPadding = 8;
       const maxWidth = Math.min(416, window.innerWidth - viewportPadding * 2);
-      const left = Math.max(viewportPadding, Math.min(rect.right - maxWidth, window.innerWidth - maxWidth - viewportPadding));
+      const left = Math.max(
+        viewportPadding,
+        Math.min(rect.right - maxWidth, window.innerWidth - maxWidth - viewportPadding),
+      );
       const top = rect.bottom + 8;
       setFilterMenu({ top, left, width: maxWidth });
     }
   };
-  
 
   const onSaveFilterChanges = () => {
     onApplyFilters?.({ minAmount, maxAmount, dateType, startDate, endDate, xeroStatus });
@@ -288,13 +309,15 @@ export function PaymentRequestToolbar({
       const rect = trigger.getBoundingClientRect();
       const viewportPadding = 8;
       const maxWidth = Math.min(416, window.innerWidth - viewportPadding * 2);
-      const left = Math.max(viewportPadding, Math.min(rect.right - maxWidth, window.innerWidth - maxWidth - viewportPadding));
+      const left = Math.max(
+        viewportPadding,
+        Math.min(rect.right - maxWidth, window.innerWidth - maxWidth - viewportPadding),
+      );
       const top = rect.bottom + 8;
       setFilterMenu({ top, left, width: maxWidth });
       return true;
     });
   };
-
 
   // Part 15.4 / 15.17 list toolbar: Search + [Easy view | Table view] + Filter + Bulk, then the
   // status chips with live counts. A phone scrolls the chips sideways (Part 14 Filter chip).
@@ -379,18 +402,27 @@ export function PaymentRequestToolbar({
                     className="fixed z-[400] overflow-y-auto overscroll-contain rounded-lg border border-border-default bg-surface-raised shadow-overlay"
                     // Fixed under its button: capped to the space left below it so Apply stays reachable
                     // when the button sits low (e.g. under the Needs attention strip) or the window is short.
-                    style={{ top: filterMenu.top, left: filterMenu.left, width: filterMenu.width, maxHeight: `calc(100dvh - ${filterMenu.top + 8}px)` }}
+                    style={{
+                      top: filterMenu.top,
+                      left: filterMenu.left,
+                      width: filterMenu.width,
+                      maxHeight: `calc(100dvh - ${filterMenu.top + 8}px)`,
+                    }}
                   >
                     <div className="border-b border-border-subtle px-4 py-3">
                       <h3 className="text-title-m text-text-primary">Filters</h3>
                       <p className="mt-1 text-body-s text-text-secondary">
-                        Choose what to show, then Apply. Closing without applying keeps the current filters.
+                        Choose what to show, then Apply. Closing without applying keeps the current
+                        filters.
                       </p>
                     </div>
                     <div className="px-4 py-4" onMouseDown={(e) => e.stopPropagation()}>
                       <div className="flex flex-col gap-5">
                         <div>
-                          <label htmlFor={`${filterFieldIds}-min-amount`} className={fieldLabelClass}>
+                          <label
+                            htmlFor={`${filterFieldIds}-min-amount`}
+                            className={fieldLabelClass}
+                          >
                             Amount
                           </label>
                           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
@@ -429,7 +461,10 @@ export function PaymentRequestToolbar({
                           </div>
                         </div>
                         <div>
-                          <label htmlFor={`${filterFieldIds}-xero-status`} className={fieldLabelClass}>
+                          <label
+                            htmlFor={`${filterFieldIds}-xero-status`}
+                            className={fieldLabelClass}
+                          >
                             Xero status
                           </label>
                           <ThemedSelect
@@ -443,7 +478,10 @@ export function PaymentRequestToolbar({
                         </div>
                         {/* Sits directly above the date range it governs. */}
                         <div>
-                          <label htmlFor={`${filterFieldIds}-date-type`} className={fieldLabelClass}>
+                          <label
+                            htmlFor={`${filterFieldIds}-date-type`}
+                            className={fieldLabelClass}
+                          >
                             Date type
                           </label>
                           <ThemedSelect
@@ -458,7 +496,10 @@ export function PaymentRequestToolbar({
                         </div>
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
                           <div>
-                            <label htmlFor={`${filterFieldIds}-start-date`} className={fieldLabelClass}>
+                            <label
+                              htmlFor={`${filterFieldIds}-start-date`}
+                              className={fieldLabelClass}
+                            >
                               {dateRangeNoun} Start Date
                             </label>
                             <DateTextField
@@ -471,7 +512,10 @@ export function PaymentRequestToolbar({
                             />
                           </div>
                           <div>
-                            <label htmlFor={`${filterFieldIds}-end-date`} className={fieldLabelClass}>
+                            <label
+                              htmlFor={`${filterFieldIds}-end-date`}
+                              className={fieldLabelClass}
+                            >
                               {dateRangeNoun} End Date
                             </label>
                             <DateTextField
@@ -486,7 +530,10 @@ export function PaymentRequestToolbar({
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-3 border-t border-border-subtle px-4 py-3" onMouseDown={(e) => e.stopPropagation()}>
+                    <div
+                      className="flex gap-3 border-t border-border-subtle px-4 py-3"
+                      onMouseDown={(e) => e.stopPropagation()}
+                    >
                       <Button kind="secondary" full onClick={onResetFilterDraft}>
                         Reset
                       </Button>
@@ -503,7 +550,11 @@ export function PaymentRequestToolbar({
             <Button
               ref={bulkButtonRef}
               kind="secondary"
-              aria-label={bulkSelectedCount > 0 ? `Bulk actions, ${bulkSelectedCount} selected` : "Bulk actions"}
+              aria-label={
+                bulkSelectedCount > 0
+                  ? `Bulk actions, ${bulkSelectedCount} selected`
+                  : "Bulk actions"
+              }
               aria-expanded={bulkMenuOpen ? "true" : "false"}
               aria-haspopup="menu"
               disabled={!bulkActionsEnabled}
@@ -554,7 +605,9 @@ export function PaymentRequestToolbar({
                       </button>
                     ) : null}
                     {isViewOnly ? (
-                      <div className="select-none px-3 py-2 text-body-m text-text-disabled">View-only access</div>
+                      <div className="select-none px-3 py-2 text-body-m text-text-disabled">
+                        View-only access
+                      </div>
                     ) : null}
                   </div>,
                   document.body,

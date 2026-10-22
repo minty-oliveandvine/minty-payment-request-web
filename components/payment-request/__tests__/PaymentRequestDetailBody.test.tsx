@@ -141,7 +141,9 @@ describe("the request on screen", () => {
 
     await loaded();
     // Part 15.17: the supplier names the page; the fields are Description rows, not inputs.
-    expect(screen.getByRole("heading", { level: 1, name: "Young Bros Transport" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Young Bros Transport" }),
+    ).toBeInTheDocument();
     const rows = within(screen.getByRole("region", { name: "Payment request details" }));
     expect(rows.getByText("PR-0001")).toBeInTheDocument();
     expect(rows.getByText("03 Mar 2026")).toBeInTheDocument();
@@ -197,7 +199,10 @@ describe("the request on screen", () => {
 
     await loaded();
     // "View Payment History" also matches /History/, so the accordion is named exactly.
-    expect(screen.getByRole("button", { name: "History" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "History" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 });
 
@@ -216,7 +221,13 @@ describe("the address it keeps", () => {
 
   it("leaves a void request on its id address", async () => {
     serve({
-      detail: bill({ id: BILL_ID, status: "void", contact: "Young Bros Transport", reference: "PR-0001", attachments: [billAttachment()] }),
+      detail: bill({
+        id: BILL_ID,
+        status: "void",
+        contact: "Young Bros Transport",
+        reference: "PR-0001",
+        attachments: [billAttachment()],
+      }),
     });
     show();
     await loaded();
@@ -229,7 +240,13 @@ describe("the address it keeps", () => {
     params.id = "PR-0001";
     window.history.replaceState(null, "", `${BASE}/payment-request/PR-0001`);
     serve({
-      detail: bill({ id: BILL_ID, status: "void", contact: "Young Bros Transport", reference: "PR-0001", attachments: [billAttachment()] }),
+      detail: bill({
+        id: BILL_ID,
+        status: "void",
+        contact: "Young Bros Transport",
+        reference: "PR-0001",
+        attachments: [billAttachment()],
+      }),
     });
     show();
     await loaded();
@@ -244,7 +261,13 @@ describe("a request with no invoice attached", () => {
   // A file that failed to upload after the request was made leaves it with none: the page says
   // so for as long as that lasts, and offers the way to fix it.
   const noInvoice = (status = "submitted") =>
-    bill({ id: BILL_ID, status, contact: "Young Bros Transport", reference: "PR-0001", attachments: [] });
+    bill({
+      id: BILL_ID,
+      status,
+      contact: "Young Bros Transport",
+      reference: "PR-0001",
+      attachments: [],
+    });
   const BANNER = "This request has no invoice attached.";
 
   it("says so, with the way to add it", async () => {
@@ -263,7 +286,9 @@ describe("a request with no invoice attached", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "Edit and add the invoice" }));
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument(),
+    );
     expect(screen.queryByText(BANNER)).not.toBeInTheDocument();
   });
 
@@ -277,7 +302,9 @@ describe("a request with no invoice attached", () => {
     show();
     await loaded();
 
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument(),
+    );
     expect(screen.queryByText(BANNER)).not.toBeInTheDocument();
   });
 
@@ -364,7 +391,9 @@ describe("editing it", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Edit" }));
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument(),
+    );
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
   });
@@ -378,7 +407,9 @@ describe("editing it", () => {
     show();
     await loaded();
     await userEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const description = await screen.findByDisplayValue("Corporate stationery and printer supplies");
+    const description = await screen.findByDisplayValue(
+      "Corporate stationery and printer supplies",
+    );
 
     await userEvent.clear(description);
     await userEvent.type(description, "A new description");
@@ -443,7 +474,9 @@ describe("editing it", () => {
     show();
     await loaded();
     await userEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const description = await screen.findByDisplayValue("Corporate stationery and printer supplies");
+    const description = await screen.findByDisplayValue(
+      "Corporate stationery and printer supplies",
+    );
     await userEvent.clear(description);
     await userEvent.type(description, "Abandoned");
 
@@ -460,7 +493,9 @@ describe("editing it", () => {
     show();
     await loaded();
     await userEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const description = await screen.findByDisplayValue("Corporate stationery and printer supplies");
+    const description = await screen.findByDisplayValue(
+      "Corporate stationery and printer supplies",
+    );
     await userEvent.clear(description);
     await userEvent.type(description, "A new description");
 
@@ -495,8 +530,12 @@ describe("editing it", () => {
 
     const summary = await screen.findByText(/details need a look/);
     expect(summary.closest("[role='alert']")).toHaveFocus();
-    expect(screen.getByRole("link", { name: "The supplier is still empty. Choose one to continue." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "The due date is still empty. Add it to continue." })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "The supplier is still empty. Choose one to continue." }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "The due date is still empty. Add it to continue." }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -517,7 +556,9 @@ describe("the actions its status allows", () => {
     await loaded();
 
     await userEvent.click(screen.getByRole("button", { name: "Return payment request" }));
-    const confirm = await screen.findByRole("alertdialog", { name: "Return this request to the requester?" });
+    const confirm = await screen.findByRole("alertdialog", {
+      name: "Return this request to the requester?",
+    });
     expect(calls.some((c) => c.path.endsWith("/return/"))).toBe(false);
     await userEvent.click(within(confirm).getByRole("button", { name: "Return to requester" }));
 
@@ -553,9 +594,13 @@ describe("view-only access", () => {
     show();
 
     await loaded();
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument(),
+    );
     expect(screen.queryByRole("button", { name: /Record payment/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Return payment request" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Return payment request" }),
+    ).not.toBeInTheDocument();
   });
 
   it("leaves the request itself perfectly readable", async () => {

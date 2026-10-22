@@ -44,7 +44,8 @@ function requestSegment(id: string, reference?: string | null, status?: string |
 export function pagesUnder(base: string): CompanyPages {
   return {
     list: `${base}/${LIST}`,
-    request: (id, reference, status) => `${base}/${LIST}/${encodeURIComponent(requestSegment(id, reference, status))}`,
+    request: (id, reference, status) =>
+      `${base}/${LIST}/${encodeURIComponent(requestSegment(id, reference, status))}`,
     create: `${base}/${LIST}/new`,
     settings: `${base}/${SETTINGS}`,
   };

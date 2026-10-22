@@ -116,12 +116,12 @@ function mapBillToRow(bill: BillListItem, entityCurrency = ""): PaymentRequestRo
 }
 
 const STATUS_LABEL_TO_API: Record<string, string> = {
-  "Draft": "draft",
+  Draft: "draft",
   "Payment Requested": "submitted",
-  "Paid": "paid",
+  Paid: "paid",
   "Partially Paid": "partially_paid",
-  "Voided": "void",
-  "Returned": "returned",
+  Voided: "void",
+  Returned: "returned",
 };
 
 type EnrichmentEntry = { epoch: number; value: BankSlipEnrichment };
@@ -134,7 +134,11 @@ export type PaymentRequestViewProps = {
   createAction?: ReactNode;
 };
 
-export function PaymentRequestView({ easyView, onEasyViewChange, createAction }: PaymentRequestViewProps) {
+export function PaymentRequestView({
+  easyView,
+  onEasyViewChange,
+  createAction,
+}: PaymentRequestViewProps) {
   const router = useRouter();
   const pages = useCompanyPages();
   const { isElevated, isViewOnly, isReadOnly } = useUserRole();
@@ -176,7 +180,10 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   /** False while the fetch-all loop is still committing pages. */
   const [datasetComplete, setDatasetComplete] = useState(false);
   /** The Record payment Drawer's request (D15-11), from either view; `readOnly` = View payments. */
-  const [recordPaymentTarget, setRecordPaymentTarget] = useState<{ billId: string; readOnly: boolean } | null>(null);
+  const [recordPaymentTarget, setRecordPaymentTarget] = useState<{
+    billId: string;
+    readOnly: boolean;
+  } | null>(null);
   /** An action that failed (void, publish), shown above the list - never a toast (Part 14). */
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -185,12 +192,20 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   const [easyViewBankSlipRowId, setEasyViewBankSlipRowId] = useState<string | null>(null);
   // Each view keeps its own sort (the table exposes 6 keys, easy view 4), but both
   // live here because the page slice has to be taken *after* sorting.
-  const [tableSort, setTableSort] = useState<{ key: SortKey | null; dir: "asc" | "desc" }>({ key: "status", dir: "asc" });
-  const [easySort, setEasySort] = useState<{ key: EasyViewSortKey; dir: "asc" | "desc" }>({ key: "status", dir: "asc" });
+  const [tableSort, setTableSort] = useState<{ key: SortKey | null; dir: "asc" | "desc" }>({
+    key: "status",
+    dir: "asc",
+  });
+  const [easySort, setEasySort] = useState<{ key: EasyViewSortKey; dir: "asc" | "desc" }>({
+    key: "status",
+    dir: "asc",
+  });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
   // Bank-slip counts, keyed by bill id and stamped with the load that produced them.
-  const [enrichmentById, setEnrichmentById] = useState<Map<string, EnrichmentEntry>>(() => new Map());
+  const [enrichmentById, setEnrichmentById] = useState<Map<string, EnrichmentEntry>>(
+    () => new Map(),
+  );
   const [enrichEpoch, setEnrichEpoch] = useState(0);
   /** A failed bank slip lookup's Retry: re-reads the counts of the rows on screen. */
   const retryBankSlips = useCallback(() => setEnrichEpoch((e) => e + 1), []);
@@ -208,7 +223,10 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
         // No count yet, or the lookup failed: unknown is not zero, so the row offers no upload.
         if (!e) return { ...r, bankslipState: "loading" as const };
         if (e.failed) {
-          return { ...r, bankslipState: entry.epoch < enrichEpoch ? ("loading" as const) : ("error" as const) };
+          return {
+            ...r,
+            bankslipState: entry.epoch < enrichEpoch ? ("loading" as const) : ("error" as const),
+          };
         }
         return {
           ...r,
@@ -232,8 +250,10 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
     let result = showVoided ? enrichedBills : enrichedBills.filter((r) => r.status !== "Voided");
     if (xeroStatus === "published") result = result.filter((r) => r.xeroActive === true);
     else if (xeroStatus === "draft") result = result.filter((r) => r.xeroActive !== true);
-    if (statusFilters.length > 0) result = result.filter((r) => statusFilters.some((s) => s === r.status));
-    if (debouncedSearch) result = result.filter((r) => rowMatchesSearch(r, debouncedSearch, searchMode));
+    if (statusFilters.length > 0)
+      result = result.filter((r) => statusFilters.some((s) => s === r.status));
+    if (debouncedSearch)
+      result = result.filter((r) => rowMatchesSearch(r, debouncedSearch, searchMode));
     if (dueFilter) result = result.filter((r) => rowMatchesDueFilter(r, dueFilter, todayIso));
     // Dates are matched here rather than server-side so the comparison uses the same
     // Hong Kong calendar date the column shows. The API compares `created_at` (a UTC
@@ -250,7 +270,18 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
       });
     }
     return result;
-  }, [enrichedBills, xeroStatus, statusFilters, debouncedSearch, searchMode, dueFilter, todayIso, dateType, startDate, endDate]);
+  }, [
+    enrichedBills,
+    xeroStatus,
+    statusFilters,
+    debouncedSearch,
+    searchMode,
+    dueFilter,
+    todayIso,
+    dateType,
+    startDate,
+    endDate,
+  ]);
 
   const totalItems = filteredBills.length;
   const pageCount = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -282,7 +313,10 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
     () => filteredBills.filter((r) => selectedIds.has(r.id)),
     [filteredBills, selectedIds],
   );
-  const activeSelectedIds = useMemo(() => activeSelectedRows.map((r) => r.id), [activeSelectedRows]);
+  const activeSelectedIds = useMemo(
+    () => activeSelectedRows.map((r) => r.id),
+    [activeSelectedRows],
+  );
   const bulkActionsEnabled = activeSelectedIds.length >= 2;
 
   const onToggleRow = useCallback(
@@ -326,7 +360,8 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
     (easyViewBankSlipSourceRow.status === "Voided" || easyViewBankSlipSourceRow.status === "Draft");
 
   const selectionContainsPaid = useMemo(
-    () => activeSelectedRows.some((row) => row.status === "Paid" || row.status === "Partially Paid"),
+    () =>
+      activeSelectedRows.some((row) => row.status === "Paid" || row.status === "Partially Paid"),
     [activeSelectedRows],
   );
 
@@ -396,7 +431,11 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
       // The list endpoint returns a bare array with no count envelope, so the whole
       // set is walked here and paged/sorted/searched in the browser.
       for (let pageNum = 1; ; pageNum += 1) {
-        const chunk = await fetchBills({ ...baseParams, page: pageNum, page_size: FETCH_PAGE_SIZE });
+        const chunk = await fetchBills({
+          ...baseParams,
+          page: pageNum,
+          page_size: FETCH_PAGE_SIZE,
+        });
         // A newer loadBills started while we were fetching — discard this stale
         // response so it can't overwrite the fresher list.
         if (seq !== loadSeqRef.current) return;
@@ -432,7 +471,11 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
       setDatasetComplete(true);
     } catch (err) {
       if (seq === loadSeqRef.current) {
-        setLoadError(err instanceof ApiError ? err.message : "Your payments didn't come through. Mind trying again?");
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Your payments didn't come through. Mind trying again?",
+        );
       }
     } finally {
       if (seq === loadSeqRef.current) setLoading(false);
@@ -451,7 +494,11 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   }, [tablePageRows, easyPageRows]);
 
   const enrichTargetsKey = useMemo(
-    () => enrichTargets.map((r) => r.id).sort().join(","),
+    () =>
+      enrichTargets
+        .map((r) => r.id)
+        .sort()
+        .join(","),
     [enrichTargets],
   );
 
@@ -522,7 +569,10 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   }, []);
 
   const recordPaymentSource = useMemo(
-    () => (recordPaymentTarget ? rawBills.find((b) => b.id === recordPaymentTarget.billId) ?? null : null),
+    () =>
+      recordPaymentTarget
+        ? (rawBills.find((b) => b.id === recordPaymentTarget.billId) ?? null)
+        : null,
     [recordPaymentTarget, rawBills],
   );
 
@@ -561,19 +611,34 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   /** Any change to what the list contains sends the user back to page 1. */
   useEffect(() => {
     setPage(1);
-  }, [statusFilterKey, debouncedSearch, searchMode, dueFilter, minAmount, maxAmount, dateType, startDate, endDate, xeroStatus]);
+  }, [
+    statusFilterKey,
+    debouncedSearch,
+    searchMode,
+    dueFilter,
+    minAmount,
+    maxAmount,
+    dateType,
+    startDate,
+    endDate,
+    xeroStatus,
+  ]);
 
   useEffect(() => {
     if (page !== safePage) setPage(safePage);
   }, [page, safePage]);
 
   const onTableSortColumn = useCallback((key: SortKey) => {
-    setTableSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+    setTableSort((s) =>
+      s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+    );
     setPage(1);
   }, []);
 
   const onEasySortChange = useCallback((key: EasyViewSortKey) => {
-    setEasySort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+    setEasySort((s) =>
+      s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+    );
     setPage(1);
   }, []);
 
@@ -621,7 +686,9 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
       showToast(`${activeSelectedIds.length} payment requests published to Xero.`, "success");
     } catch (err) {
       setActionError(
-        err instanceof ApiError ? err.message : "Those payment requests didn't reach Xero. Try publishing again.",
+        err instanceof ApiError
+          ? err.message
+          : "Those payment requests didn't reach Xero. Try publishing again.",
       );
     }
   }, [activeSelectedIds, loadBills, showToast]);
@@ -731,7 +798,8 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
   );
 
   const recordPayment = useCallback(
-    (rowId: string, readOnly?: boolean) => setRecordPaymentTarget({ billId: rowId, readOnly: readOnly ?? false }),
+    (rowId: string, readOnly?: boolean) =>
+      setRecordPaymentTarget({ billId: rowId, readOnly: readOnly ?? false }),
     [],
   );
 
@@ -785,7 +853,9 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
         {showReadOnlyBanner || actionError ? (
           <div className="mx-auto mb-4 flex w-full max-w-[1200px] flex-col gap-2 px-4 sm:px-6 lg:px-8">
             {showReadOnlyBanner ? (
-              <InlineAlert tone="info">Read-only access — you are not a member of this entity.</InlineAlert>
+              <InlineAlert tone="info">
+                Read-only access — you are not a member of this entity.
+              </InlineAlert>
             ) : null}
             {actionError ? <InlineAlert tone="danger">{actionError}</InlineAlert> : null}
           </div>
@@ -807,7 +877,11 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
           <>
             {/* Easy view on a computer by choice; a phone ALWAYS gets the rows - Table view is
                 hidden below 768px (Part 15.17, D15-18). */}
-            <div className={easyView ? "flex min-h-0 flex-1 flex-col" : "flex min-h-0 flex-1 flex-col md:hidden"}>
+            <div
+              className={
+                easyView ? "flex min-h-0 flex-1 flex-col" : "flex min-h-0 flex-1 flex-col md:hidden"
+              }
+            >
               <PaymentRequestEasyView
                 rows={easyPageRows}
                 loading={loading}
@@ -840,7 +914,9 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
                 onToggleAll={onToggleAll}
                 todayIso={todayIso}
                 onRecordPayment={recordPayment}
-                onRowClick={(rowId, reference, status) => router.push(pages.request(rowId, reference, status))}
+                onRowClick={(rowId, reference, status) =>
+                  router.push(pages.request(rowId, reference, status))
+                }
                 onRowDelete={async (rowId) => {
                   setActionError(null);
                   try {
@@ -848,7 +924,11 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
                     removeBillsLocally([rowId]);
                     await loadBills();
                   } catch (err) {
-                    setActionError(err instanceof ApiError ? err.message : "That payment request wasn't voided. Try again.");
+                    setActionError(
+                      err instanceof ApiError
+                        ? err.message
+                        : "That payment request wasn't voided. Try again.",
+                    );
                     await loadBills();
                     throw err;
                   }
@@ -860,7 +940,9 @@ export function PaymentRequestView({ easyView, onEasyViewChange, createAction }:
                     await loadBills();
                   } catch (err) {
                     setActionError(
-                      err instanceof ApiError ? err.message : "That payment request didn't reach Xero. Try publishing again.",
+                      err instanceof ApiError
+                        ? err.message
+                        : "That payment request didn't reach Xero. Try publishing again.",
                     );
                   }
                 }}
