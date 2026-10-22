@@ -45,7 +45,7 @@ import {
   formatAmount,
   toAmountEditString,
   toAmountString,
-} from "@/lib/amountFormat";
+} from "@minty/shared/money";
 import {
   ApiError,
   dedupeEntityBillContactsForPicker,
@@ -63,7 +63,7 @@ import { useEntityCurrencyState } from "@/lib/entityCurrency";
 import { ATTACHMENT_ACCEPT, formatFileSize, isAllowedAttachment } from "@/lib/fileAttachmentPreview";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
 import { saveAttachmentBlobs } from "@/lib/paymentRequestAttachmentStore";
-import { useClientValue } from "@/lib/useClientValue";
+import { useClientValue } from "@minty/shared/clientValue";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 type UploadedEntry = { id: string; file: File };
@@ -145,7 +145,7 @@ export function PaymentRequestForm() {
   const currency = useEntityCurrencyState();
   const entityCurrency = currency.code;
   const currencyBlocked = currency.status !== "ready";
-  const entityId = useClientValue(getEntityIdSnapshot, "");
+  const entityId = useClientValue(getEntityIdSnapshot, () => "");
   const previewSubtitleId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
 

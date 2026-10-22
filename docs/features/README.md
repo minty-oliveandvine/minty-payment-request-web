@@ -16,6 +16,35 @@ is minty-web's). Nothing is decided here that a backend does not re-check.
 | User-facing error copy | [../ERROR_COPY.md](../ERROR_COPY.md) |
 | Manual QA checklist to run by hand before a release | [qa-checklist.md](qa-checklist.md) |
 
+**Shared non-UI code (the shared-code refactor, owner 2026-10-21: one shared module per concern,
+in every app).** These come from `@minty/shared` and have no local copy; what is left in `lib/` is
+this app's configuration of them:
+
+| `@minty/shared/…` | Here as |
+|---|---|
+| `apiClient` (`createBearerClient`, `ApiError`, `SESSION_ENDED`), `errorCopy` | `lib/api.ts`'s `apiFetch`; `components/ui/sidebarHost.ts`'s `mintyApi`, `mintyQuietApi`, `subscriptionApi` |
+| `auth` (`createCookieAuth`, `decodeJwtPayload`, `isTokenExpired(token)`, `isTokenExpiringSoon(token)`, `moduleClaims`) | `lib/auth.ts` (the `billing_` cookies, 8 hours; keeps `setAuth(token, id, name)`, the role/sid claims, `refreshToken`, `redirectToLogin`); `lib/moduleClaims.ts`'s `useEntitlements` |
+| `env` (`envUrl`) | `lib/env.ts` - a production build with a URL unset throws |
+| `dates` (`formatDay`, `formatInstantDay`, `isoDateInTimeZone(timeZone, date)`, `HK_TIME_ZONE`) | used directly; `lib/dateDisplayFormat.ts` keeps only `formatLocalDateForDisplay` and `parseDdMmmYyyyToIso` |
+| `handoff` (`hubHandoffUrl`, `mintyEntryUrl`), `landing` (`useLandingHandoff`) | `middleware.ts` (old `/profile/*` links), `sidebarHost`'s `handoff`, `lib/mintyUrls.ts`'s `buildMintyEnterUrl` (with this app's fallback, Minty's `/entity`), `app/landing/page.tsx` |
+| `portal` (`createProfileApi`, `fetchAllSubscriptions`, `loadViewer`) | `features/profile/api/profile.ts`, `SubscriptionsOverviewCard`'s `loadSubscriptions`, `sidebarHost.loadViewer` |
+| `clientValue` (`useClientValue`), `scrollLock` (`pushAppScrollLock`), `companyRef` (`pettyCashSettingsUrl`), `safeNext`, `previewSibling`, `money` | used directly. The settings pills' other three builders stay in `SettingsPills.tsx`: the package's `settingsSectionUrl` would route them differently |
+
+**Config files on the package's presets (2026-10-22), the same in every Next.js app.**
+`tsconfig.json` extends `@minty/shared/tsconfig.base.json` and keeps only `paths`, `include`,
+`exclude` and this app's one difference, `"allowJs": true`; `eslint.config.mjs` is
+`@minty/shared/eslint` with nothing added; `package.json`'s `"prettier"` key names
+`@minty/shared/prettier` (with `format` / `format:check` scripts - `prettier` itself is not yet a
+devDependency here); `vitest.config.ts` is `mintyVitest(import.meta.url, { exclude: ["public/**"] })`;
+`playwright.config.ts` is `mintyPlaywright({ port: 3020 })`; `next.config.ts` wraps its `env` block
+and the pdf.js asset copy in `withMintyDefaults`, which adds the security headers,
+`poweredByHeader: false`, `transpilePackages` and `allowedDevOrigins: ["127.0.0.1"]`; and
+`e2e/helpers.ts` takes `credentials`, `mintModuleToken`, `reachable` and `companyRef` from
+`@minty/shared/e2e` (plain JS, so Playwright loads it - the old `e2e/companyRef.ts` copy and its pin
+test are gone; `requireCredentials` stays local because it skips where the package's throws, and
+`expectNoSideScroll(page, width)` because it takes the width). `.editorconfig` is the same file in
+every app. A shared setting changes in the package and a pin bump, never here.
+
 Email fields take English only (2026-10-01): My Profile's email spreads `useEmailInput` from
 `lib/emailInput.ts`, a copy of minty-web's. The input is `type="text" inputMode="email"`, anything
 outside printable ASCII is dropped once an IME composition ends, and the field says why. Flask

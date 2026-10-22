@@ -5,7 +5,7 @@ import { type ReactNode } from "react";
 import { getEntityIdSnapshot, getRoleFromToken } from "@/lib/auth";
 import { useEntitlements } from "@/lib/moduleClaims";
 import { buildMintyEnterUrl, MINTY_MODULE_URL } from "@/lib/mintyUrls";
-import { useClientValue } from "@/lib/useClientValue";
+import { useClientValue } from "@minty/shared/clientValue";
 import { useUserRole } from "@/lib/useUserRole";
 
 /**
@@ -101,7 +101,7 @@ export function ModuleNotActive({
 
   // Cookies are client-only; read through useClientValue like every other page here, so the
   // server and first client render agree.
-  const entityId = useClientValue(getEntityIdSnapshot, "");
+  const entityId = useClientValue(getEntityIdSnapshot, () => "");
 
   // Minty offers the subscription link only when the reader could actually open it —
   // `MODULE_VIEW` starts at CASHIER, so any member qualifies, and an unqualified link
@@ -209,7 +209,7 @@ export function ModuleNotActive({
  * membership and entitlements on every call regardless of what this decides.
  */
 export function ModuleGate({ children }: { children: ReactNode }) {
-  const { billingEnabled } = useEntitlements();
+  const { billing: billingEnabled } = useEntitlements();
 
   // WHICH refusal, and it is not the same question as whether to refuse. A member of a
   // company that never bought Payment Request needs "Module not active" and a link to fix
@@ -224,7 +224,7 @@ export function ModuleGate({ children }: { children: ReactNode }) {
   // `undefined` is the server snapshot and means "not read yet", which is NOT the same as the
   // `null` / "" the token carries for no role: guessing between them for one frame shows the
   // wrong refusal to the wrong person.
-  const role = useClientValue<string | null | undefined>(getRoleFromToken, undefined);
+  const role = useClientValue<string | null | undefined>(getRoleFromToken, () => undefined);
 
   if (billingEnabled) return <>{children}</>;
   if (role === undefined) return null;

@@ -152,4 +152,32 @@ describe("redirectToLogin", () => {
     auth.redirectToLogin();
     expect(auth.getAuth()?.token).toBe(TOKEN);
   });
+
+  // Pins the destination before it moves to @minty/shared (the shared-code refactor,
+  // 2026-10-21). The navigation itself is not observable in jsdom, but the address is built by
+  // `withReturnOrigin`, so a pass-through spy on it shows exactly what the browser is sent to.
+  it("is Minty's root, with a trailing slash, named for this app's origin - nothing more specific", async () => {
+    vi.resetModules();
+    const seen: string[] = [];
+    vi.doMock("@minty/shared/previewSibling", async (importOriginal) => {
+      const real = await importOriginal<typeof import("@minty/shared/previewSibling")>();
+      return {
+        ...real,
+        withReturnOrigin: (url: string, origin?: string) => {
+          seen.push(url);
+          return real.withReturnOrigin(url, origin);
+        },
+      };
+    });
+    try {
+      const auth = await import("@/lib/auth");
+      auth.setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
+
+      auth.redirectToLogin();
+
+      expect(seen).toEqual([`${env.PETTY_CASH_URL}/`]);
+    } finally {
+      vi.doUnmock("@minty/shared/previewSibling");
+    }
+  });
 });

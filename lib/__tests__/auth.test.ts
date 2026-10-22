@@ -1,4 +1,6 @@
-// The cookie jar and the claims read out of the token (lib/auth.ts).
+// The cookie jar and the claims read out of the token (lib/auth.ts, over @minty/shared/auth's
+// createCookieAuth; decodeJwtPayload / isTokenExpired / isTokenExpiringSoon are the package's,
+// read here off the billing cookie - owner 2026-10-21: one shared module).
 //
 // Nothing here verifies a signature, because the app does not: the API re-checks every call.
 // What the app DOES do client-side is decide, from the token alone, whether to refresh, whether
@@ -12,14 +14,17 @@ import {
   ENTITY_ID_COOKIE_NAME,
   ENTITY_NAME_COOKIE_NAME,
   clearAuth,
-  decodeJwtPayload,
   getAuth,
+  getAuthSnapshot,
+  getEntityIdSnapshot,
   getLoginSidFromToken,
   getRoleFromToken,
-  isTokenExpired,
-  isTokenExpiringSoon,
   setAuth,
 } from "@/lib/auth";
+import { decodeJwtPayload, isTokenExpired, isTokenExpiringSoon } from "@minty/shared/auth";
+
+/** The token in the billing cookie - what every caller hands the package's readers. */
+const cookieToken = () => getAuth()?.token;
 
 const TOKEN = unsignedToken();
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
@@ -233,33 +238,33 @@ describe("isTokenExpiringSoon", () => {
 
   it("waits until the token is inside the default two minutes", () => {
     setAuth(tokenExpiringIn(121), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpiringSoon()).toBe(false);
+    expect(isTokenExpiringSoon(cookieToken())).toBe(false);
     setAuth(tokenExpiringIn(119), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpiringSoon()).toBe(true);
+    expect(isTokenExpiringSoon(cookieToken())).toBe(true);
   });
 
   it("takes a threshold of its own", () => {
     setAuth(tokenExpiringIn(300), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpiringSoon(120)).toBe(false);
-    expect(isTokenExpiringSoon(600)).toBe(true);
+    expect(isTokenExpiringSoon(cookieToken(), 120)).toBe(false);
+    expect(isTokenExpiringSoon(cookieToken(), 600)).toBe(true);
   });
 
   it("is true for a token that has already run out", () => {
     setAuth(tokenExpiringIn(-60), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpiringSoon()).toBe(true);
+    expect(isTokenExpiringSoon(cookieToken())).toBe(true);
   });
 
   it("is false with no token, a malformed one, or no exp claim", () => {
-    expect(isTokenExpiringSoon()).toBe(false);
+    expect(isTokenExpiringSoon(cookieToken())).toBe(false);
     setAuth("nonsense", ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpiringSoon()).toBe(false);
+    expect(isTokenExpiringSoon(cookieToken())).toBe(false);
     setAuth(tokenWithout("exp"), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpiringSoon()).toBe(false);
+    expect(isTokenExpiringSoon(cookieToken())).toBe(false);
   });
 
   it("is false for an exp that is not a number", () => {
     setAuth(unsignedToken(moduleTokenClaims({ exp: "soon" })), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpiringSoon()).toBe(false);
+    expect(isTokenExpiringSoon(cookieToken())).toBe(false);
   });
 });
 
@@ -274,22 +279,79 @@ describe("isTokenExpired", () => {
 
   it("allows five seconds of clock skew either side of the boundary", () => {
     setAuth(tokenExpiringIn(-4), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpired()).toBe(false);
+    expect(isTokenExpired(cookieToken())).toBe(false);
     setAuth(tokenExpiringIn(-6), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpired()).toBe(true);
+    expect(isTokenExpired(cookieToken())).toBe(true);
   });
 
   it("is false for a token that is merely expiring soon", () => {
     setAuth(tokenExpiringIn(30), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpiringSoon()).toBe(true);
-    expect(isTokenExpired()).toBe(false);
+    expect(isTokenExpiringSoon(cookieToken())).toBe(true);
+    expect(isTokenExpired(cookieToken())).toBe(false);
   });
 
-  it("is false with no token, a malformed one, or no exp claim", () => {
-    expect(isTokenExpired()).toBe(false);
+  // owner 2026-10-21: one shared module (@minty/shared/auth) - no token at all now counts as
+  // expired (it was "not expired"); a malformed token or one with no exp still cannot tell.
+  it("is TRUE with no token, false for a malformed one or no exp claim", () => {
+    expect(isTokenExpired(cookieToken())).toBe(true);
     setAuth("nonsense", ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpired()).toBe(false);
+    expect(isTokenExpired(cookieToken())).toBe(false);
     setAuth(tokenWithout("exp"), ENTITY_ID, ENTITY_NAME);
-    expect(isTokenExpired()).toBe(false);
+    expect(isTokenExpired(cookieToken())).toBe(false);
+  });
+});
+
+// Pins the rest of the cookie session before it moves to @minty/shared (the shared-code
+// refactor, 2026-10-21): the snapshot readers and the Secure flag.
+describe("getAuthSnapshot", () => {
+  it("is null with no session", () => {
+    expect(getAuthSnapshot()).toBeNull();
+  });
+
+  it("hands back the SAME object while the cookies are unchanged - React compares by identity", () => {
+    setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
+    const first = getAuthSnapshot();
+    expect(first).toEqual({ token: TOKEN, entityId: ENTITY_ID, entityName: ENTITY_NAME });
+    expect(getAuthSnapshot()).toBe(first);
+    // getAuth, by contrast, parses afresh every call.
+    expect(getAuth()).not.toBe(getAuth());
+  });
+
+  it("notices setAuth and clearAuth", () => {
+    setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
+    const before = getAuthSnapshot();
+    setAuth(TOKEN, ENTITY_ID, "Another Company");
+    const after = getAuthSnapshot();
+    expect(after).not.toBe(before);
+    expect(after?.entityName).toBe("Another Company");
+    clearAuth();
+    expect(getAuthSnapshot()).toBeNull();
+  });
+});
+
+describe("getEntityIdSnapshot", () => {
+  it("is the cookie's company id, or an empty string", () => {
+    expect(getEntityIdSnapshot()).toBe("");
+    setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
+    expect(getEntityIdSnapshot()).toBe(ENTITY_ID);
+  });
+});
+
+describe("setAuth over https", () => {
+  it("adds Secure to all three cookies when the page is served over https", () => {
+    // jsdom will not redefine window.location, so the whole `window` the module reads is
+    // swapped for one that reports https; `document` stays the real jar.
+    const cookies = recordCookieWrites();
+    vi.stubGlobal("window", { location: { protocol: "https:" } });
+    try {
+      setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
+    } finally {
+      vi.unstubAllGlobals();
+      cookies.restore();
+    }
+    expect(cookies.writes).toHaveLength(3);
+    for (const write of cookies.writes) {
+      expect(write.endsWith(";path=/;max-age=28800;SameSite=Lax;Secure")).toBe(true);
+    }
   });
 });

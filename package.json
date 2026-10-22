@@ -2,6 +2,7 @@
   "name": "minty-payment-request-web",
   "version": "0.1.0",
   "private": true,
+  "prettier": "@minty/shared/prettier",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3020",
     "build": "next build",
@@ -10,7 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@minty/shared": "github:minty-oliveandvine/minty-shared-ts#v0.6",

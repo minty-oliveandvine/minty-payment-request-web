@@ -14,6 +14,11 @@
  * - how it logs out (every app's Logout ends the session everywhere - the user's call);
  * - how it reaches Flask (`/api/me/profile`) and minty-subscription-api (`/api/me/subscriptions`)
  *   with the token it holds, and what a 401 means here (one refresh, then back to Minty).
+ *
+ * The clients are `@minty/shared/apiClient`'s `createBearerClient`, the viewer read is
+ * `@minty/shared/portal`'s `loadViewer` and the way into minty-web is `@minty/shared/handoff`'s
+ * `hubHandoffUrl` (owner 2026-10-21: one shared module) - what is left here is this app's
+ * configuration of them.
  */
 
 import { usePathname } from "next/navigation";
@@ -23,20 +28,16 @@ import {
   type SidebarHost,
   type Viewer,
 } from "@minty/shared/sidebar";
+import { createBearerClient, type UnauthorizedContext } from "@minty/shared/apiClient";
+import { isTokenExpiringSoon, moduleClaims } from "@minty/shared/auth";
+import { HUB_HANDOFF_ROUTE, hubHandoffUrl } from "@minty/shared/handoff";
 import { guardLeave } from "@minty/shared/leaveGuard";
-import { withReturnOrigin } from "@minty/shared/previewSibling";
+import { loadViewer as readViewer } from "@minty/shared/portal";
+import { pushAppScrollLock } from "@minty/shared/scrollLock";
 
-import { ApiError, logoutSession } from "@/lib/api";
-import { pushAppScrollLock } from "@/lib/appScrollRoot";
+import { logoutSession } from "@/lib/api";
 import { env } from "@/lib/env";
-import {
-  clearAuth,
-  getAuth,
-  isTokenExpiringSoon,
-  redirectToLogin,
-  refreshToken,
-} from "@/lib/auth";
-import { getModuleClaims } from "@/lib/moduleClaims";
+import { clearAuth, getAuth, redirectToLogin, refreshToken } from "@/lib/auth";
 import {
   buildMintyEnterUrl,
   buildMintyProfileUrl,
@@ -66,10 +67,8 @@ type ModuleAccess = { pettyCash: boolean; billing: boolean };
  * re-established from that token on the way (as `buildMintyProfileUrl` does).
  */
 function handoff(next: string): string {
-  const path = `/handoff/minty-web?${new URLSearchParams({ next }).toString()}`;
-  return getAuth()?.entityId
-    ? buildMintyEnterUrl(path)
-    : withReturnOrigin(`${MINTY_MODULE_URL}${path}`);
+  if (!getAuth()?.entityId) return hubHandoffUrl(MINTY_MODULE_URL, next);
+  return buildMintyEnterUrl(`${HUB_HANDOFF_ROUTE}?${new URLSearchParams({ next }).toString()}`);
 }
 
 /** The company in this app's cookie ("" when none). */
@@ -84,8 +83,7 @@ export function entityName(): string {
 
 /** Which modules that company has - the token's claims, both on when unknown (never hide nav). */
 export function moduleAccess(): ModuleAccess {
-  const claims = getModuleClaims();
-  return { pettyCash: claims.pettyCashEnabled, billing: claims.billingEnabled };
+  return moduleClaims(getAuth()?.token);
 }
 
 /** Where each item of the menu (and My Profile) leads FROM THIS APP. */
@@ -160,117 +158,51 @@ async function endSession(): Promise<void> {
 
 // --- the two backends the copies read ----------------------------------------------------------
 
-/** Shown when a backend gave no sentence of its own - minty-web's `HOUSE_FALLBACK`. */
-export const HOUSE_FALLBACK =
-  "Something went wrong on my end. Mind trying again?";
-const SESSION_ENDED = "Your session has ended. Signing you back in…";
-
-export type HubRequest = {
-  method?: "GET" | "PATCH";
-  json?: unknown;
-  query?: Record<string, string | number | undefined>;
-  signal?: AbortSignal;
-  /**
-   * What a 401 that one refresh did not cure means to the caller: `"reauth"` (the default) sends
-   * the browser back to Minty for a fresh token, as every other read of this app does;
-   * `"reject"` only rejects - for a read that is decoration (the header's initials), which must
-   * never move the page.
-   */
-  onUnauthorized?: "reauth" | "reject";
-};
-
-function withQuery(path: string, query?: HubRequest["query"]): string {
-  if (!query) return path;
-  const qs = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined && value !== "") qs.set(key, String(value));
-  }
-  const s = qs.toString();
-  return s ? `${path}?${s}` : path;
-}
-
-async function readBody(res: Response): Promise<unknown> {
-  const text = await res.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return text;
-  }
-}
-
-function sentence(body: unknown): string | null {
-  if (
-    body &&
-    typeof body === "object" &&
-    typeof (body as { error?: unknown }).error === "string"
-  ) {
-    return (body as { error: string }).error;
-  }
-  return null;
-}
-
-async function bearerJson<T>(
-  base: string,
-  path: string,
-  init: HubRequest,
-  retried = false,
-): Promise<T> {
-  const {
-    method = "GET",
-    json,
-    query,
-    signal,
-    onUnauthorized = "reauth",
-  } = init;
-  if (!retried && isTokenExpiringSoon(120)) await refreshToken();
+/** The bearer, refreshed first when it is about to lapse. */
+async function freshToken(): Promise<string | null> {
   const token = getAuth()?.token;
-  if (!token) {
-    if (onUnauthorized === "reauth") redirectToLogin();
-    throw new ApiError(401, SESSION_ENDED);
-  }
+  if (token && isTokenExpiringSoon(token, 120)) await refreshToken();
+  return getAuth()?.token || null;
+}
 
-  const headers = new Headers({
-    Accept: "application/json",
-    Authorization: `Bearer ${token}`,
-  });
-  if (json !== undefined) headers.set("Content-Type", "application/json");
-  const res = await fetch(`${base}${withQuery(path, query)}`, {
-    method,
-    headers,
-    body: json === undefined ? undefined : JSON.stringify(json),
-    signal,
-  });
-
-  if (res.status === 401) {
-    if (!retried && (await refreshToken()))
-      return bearerJson<T>(base, path, init, true);
-    if (onUnauthorized === "reauth") redirectToLogin();
-    throw new ApiError(401, SESSION_ENDED);
-  }
-  const body = await readBody(res);
-  if (!res.ok) throw new ApiError(res.status, sentence(body) ?? HOUSE_FALLBACK);
-  return body as T;
+/**
+ * What a 401 means to the hub reads: one refresh and one retry; a 401 that does not cure, or no
+ * token at all, `"reauth"` sends the browser back to Minty for a fresh token (as every other read
+ * of this app does) and `"reject"` only rejects - for a read that is decoration (the header's
+ * initials), which must never move the page. Either way the call rejects with the shared
+ * SESSION_ENDED.
+ */
+function onUnauthorized(mode: "reauth" | "reject") {
+  return async ({ reason, retried }: UnauthorizedContext): Promise<boolean> => {
+    if (reason === "401" && !retried && (await refreshToken())) return true;
+    if (mode === "reauth") redirectToLogin();
+    return false;
+  };
 }
 
 /**
  * Flask's hub surface - `/api/me/profile` (minty-web's `mintyFetch`). Never sends `X-Entity-Id`:
  * Flask allows only `Authorization` and `Content-Type`; a company travels as `?entity=`.
  */
-export function mintyFetch<T = unknown>(
-  path: string,
-  init: HubRequest = {},
-): Promise<T> {
-  return bearerJson<T>(MINTY_MODULE_URL.replace(/\/+$/, ""), path, init);
-}
+export const mintyApi = createBearerClient({
+  baseUrl: MINTY_MODULE_URL,
+  getToken: freshToken,
+  onUnauthorized: onUnauthorized("reauth"),
+});
+
+/** The same, for decoration: a 401 that one refresh did not cure only rejects. */
+export const mintyQuietApi = createBearerClient({
+  baseUrl: MINTY_MODULE_URL,
+  getToken: freshToken,
+  onUnauthorized: onUnauthorized("reject"),
+});
 
 /** minty-subscription-api's person-scoped `/api/me/*` (minty-web's `apiFetch`, without a company). */
-export function billingApiFetch<T = unknown>(
-  path: string,
-  init: HubRequest = {},
-): Promise<T> {
-  return bearerJson<T>(SUBSCRIPTION_API_URL, path, init);
-}
+export const subscriptionApi = createBearerClient({
+  baseUrl: SUBSCRIPTION_API_URL,
+  getToken: freshToken,
+  onUnauthorized: onUnauthorized("reauth"),
+});
 
 /** The token this app holds - what the viewer read is cached by. */
 export function currentToken(): string {
@@ -283,15 +215,7 @@ export function currentToken(): string {
  * Flask's hub surface, as decoration: a read that fails must never move the page, so a 401 only
  * rejects and the badge stays empty.
  */
-async function loadViewer(): Promise<Viewer | null> {
-  const body = await mintyFetch<{
-    user?: { name?: unknown; initials?: unknown };
-  }>("/api/me/profile", { onUnauthorized: "reject" });
-  const user = body?.user;
-  if (typeof user?.name !== "string" || typeof user.initials !== "string")
-    return null;
-  return { name: user.name, initials: user.initials };
-}
+const loadViewer = (): Promise<Viewer | null> => readViewer(mintyQuietApi.json);
 
 export const sidebarHost: SidebarHost = {
   app: "minty-payment-request-web",

@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { formatMoney } from "@minty/shared/money";
 import type { PaymentRequestStatusFilter } from "./PaymentRequestToolbar";
 import { BankSlipDetailsModal, type BankSlipDetails } from "./BankSlipDetailsModal";
 import { BankSlipLoadState } from "./BankSlipLoadState";
@@ -822,7 +823,7 @@ export function PaymentRequestTable({
                                   {row.unpaidAmount ? <span className="whitespace-nowrap text-body-m font-semibold text-text-primary">{row.unpaidAmount}</span> : null}
                                   {row.invoiceTotal ? (
                                     <span className="whitespace-nowrap text-caption text-text-muted tabular-nums">
-                                      of {entityCurrency} {row.invoiceTotal}
+                                      of {formatMoney(row.invoiceTotal, entityCurrency)}
                                     </span>
                                   ) : null}
                                 </div>

@@ -12,9 +12,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
-import { setAuth } from "@/lib/auth";
+import { moduleClaims } from "@minty/shared/auth";
+
+import { getAuth, setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { getModuleClaims, useEntitlements } from "@/lib/moduleClaims";
+import { useEntitlements } from "@/lib/moduleClaims";
 
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
 const ENTITY_NAME = "Olive & Vine";
@@ -26,42 +28,46 @@ const answer = (status: number, body: unknown) =>
 
 /** The smallest possible reader of the hook: one line of text per flag. */
 function Probe() {
-  const { pettyCashEnabled, billingEnabled } = useEntitlements();
+  const { pettyCash, billing } = useEntitlements();
   return (
     <p role="status">
-      {`petty cash ${pettyCashEnabled ? "on" : "off"}, payment request ${billingEnabled ? "on" : "off"}`}
+      {`petty cash ${pettyCash ? "on" : "off"}, payment request ${billing ? "on" : "off"}`}
     </p>
   );
 }
 
 const shown = () => screen.getByRole("status").textContent;
 
-describe("getModuleClaims", () => {
+// The claims are @minty/shared/auth's `moduleClaims` (owner 2026-10-21: one shared module), read
+// here off this app's billing cookie - the first paint useEntitlements starts from.
+const getModuleClaims = () => moduleClaims(getAuth()?.token);
+
+describe("moduleClaims, off the billing cookie", () => {
   it("is both modules ON with no token at all", () => {
     // A standalone or pre-auth render must never hide nav.
-    expect(getModuleClaims()).toEqual({ pettyCashEnabled: true, billingEnabled: true });
+    expect(getModuleClaims()).toEqual({ pettyCash: true, billing: true });
   });
 
   it("is both ON for a malformed token", () => {
     setAuth("nonsense", ENTITY_ID, ENTITY_NAME);
-    expect(getModuleClaims()).toEqual({ pettyCashEnabled: true, billingEnabled: true });
+    expect(getModuleClaims()).toEqual({ pettyCash: true, billing: true });
   });
 
   it("is both ON for a token minted before module gating shipped", () => {
     // `unsignedToken` takes the claim set it is given, so this token carries ONLY a role -
     // exactly a legacy token. "Missing claim" must mean "not gated", never "off".
     setAuth(unsignedToken({ role: "admin" }), ENTITY_ID, ENTITY_NAME);
-    expect(getModuleClaims()).toEqual({ pettyCashEnabled: true, billingEnabled: true });
+    expect(getModuleClaims()).toEqual({ pettyCash: true, billing: true });
   });
 
   it("honours an explicit false, which the backend writes only from an entitlement row", () => {
     setAuth(unsignedToken({ petty_cash_enabled: false, billing_enabled: false }), ENTITY_ID, ENTITY_NAME);
-    expect(getModuleClaims()).toEqual({ pettyCashEnabled: false, billingEnabled: false });
+    expect(getModuleClaims()).toEqual({ pettyCash: false, billing: false });
   });
 
   it("falls back to ON for a claim that is not a boolean", () => {
     setAuth(unsignedToken({ billing_enabled: "false", petty_cash_enabled: 0 }), ENTITY_ID, ENTITY_NAME);
-    expect(getModuleClaims()).toEqual({ pettyCashEnabled: true, billingEnabled: true });
+    expect(getModuleClaims()).toEqual({ pettyCash: true, billing: true });
   });
 });
 

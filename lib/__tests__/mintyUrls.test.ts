@@ -51,6 +51,35 @@ describe("buildMintyEnterUrl", () => {
     setAuth(TOKEN, "", "");
     expect(buildMintyEnterUrl()).toBe(`${env.PETTY_CASH_URL}/entity?return_origin=${encodeURIComponent(window.location.origin)}`);
   });
+
+  // Pins the exact strings before this moves to @minty/shared (the shared-code refactor,
+  // 2026-10-21): parameter order, and the re-encoding `withReturnOrigin` does on the way out.
+  it("is token, then next, then return_origin, exactly", () => {
+    setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
+    const origin = encodeURIComponent(window.location.origin);
+
+    expect(buildMintyEnterUrl()).toBe(
+      `${env.PETTY_CASH_URL}/entity/${ENTITY_ID}/enter?token=${TOKEN}&return_origin=${origin}`,
+    );
+    expect(buildMintyEnterUrl("/entity/e1/petty-cash/reports")).toBe(
+      `${env.PETTY_CASH_URL}/entity/${ENTITY_ID}/enter?token=${TOKEN}` +
+        `&next=%2Fentity%2Fe1%2Fpetty-cash%2Freports&return_origin=${origin}`,
+    );
+  });
+
+  it("re-encodes a space in `next` as '+', because withReturnOrigin re-serialises the query", () => {
+    setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
+
+    const built = buildMintyEnterUrl("/a b");
+
+    expect(built).toContain("&next=%2Fa+b&");
+    expect(new URL(built).searchParams.get("next")).toBe("/a b");
+  });
+
+  it("treats an empty next as no next at all", () => {
+    setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
+    expect(new URL(buildMintyEnterUrl("")).searchParams.has("next")).toBe(false);
+  });
 });
 
 describe("buildMintyProfileUrl", () => {

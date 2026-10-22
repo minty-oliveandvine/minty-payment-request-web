@@ -1,20 +1,6 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
+// @minty/shared/eslint: next/core-web-vitals + typescript and the folders no app lints (pdf.js's
+// worker, copied into public/pdfjs/ by next.config.ts, among them). This app adds nothing of its own.
+import { defineConfig } from "eslint/config";
+import minty from "@minty/shared/eslint";
 
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    // pdf.js's worker, copied in from node_modules by next.config.ts (gitignored): not our code.
-    "public/pdfjs/**",
-  ]),
-]);
-
-export default eslintConfig;
+export default defineConfig([...minty]);

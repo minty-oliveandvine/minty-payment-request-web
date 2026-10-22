@@ -7,7 +7,9 @@
  *
  * The card is `@minty/shared/profile`'s since v0.6 (the owner, 2026-10-20: one implementation for
  * every app - it was a copy of minty-web's); its figures are minty-web's `overview`, lifted into
- * the package. This file is this app's part: the read over `/api/me/subscriptions`, every page.
+ * the package. This file is this app's part: the read over `/api/me/subscriptions`, every page -
+ * `@minty/shared/portal`'s `fetchAllSubscriptions` (owner 2026-10-21: one shared module) over this
+ * app's subscription-api client, a wrong-shaped page refused as this app's ApiError(502).
  * Manage Subscription is the host's `links.subscriptions()` - minty-web's portal, through Flask.
  */
 
@@ -16,12 +18,20 @@ import {
   type SubscriptionsList,
 } from "@minty/shared/profile";
 
-import "@/components/ui/sidebarHost";
+import { ApiError } from "@minty/shared/apiClient";
+import { fetchAllSubscriptions, type AllSubscriptions } from "@minty/shared/portal";
 
-import { fetchAllPayerSubscriptions } from "@/features/subscription/api/payerSubscriptions";
+import { subscriptionApi } from "@/components/ui/sidebarHost";
 
-const load = (signal: AbortSignal): Promise<SubscriptionsList> =>
-  fetchAllPayerSubscriptions(signal);
+/** Every company the person is responsible for, every page walked. */
+export function loadSubscriptions(signal?: AbortSignal): Promise<AllSubscriptions> {
+  return fetchAllSubscriptions(subscriptionApi.json, {
+    signal,
+    shapeError: (status, message) => new ApiError(status, message),
+  });
+}
+
+const load = (signal: AbortSignal): Promise<SubscriptionsList> => loadSubscriptions(signal);
 
 /** Rendered by the shell into My Profile's `subscriptions` slot. `today`: tests only. */
 export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {

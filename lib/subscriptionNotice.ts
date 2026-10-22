@@ -12,12 +12,9 @@
  * fails, times out, or the user's token has aged out, the landing page shows
  * nothing rather than an error. Never throws.
  */
-import {
-  getAuth,
-  getLoginSidFromToken,
-  isTokenExpiringSoon,
-  refreshToken,
-} from "./auth";
+import { isTokenExpiringSoon } from "@minty/shared/auth";
+
+import { getAuth, getLoginSidFromToken, refreshToken } from "./auth";
 import { env } from "./env";
 
 export type NoticeSeverity = "critical" | "warning" | "info";
@@ -98,7 +95,7 @@ export async function fetchSubscriptionNotice(): Promise<SubscriptionNotice | nu
   // open holds a token the API will reject long before the cookie disappears. Refresh
   // up front rather than burning the first attempt on a guaranteed 401.
   let token = auth.token;
-  if (isTokenExpiringSoon()) {
+  if (isTokenExpiringSoon(token)) {
     if (await refreshToken()) {
       token = getAuth()?.token ?? token;
     } else {

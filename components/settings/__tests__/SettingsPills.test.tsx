@@ -15,6 +15,7 @@ import {
   integrationTabUrl,
   type SettingsTabId,
 } from "@/components/settings/SettingsPills";
+import { pettyCashSettingsUrl } from "@minty/shared/companyRef";
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -85,6 +86,29 @@ describe("integrationTabUrl", () => {
     expect(integrationTabUrl("https://minty.test", "a/b")).toBe(
       "https://minty.test/entity/a%2Fb/settings/integration",
     );
+  });
+
+  it("does not trim a trailing slash on the origin it is given", () => {
+    expect(integrationTabUrl("https://minty.test/", ENTITY_ID)).toBe(
+      `https://minty.test//entity/${ENTITY_ID}/settings/integration`,
+    );
+  });
+});
+
+// The Petty Cash pill's builder is @minty/shared/companyRef's since the shared-code refactor
+// (2026-10-21); its address is exactly the one this app built before.
+describe("pettyCashSettingsUrl", () => {
+  it("is Flask's hand-off to the Petty Cash app, the company's settings as `next`, exactly", () => {
+    expect(pettyCashSettingsUrl("https://minty.test", ENTITY_ID, ENTITY_NAME)).toBe(
+      `https://minty.test/handoff/petty-cash-web?entity_id=${ENTITY_ID}` +
+        "&next=%2Fentity%2F360812e1%2Folive-and-vine%2Fsettings%2Fpetty-cash" +
+        `&return_origin=${encodeURIComponent(window.location.origin)}`,
+    );
+  });
+
+  it("names an unnamed company 'company' - the server render passes an empty name", () => {
+    const next = new URL(pettyCashSettingsUrl("https://minty.test", ENTITY_ID, "")).searchParams.get("next");
+    expect(next).toBe("/entity/360812e1/company/settings/petty-cash");
   });
 });
 

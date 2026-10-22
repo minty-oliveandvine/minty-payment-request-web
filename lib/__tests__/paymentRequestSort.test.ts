@@ -20,17 +20,22 @@ const order = (rows: ReturnType<typeof billRow>[], key: SortKey, dir: "asc" | "d
 
 describe("parseRowAmount", () => {
   it("reads both row shapes", () => {
-    // invoiceTotal carries no currency symbol, unpaidAmount does.
+    // invoiceTotal carries no currency code, unpaidAmount does (@minty/shared/money's shape).
     expect(parseRowAmount("6,000.00")).toBe(6000);
-    expect(parseRowAmount("HK$ 1,500.00")).toBe(1500);
+    expect(parseRowAmount("HKD 1,500.00")).toBe(1500);
     expect(parseRowAmount("13,000.50")).toBe(13000.5);
+  });
+
+  it("reads a negative with the sign before the code, and the older symbol shape", () => {
+    expect(parseRowAmount("-HKD 120.00")).toBe(-120);
+    expect(parseRowAmount("HK$ 1,500.00")).toBe(1500);
   });
 
   it("is null for blank, a dash or anything with no number in it", () => {
     expect(parseRowAmount("")).toBeNull();
     expect(parseRowAmount("   ")).toBeNull();
     expect(parseRowAmount("-")).toBeNull();
-    expect(parseRowAmount("HK$")).toBeNull();
+    expect(parseRowAmount("HKD")).toBeNull();
   });
 });
 
@@ -161,8 +166,8 @@ describe("compareRows", () => {
 
   it("sorts by unpaid amount, lowest first ascending, with blanks last", () => {
     const rows = [
-      billRow({ id: "high", unpaidAmount: "HK$ 6,000.00" }),
-      billRow({ id: "low", unpaidAmount: "HK$ 300.00" }),
+      billRow({ id: "high", unpaidAmount: "HKD 6,000.00" }),
+      billRow({ id: "low", unpaidAmount: "HKD 300.00" }),
       billRow({ id: "none", unpaidAmount: "" }),
     ];
     expect(order(rows, "unpaidAmount", "asc")).toEqual(["low", "high", "none"]);

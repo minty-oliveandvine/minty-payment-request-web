@@ -202,7 +202,8 @@ export function audit(overrides: Partial<AuditItem> = {}): AuditItem {
 
 /**
  * A table row as the list screen builds it. The amounts are the ones the search and sort tests
- * reason about: `invoiceTotal` carries no currency symbol, `unpaidAmount` does.
+ * reason about: `invoiceTotal` carries no currency code, `unpaidAmount` does - "HKD 6,000.00",
+ * the shape the app itself writes (@minty/shared/money).
  */
 export function billRow(overrides: Partial<PaymentRequestRow> = {}): PaymentRequestRow {
   return {
@@ -215,7 +216,7 @@ export function billRow(overrides: Partial<PaymentRequestRow> = {}): PaymentRequ
     submittedDate: "04 Mar 2026",
     submittedDateIso: "2026-03-04",
     status: "Payment Requested",
-    unpaidAmount: "HK$ 6,000.00",
+    unpaidAmount: "HKD 6,000.00",
     invoiceTotal: "6,000.00",
     payment: "",
     paidDate: "-",
@@ -227,8 +228,8 @@ export function billRow(overrides: Partial<PaymentRequestRow> = {}): PaymentRequ
 
 /** The four amounts the search tests turn on: 3,000.00 · 13,000.50 · 300.00 · 1,500.00. */
 export const SEARCH_ROWS: PaymentRequestRow[] = [
-  billRow({ id: "r-3000", contactTitle: "Exact Three Thousand", invoiceTotal: "3,000.00", unpaidAmount: "HK$ 3,000.00" }),
-  billRow({ id: "r-13000", contactTitle: "Thirteen Thousand Fifty", invoiceTotal: "13,000.50", unpaidAmount: "HK$ 13,000.50" }),
-  billRow({ id: "r-300", contactTitle: "Three Hundred", invoiceTotal: "300.00", unpaidAmount: "HK$ 300.00" }),
-  billRow({ id: "r-1500", contactTitle: "3000", contactCaption: "A supplier literally named 3000", invoiceTotal: "1,500.00", unpaidAmount: "HK$ 1,500.00" }),
+  billRow({ id: "r-3000", contactTitle: "Exact Three Thousand", invoiceTotal: "3,000.00", unpaidAmount: "HKD 3,000.00" }),
+  billRow({ id: "r-13000", contactTitle: "Thirteen Thousand Fifty", invoiceTotal: "13,000.50", unpaidAmount: "HKD 13,000.50" }),
+  billRow({ id: "r-300", contactTitle: "Three Hundred", invoiceTotal: "300.00", unpaidAmount: "HKD 300.00" }),
+  billRow({ id: "r-1500", contactTitle: "3000", contactCaption: "A supplier literally named 3000", invoiceTotal: "1,500.00", unpaidAmount: "HKD 1,500.00" }),
 ];

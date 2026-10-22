@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { formatAmount } from "@minty/shared/money";
 import type { PaymentRequestRow } from "./PaymentRequestTable";
 import { currencyLabelForCode } from "@/lib/currencyDisplay";
-import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
+import { formatDay } from "@minty/shared/dates";
 import { parseRowAmount } from "@/lib/paymentRequestRowSort";
 
 /** Currency groups rendered in full before the rest collapse into a "+N more" line. */
@@ -22,13 +23,9 @@ export type PaymentRequestTotalsBannerProps = {
 
 type CurrencyTotals = { code: string; invoice: number; unpaid: number };
 
-export function formatTotal(n: number): string {
-  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 /**
  * Sums both figures per currency so HKD is never silently added to USD.
- * `invoiceTotal` carries no symbol ("6,000.00"), `unpaidAmount` does ("HK$ 1,500.00") —
+ * `invoiceTotal` carries no code ("6,000.00"), `unpaidAmount` does ("HKD 1,500.00") —
  * `parseRowAmount` handles both. Largest unpaid total leads, matching the headline figure.
  */
 function sumByCurrency(rows: PaymentRequestRow[]): CurrencyTotals[] {
@@ -45,8 +42,8 @@ function sumByCurrency(rows: PaymentRequestRow[]): CurrencyTotals[] {
 
 /** `10 Aug 2026 - 17 Aug 2026`, or just the one side that is set. */
 function formatDateRange(startDate: string, endDate: string): string {
-  const from = startDate ? formatIsoDateForDisplay(startDate) || startDate : "";
-  const to = endDate ? formatIsoDateForDisplay(endDate) || endDate : "";
+  const from = startDate ? formatDay(startDate) || startDate : "";
+  const to = endDate ? formatDay(endDate) || endDate : "";
   if (from && to) return `${from} - ${to}`;
   if (from) return `From ${from}`;
   if (to) return `Until ${to}`;
@@ -99,11 +96,11 @@ export function PaymentRequestTotalsBanner({
           <div className="grid grid-cols-[auto_auto] items-baseline gap-x-6">
             <span className="text-[15px] font-medium text-text-primary">{unpaidLabel}</span>
             <span className="whitespace-nowrap text-right text-2xl font-bold tabular-nums text-text-link">
-              {formatTotal(g.unpaid)}
+              {formatAmount(g.unpaid)}
             </span>
             <span className="text-sm text-text-muted">{invoiceLabel}</span>
             <span className="whitespace-nowrap text-right text-base tabular-nums text-text-muted">
-              {formatTotal(g.invoice)}
+              {formatAmount(g.invoice)}
             </span>
           </div>
         </div>

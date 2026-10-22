@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 
-import { companyRef } from "@minty/shared/companyRef";
-import { withReturnOrigin } from "@minty/shared/previewSibling";
+import { useClientValue } from "@minty/shared/clientValue";
+import { pettyCashSettingsUrl } from "@minty/shared/companyRef";
 
 import { getAuth } from "@/lib/auth";
 import { useEntitlements } from "@/lib/moduleClaims";
-import { useClientValue } from "@/lib/useClientValue";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export const SETTINGS_TAB_IDS = ["users", "xero", "entity", "bill", "modules"] as const;
@@ -44,19 +43,12 @@ const pillClass = (isActive: boolean) =>
       : "border-border-default bg-surface-card text-text-secondary hover:bg-state-hover"
   }`;
 
-/**
- * Petty Cash Settings: the Petty Cash app's settings page (minty-petty-cash-web), through Flask's
- * login-gated `/handoff/petty-cash-web`, which mints that app's token for this company and lands
- * on `next` - as minty-web's pill does. Never Flask's own (retired) settings page. No token in
- * the address: the Flask session is the credential, as for the other pills.
- */
-export const pettyCashSettingsUrl = (module1Url: string, entityId: string, entityName: string) => {
-  const qs = new URLSearchParams({
-    entity_id: entityId,
-    next: `/entity/${companyRef(entityId, entityName)}/settings/petty-cash`,
-  });
-  return withReturnOrigin(`${module1Url}/handoff/petty-cash-web?${qs.toString()}`);
-};
+// Petty Cash Settings is `@minty/shared/companyRef`'s `pettyCashSettingsUrl` (owner 2026-10-21:
+// one shared module): the Petty Cash app's settings page (minty-petty-cash-web), through Flask's
+// login-gated `/handoff/petty-cash-web`, which mints that app's token for this company and lands
+// on `next` - as minty-web's pill does. No token in the address: the Flask session is the
+// credential, as for the other pills. The other three keep this app's own builders below: the
+// package's `settingsSectionUrl` would send them through a different Flask route.
 
 /** Entity & Integration (where Xero is connected) - also the way there from a Xero-less card. */
 export const integrationTabUrl = (module1Url: string, entityId: string) =>
@@ -88,9 +80,9 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
   // The "Petty Cash Settings" pill bounces the user over to Module 1; it makes
   // no sense for entities that don't have the petty cash module turned on, and
   // would land them on a screen they can't use. Filter it out when disabled.
-  const { pettyCashEnabled } = useEntitlements();
+  const { pettyCash: pettyCashEnabled } = useEntitlements();
   const pages = useCompanyPages();
-  const entityName = useClientValue(() => getAuth()?.entityName ?? "", "");
+  const entityName = useClientValue(() => getAuth()?.entityName ?? "", () => "");
   const visibleTabs = TABS.filter((t) => t.id !== "entity" || pettyCashEnabled);
 
   return (

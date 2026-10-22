@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import { withMintyDefaults } from "@minty/shared/next";
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
@@ -34,35 +34,12 @@ function copyPdfjsAssets() {
 copyPdfjsAssets();
 
 /**
- * Sent with every response (the URL security round, 2026-10-05). Same values in minty-web,
- * minty-payment-request-web and minty-onboarding-web, and in Flask (pettycash/core/http_hardening.py).
- * - Referrer-Policy same-origin: another site never sees a path or query from here (tokens).
- * - frame-ancestors / X-Frame-Options: only this app may frame its pages (clickjacking).
- * - HSTS in production builds only; a browser ignores it over plain http anyway.
+ * withMintyDefaults (@minty/shared/next) supplies what every Minty app sends and needs: the
+ * security headers on every path (the URL security round, 2026-10-05), no X-Powered-By,
+ * `transpilePackages: ["@minty/shared"]` (the package ships .ts source) and 127.0.0.1 as an
+ * allowed dev origin. Only this app's own settings are below.
  */
-const securityHeaders = [
-  { key: "Referrer-Policy", value: "same-origin" },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
-  { key: "X-Frame-Options", value: "SAMEORIGIN" },
-  ...(process.env.NODE_ENV === "production"
-    ? [{ key: "Strict-Transport-Security", value: "max-age=31536000" }]
-    : []),
-];
-
-const nextConfig: NextConfig = {
-  /**
-   * @minty/shared ships .ts/.tsx SOURCE, not a build (modernisation_plan.md Part 3 step 4), so
-   * Next compiles it with this app's own toolchain. Without this the build fails on the first
-   * .ts file under node_modules - loudly, unlike the Tailwind scan, which fails silently (see
-   * the @source line in app/globals.css).
-   */
-  transpilePackages: ["@minty/shared"],
-  async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
-  },
-  /** Slightly smaller responses; security-through-obscurity only. */
-  poweredByHeader: false,
+export default withMintyDefaults({
   /**
    * The plain-named variables this app reads, inlined at build time into the client bundle,
    * the server and middleware.ts. Raw values only ("" when unset - Next skips an undefined
@@ -75,6 +52,4 @@ const nextConfig: NextConfig = {
     SUBSCRIPTION_API_URL: process.env.SUBSCRIPTION_API_URL ?? "",
     MAINTENANCE_SHOW_NEW_LINK: process.env.MAINTENANCE_SHOW_NEW_LINK ?? "",
   },
-};
-
-export default nextConfig;
+});

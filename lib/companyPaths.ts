@@ -2,7 +2,8 @@
  * The pages under a company's address, from the address itself - no package import, so the
  * Playwright helpers can use it. Playwright never compiles TypeScript under node_modules, and
  * @minty/shared ships as .ts source, so anything e2e/ imports must not reach the package
- * (`lib/companyPages.ts` does, for `companyRef`). See e2e/companyRef.ts.
+ * (`lib/companyPages.ts` does, for `companyRef`); e2e/ takes `companyRef` from the plain-JS
+ * `@minty/shared/e2e`.
  */
 
 export type CompanyPages = {

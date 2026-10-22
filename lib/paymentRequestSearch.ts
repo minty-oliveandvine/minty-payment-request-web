@@ -8,8 +8,8 @@ import { parseRowAmount } from "@/lib/paymentRequestRowSort";
 export type SearchMode = "contains" | "exact";
 
 /**
- * Digits and the decimal point only — thousands separators and currency symbols dropped.
- * `"6,000.00"` → `"6000.00"`, `"HK$ 1,500.00"` → `"1500.00"`, `"3,000"` → `"3000"`.
+ * Digits and the decimal point only — thousands separators and currency codes (or symbols) dropped.
+ * `"6,000.00"` → `"6000.00"`, `"HKD 1,500.00"` → `"1500.00"`, `"3,000"` → `"3000"`.
  *
  * The decimal point is deliberately kept: stripping to bare digits would turn
  * `"3,000.00"` into `"300000"` and `"300.00"` into `"30000"`, so a query of `3000`

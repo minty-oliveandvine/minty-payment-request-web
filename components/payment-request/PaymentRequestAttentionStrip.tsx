@@ -16,10 +16,11 @@ import type { ReactNode } from "react";
 
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { currencyLabelForCode } from "@/lib/currencyDisplay";
+import { formatMoney } from "@minty/shared/money";
+
 import type { AttentionGroup, PaymentRequestAttention } from "@/lib/paymentRequestAttention";
 
-import { formatTotal, MAX_CURRENCY_GROUPS } from "./PaymentRequestTotalsBanner";
+import { MAX_CURRENCY_GROUPS } from "./PaymentRequestTotalsBanner";
 
 export type AttentionTile = "overdue" | "dueSoon" | "returned";
 
@@ -51,7 +52,7 @@ function UnpaidLines({ group }: { group: AttentionGroup }) {
     <span className="flex flex-col text-body-s text-text-primary tabular-nums" translate="no">
       {shown.map((u) => (
         <span key={u.code} className="whitespace-nowrap">
-          {currencyLabelForCode(u.code)} {formatTotal(u.amount)} unpaid
+          {formatMoney(u.amount, u.code)} unpaid
         </span>
       ))}
       {hidden > 0 ? (

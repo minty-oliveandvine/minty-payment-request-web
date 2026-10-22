@@ -6,24 +6,32 @@
  * build time. Spell each one out: a dynamic `process.env[name]` is never inlined and silently
  * reads undefined in the browser.
  *
- * Defaults are the owner's local ports (2026-10-16, Documents\dev.ps1: Petty Cash / Flask 8000,
- * Payment Request API 8020, Subscription API 8001); trailing slashes are stripped. The deployed app sets all three explicitly. No
- * environment-name switch - one variable, one URL.
+ * The rule is `envUrl` (@minty/shared/env; owner 2026-10-21: one shared module): trimmed, every
+ * trailing slash stripped, and a blank value (a lone "/" counts) gets the owner's local port
+ * (2026-10-16, Documents\dev.ps1: Petty Cash / Flask 8000, Payment Request API 8020,
+ * Subscription API 8001) in development and tests only - a production build with one unset
+ * THROWS, naming it. CI and every Vercel environment set all three. No environment-name switch -
+ * one variable, one URL.
  */
 
-function url(raw: string | undefined, fallback: string): string {
-  const value = (raw ?? "").trim();
-  return (value || fallback).replace(/\/+$/, "");
-}
+import { envUrl } from "@minty/shared/env";
 
 export const env = {
   /** Petty Cash (Minty, Flask) - login, `/enter`, the re-handoff to minty-web, the profile. */
-  PETTY_CASH_URL: url(process.env.PETTY_CASH_URL, "http://localhost:8000"),
+  PETTY_CASH_URL: envUrl("PETTY_CASH_URL", process.env.PETTY_CASH_URL, "http://localhost:8000"),
   /** minty-payment-request-api - every `/api/v1` call this app makes. */
-  PAYMENT_REQUEST_API_URL: url(process.env.PAYMENT_REQUEST_API_URL, "http://localhost:8020"),
+  PAYMENT_REQUEST_API_URL: envUrl(
+    "PAYMENT_REQUEST_API_URL",
+    process.env.PAYMENT_REQUEST_API_URL,
+    "http://localhost:8020",
+  ),
   /**
    * minty-subscription-api - the sidebar's Subscriptions Overview (`/api/me/subscriptions`)
    * and the landing page's subscription notice (`/api/entities/{id}/subscription-notice`).
    */
-  SUBSCRIPTION_API_URL: url(process.env.SUBSCRIPTION_API_URL, "http://localhost:8001"),
+  SUBSCRIPTION_API_URL: envUrl(
+    "SUBSCRIPTION_API_URL",
+    process.env.SUBSCRIPTION_API_URL,
+    "http://localhost:8001",
+  ),
 } as const;

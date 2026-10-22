@@ -34,7 +34,7 @@ const ROWS: PaymentRequestRow[] = [
     contactTitle: "Young Bros Transport",
     contactCaption: "Corporate stationery",
     status: "Payment Requested",
-    unpaidAmount: "HK$ 6,000.00",
+    unpaidAmount: "HKD 6,000.00",
     invoiceDate: "03 Mar 2026",
     submittedDate: "04 Mar 2026",
     xeroActive: true,
@@ -44,7 +44,7 @@ const ROWS: PaymentRequestRow[] = [
     contactTitle: "Draft Supplier",
     contactCaption: "A draft",
     status: "Draft",
-    unpaidAmount: "HK$ 450.25",
+    unpaidAmount: "HKD 450.25",
     invoiceDate: "01 Mar 2026",
   }),
   billRow({
@@ -52,7 +52,7 @@ const ROWS: PaymentRequestRow[] = [
     contactTitle: "Cancelled Order Inc",
     contactCaption: "Voided",
     status: "Voided",
-    unpaidAmount: "HK$ 800.00",
+    unpaidAmount: "HKD 800.00",
   }),
 ];
 
@@ -157,7 +157,15 @@ describe("the rows", () => {
   it("show the unpaid amount with its currency", () => {
     show();
 
-    expect(table().getByText("HK$ 6,000.00")).toBeInTheDocument();
+    expect(table().getByText("HKD 6,000.00")).toBeInTheDocument();
+  });
+
+  it("show the invoice total beneath it in the same money format", async () => {
+    show();
+
+    // owner 2026-10-21: one money rule (@minty/shared/money) - code, one space, the places.
+    // Every fixture row shares the default 6,000.00 invoice total.
+    expect((await within(screen.getByRole("table")).findAllByText("of HKD 6,000.00")).length).toBeGreaterThan(0);
   });
 
   it("say so plainly when nothing matches the status", () => {

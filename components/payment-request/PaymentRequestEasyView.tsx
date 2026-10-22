@@ -19,6 +19,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { formatMoney } from "@minty/shared/money";
+
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
@@ -282,8 +284,7 @@ export function PaymentRequestEasyView({
                   <span className="whitespace-nowrap text-title-m tabular-nums text-text-primary">{row.unpaidAmount}</span>
                   {row.invoiceTotal ? (
                     <span className="whitespace-nowrap text-caption tabular-nums text-text-muted">
-                      of {row.currencyCode ? `${row.currencyCode} ` : ""}
-                      {row.invoiceTotal}
+                      of {formatMoney(row.invoiceTotal, row.currencyCode)}
                     </span>
                   ) : null}
                 </div>

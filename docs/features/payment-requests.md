@@ -44,7 +44,7 @@ Secondary, the detail header's Edit and More, "Continue" for a draft. Table view
 Submitted, Paid date, Bankslip, Xero and ⋮ columns, and money stays in the currency CODE
 ("HKD 4,800.00"), not the Figma's "HK$". **Drawn in the Figma, not built** (follow-ups, some need
 API work): Export CSV; draft autosave ("Saved 2 min ago"); the Table selection bar ("2 requests
-selected · HK$6,040.00 unpaid · Clear · Download slips · Record payment for 2"); invoice rows
+selected · HKD 6,040.00 unpaid · Clear · Download slips · Record payment for 2"); invoice rows
 nested under a request ("Invoice INV-… · 2 bank slips").
 
 ## The list (`/entity/<shortid>/<name>/payment-request`, `components/payment-request/PaymentRequestView.tsx`)
@@ -93,6 +93,14 @@ nested under a request ("Invoice INV-… · 2 bank slips").
 - **Record payment** opens one drawer, `RecordPaymentDrawer.tsx`, from either view (below).
 - Every amount is shown in the **entity's currency** (`lib/entityCurrency.ts` from
   `GET /api/auth/entity-currency`), never the bill's stored code.
+- **One money rule** (owner, 2026-10-21): every amount goes through `@minty/shared/money`
+  (this app's own `lib/amountFormat.ts` is gone) - "HKD 1,234.50": the ISO code, a non-breaking
+  space (U+00A0, so a line never splits the code from its amount), two places, never a symbol;
+  a negative is "-HKD 120.00"; extra decimals are cut, not rounded ("9.999" → "9.99"); with no
+  currency yet the number stands alone. Payment requests always show
+  the places (`formatMoney`, never `formatPrice`). The totals banner's figures carry no code
+  (`formatAmount`; a mixed set names each currency above its group). Typing keeps plain digits,
+  capped at 11 before the point and 2 after, and groups on blur.
 - **Bank slip counts** load per visible row (`lib/bankSlipEnrichment.ts`). An unknown count is
   never shown as zero: while loading the row shows "…", and a failed lookup is logged and shows
   **Retry** (`BankSlipLoadState.tsx`, re-reads the rows on screen) — never **Upload**, which
@@ -247,7 +255,8 @@ that component is gone, along with the unused `FileAttachmentPreviewLayer` and t
   and leaves the modal open. Those modals deliberately have **no** `viewerOpen` branch.
 - **Focus** starts on Close, is trapped, and returns to the opener on unmount (with a
   fallback: the opener may have been removed, e.g. the file was deleted).
-- **The scroll lock is reference counted** (`lib/appScrollRoot.ts`). Save-and-restore was
+- **The scroll lock is reference counted** (`@minty/shared/scrollLock`, lifted from this app's
+  old `lib/appScrollRoot.ts`). Save-and-restore was
   only safe if cleanups ran strictly LIFO, which React does not guarantee when a parent and
   child unmount in one commit; the out-of-order case left `overflow: hidden` on for good.
 - **The viewer creates no object URL.** The caller owns the URL's lifetime and renders the

@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef } from "react";
-import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
+import { formatDay } from "@minty/shared/dates";
 
 export const DATE_TEXT_PLACEHOLDER = "DD MM YYYY";
 
@@ -47,7 +47,7 @@ export function DateTextField({
         triggering .showPicker() to guarantee clean dropdown activation across platforms 
         without native browser text overlapping.
   */
-  const display = value ? formatIsoDateForDisplay(value) : "";
+  const display = value ? formatDay(value) : "";
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   const handleContainerClick = () => {

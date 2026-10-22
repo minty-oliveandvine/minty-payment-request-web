@@ -19,7 +19,7 @@ import {
   setEasyView,
   subscribeEasyView,
 } from "@/lib/easyViewStore";
-import { useClientValue } from "@/lib/useClientValue";
+import { useClientValue } from "@minty/shared/clientValue";
 import { fetchXeroStatus } from "@/lib/api";
 import {
   claimSubscriptionNotice,
@@ -31,7 +31,7 @@ export default function Home() {
   // Both come from the browser, so both are read as snapshots rather than seeded by an effect:
   // the cookie never changes under us, the Easy View preference does (the toggle writes it), so
   // only that one has a store with a subscribe.
-  const auth = useClientValue(getAuthSnapshot, null);
+  const auth = useClientValue(getAuthSnapshot, () => null);
   const easyView = useSyncExternalStore(
     subscribeEasyView,
     getEasyViewSnapshot,

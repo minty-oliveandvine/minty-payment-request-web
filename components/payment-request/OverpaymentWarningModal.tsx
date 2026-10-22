@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Overlay";
 import type { PaymentItem } from "@/lib/api";
-import { formatDateInTimeZoneForDisplay, formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
-import { formatMoney } from "@/lib/amountFormat";
+import { HK_TIME_ZONE, formatDay, formatInstantDay } from "@minty/shared/dates";
+import { formatMoney } from "@minty/shared/money";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export type OverpaymentWarningModalProps = {
@@ -22,18 +22,18 @@ function formatPaymentDateTime(dateStr: string | null): string {
   if (!dateStr) return "—";
   const head = dateStr.trim().slice(0, 10);
   if (/^\d{4}-\d{2}-\d{2}$/.test(head)) {
-    return formatIsoDateForDisplay(head) || dateStr;
+    return formatDay(head) || dateStr;
   }
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return dateStr;
-  return formatDateInTimeZoneForDisplay(d, "Asia/Hong_Kong") || dateStr;
+  return formatInstantDay(d, HK_TIME_ZONE) || dateStr;
 }
 
 function formatCreatedAt(isoStr: string | null | undefined): string {
   if (!isoStr) return "";
   const d = new Date(isoStr);
   if (Number.isNaN(d.getTime())) return "";
-  const datePart = formatDateInTimeZoneForDisplay(d, "Asia/Hong_Kong");
+  const datePart = formatInstantDay(d, HK_TIME_ZONE);
   const timePart = d.toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",

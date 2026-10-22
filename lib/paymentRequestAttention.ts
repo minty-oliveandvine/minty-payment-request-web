@@ -9,7 +9,7 @@
  */
 
 import type { PaymentRequestRow } from "@/components/payment-request/PaymentRequestTable";
-import { BILLING_TIME_ZONE, isoDateInTimeZone } from "@/lib/dateDisplayFormat";
+import { HK_TIME_ZONE, isoDateInTimeZone } from "@minty/shared/dates";
 import { parseRowAmount } from "@/lib/paymentRequestRowSort";
 
 /** "Due soon" = due today up to this many days ahead. */
@@ -36,7 +36,7 @@ export type PaymentRequestAttention = {
 
 /** Today's calendar date in the billing timezone, as `yyyy-mm-dd`. */
 export function billingToday(now: Date = new Date()): string {
-  return isoDateInTimeZone(now, BILLING_TIME_ZONE);
+  return isoDateInTimeZone(HK_TIME_ZONE, now);
 }
 
 function isoToUtcDay(iso: string): number | null {

@@ -190,6 +190,14 @@ describe("the rows it shows", () => {
     await waitFor(() => expect(table().getByText("HKD 6,000.00")).toBeInTheDocument());
   });
 
+  it("read a blank amount due as nothing owed, in the same format", async () => {
+    serve({ pages: [[billListItem({ id: "b1", contact: "One Supplier", amount_due: "" })]] });
+
+    show();
+
+    await waitFor(() => expect(table().getByText("HKD 0.00")).toBeInTheDocument());
+  });
+
   it("say so plainly when the company has none", async () => {
     serve({ pages: [[]] });
 

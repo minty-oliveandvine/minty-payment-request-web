@@ -34,12 +34,12 @@ const ROWS: PaymentRequestRow[] = [
     contactTitle: "Young Bros Transport",
     contactCaption: "Corporate stationery",
     status: "Payment Requested",
-    unpaidAmount: "HK$ 6,000.00",
+    unpaidAmount: "HKD 6,000.00",
   }),
-  billRow({ id: "r-part", contactTitle: "Half Paid Ltd", status: "Partially Paid", unpaidAmount: "HK$ 300.00" }),
-  billRow({ id: "r-paid", contactTitle: "All Square Co", status: "Paid", unpaidAmount: "HK$ 0.00" }),
-  billRow({ id: "r-draft", contactTitle: "Draft Supplier", status: "Draft", unpaidAmount: "HK$ 450.25" }),
-  billRow({ id: "r-void", contactTitle: "Cancelled Order Inc", status: "Voided", unpaidAmount: "HK$ 800.00" }),
+  billRow({ id: "r-part", contactTitle: "Half Paid Ltd", status: "Partially Paid", unpaidAmount: "HKD 300.00" }),
+  billRow({ id: "r-paid", contactTitle: "All Square Co", status: "Paid", unpaidAmount: "HKD 0.00" }),
+  billRow({ id: "r-draft", contactTitle: "Draft Supplier", status: "Draft", unpaidAmount: "HKD 450.25" }),
+  billRow({ id: "r-void", contactTitle: "Cancelled Order Inc", status: "Voided", unpaidAmount: "HKD 800.00" }),
 ];
 
 const onSortChange = vi.fn<(key: EasyViewSortKey) => void>();
@@ -101,7 +101,9 @@ describe("a row", () => {
     show();
     const r = row("Young Bros Transport");
     expect(r).toHaveTextContent("Corporate stationery");
-    expect(within(r).getByText("HK$ 6,000.00")).toHaveClass("text-text-primary", "tabular-nums");
+    expect(within(r).getByText("HKD 6,000.00")).toHaveClass("text-text-primary", "tabular-nums");
+    // owner 2026-10-21: one money rule (@minty/shared/money) - the total in the same format.
+    expect(within(r).getByText("of HKD 6,000.00")).toBeInTheDocument();
   });
 
   it.each([

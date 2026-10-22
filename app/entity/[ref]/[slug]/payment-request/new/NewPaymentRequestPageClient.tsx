@@ -5,12 +5,12 @@ import { PaymentRequestForm } from "@/components/PaymentRequestForm";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getAuthSnapshot } from "@/lib/auth";
-import { useClientValue } from "@/lib/useClientValue";
+import { useClientValue } from "@minty/shared/clientValue";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 import { useUserRole } from "@/lib/useUserRole";
 
 export function NewPaymentRequestPageClient() {
-  const auth = useClientValue(getAuthSnapshot, null);
+  const auth = useClientValue(getAuthSnapshot, () => null);
   const pages = useCompanyPages();
   const { hasAnyRole, isViewOnly } = useUserRole();
 

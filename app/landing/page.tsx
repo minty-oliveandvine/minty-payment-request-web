@@ -1,32 +1,30 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
+import { useLandingHandoff } from "@minty/shared/landing";
+import { withReturnOrigin } from "@minty/shared/previewSibling";
 import { setAuth } from "@/lib/auth";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
-import { withReturnOrigin } from "@minty/shared/previewSibling";
-import { safeNextPath } from "@minty/shared/safeNext";
 
+/** Nothing to land with: back into Minty (its /entity - the entity list, or sign-in). */
+function backToMinty() {
+  window.location.replace(withReturnOrigin(`${MINTY_MODULE_URL}/entity`));
+}
+
+/**
+ * Flask's hand-off lands here (`/landing?token=…&next=…&entity_id=…&entity_name=…`):
+ * `@minty/shared/landing`'s hook (owner 2026-10-21: one shared module) stores the token and goes
+ * to the safe `next` - "/" when there is none, which the middleware moves to the company's list.
+ */
 function LandingContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const token = searchParams.get("token") ?? "";
-    const entityId = searchParams.get("entity_id") ?? "";
-    const entityName = searchParams.get("entity_name") ?? "";
-    // No `next`: "/" - the middleware moves it to the company's own list.
-    const next = safeNextPath(searchParams.get("next"), "/");
-
-    if (!token) {
-      // Nothing to land with: back into Minty (its /entity - the entity list, or sign-in).
-      window.location.replace(withReturnOrigin(`${MINTY_MODULE_URL}/entity`));
-      return;
-    }
-
-    setAuth(token, entityId, entityName);
-    router.replace(next);
-  }, [router, searchParams]);
+  useLandingHandoff({
+    searchParams: useSearchParams(),
+    router: useRouter(),
+    setAuth,
+    home: "/",
+    onNoToken: backToMinty,
+  });
 
   return (
     <div className="flex min-h-dvh min-h-screen items-center justify-center bg-surface-card">

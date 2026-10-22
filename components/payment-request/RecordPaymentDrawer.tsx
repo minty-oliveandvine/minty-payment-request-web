@@ -6,7 +6,7 @@
  * 480 wide over the Part 13 scrim; a full-screen sheet on a phone (components/ui/Overlay.tsx).
  * Top to bottom: what is owed (Invoice amount, Paid so far, Unpaid) → the payments already
  * recorded → [Pay in full | Part payment] → Amount (helper "Unpaid: …", live "Unpaid after this
- * payment") → Payment date → bank slips → the Primary "Record HK$…" in the footer.
+ * payment") → Payment date → bank slips → the Primary "Record HKD …" in the footer.
  *
  * Rules kept from the old dialog, unchanged:
  * - once a part payment exists (or the bill is Partially Paid) only part payments are offered;
@@ -37,7 +37,7 @@ import {
   formatMoney,
   parseAmount,
   toAmountEditString,
-} from "@/lib/amountFormat";
+} from "@minty/shared/money";
 import {
   ApiError,
   createPayment,
@@ -54,7 +54,7 @@ import {
   billStatusShouldRollbackWhenNoPayments,
   normalizeBillStatusKey,
 } from "@/lib/billStatusRollback";
-import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
+import { formatDay } from "@minty/shared/dates";
 import { useEntityCurrency } from "@/lib/entityCurrency";
 import { shouldShowPaymentInHistory } from "@/lib/paymentHistoryDisplay";
 import { useUserRole } from "@/lib/useUserRole";
@@ -82,14 +82,14 @@ function formatPaymentDateLabel(dateStr: string | null) {
   if (!dateStr) return "—";
   const head = dateStr.trim().slice(0, 10);
   if (/^\d{4}-\d{2}-\d{2}$/.test(head)) {
-    return formatIsoDateForDisplay(head) || dateStr;
+    return formatDay(head) || dateStr;
   }
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return dateStr;
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return formatIsoDateForDisplay(`${y}-${m}-${day}`) || dateStr;
+  return formatDay(`${y}-${m}-${day}`) || dateStr;
 }
 
 function todayISO() {

@@ -40,12 +40,12 @@ import {
   formatMoney,
   isWithinAmountLimits,
   parseAmount,
-} from "@/lib/amountFormat";
+} from "@minty/shared/money";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
 import { billHasRemainingCountablePayments, billStatusShouldRollbackWhenNoPayments } from "@/lib/billStatusRollback";
 import { enrichAccountCodeWithOptions } from "@/lib/billFormSelectOptions";
 import { billToDetailedInfo, buildBillUpdatePayload } from "@/lib/paymentRequestBillMap";
-import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
+import { formatDay } from "@minty/shared/dates";
 import { shouldShowPaymentInHistory } from "@/lib/paymentHistoryDisplay";
 import {
   loadAttachmentBlobs,
@@ -965,7 +965,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     if (!requestId) return [];
     return payments.filter(shouldShowPaymentInHistory).map((p): PaymentHistoryRow => {
       const shortDate = p.payment_date
-        ? formatIsoDateForDisplay(p.payment_date.trim().slice(0, 10)) || "—"
+        ? formatDay(p.payment_date.trim().slice(0, 10)) || "—"
         : "—";
       const forThisBill = p.bill_id === requestId;
       const dateLabel = shortDate;
@@ -1113,7 +1113,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   // ---- Part 15.17 Record page: the header's actions, from the status × action matrix ----
   const canPay = isElevated && !isViewOnly;
   const statusNow = billDisplayStatus;
-  const submittedOn = bill?.created_at ? formatIsoDateForDisplay(bill.created_at.slice(0, 10)) : "";
+  const submittedOn = bill?.created_at ? formatDay(bill.created_at.slice(0, 10)) : "";
   const summaryItems: SummaryItem[] = submitAttemptFieldErrors
     ? (Object.keys(DETAIL_FIELD_IDS) as (keyof typeof DETAIL_FIELD_IDS)[])
         .filter((k) => k !== "billNo" && submitAttemptFieldErrors[k as keyof DetailSubmitFieldErrors])

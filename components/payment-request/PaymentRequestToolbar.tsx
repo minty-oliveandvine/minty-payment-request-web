@@ -10,7 +10,7 @@ import { FilterChip } from "@/components/ui/FilterChip";
 import { Icon } from "@/components/ui/Icon";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useUserRole } from "@/lib/useUserRole";
-import { acceptAmountInput, formatAmount, toAmountEditString } from "@/lib/amountFormat";
+import { acceptAmountInput, formatAmount, toAmountEditString } from "@minty/shared/money";
 
 const FILTER_DATE_TYPE_OPTIONS = [
   { value: "Invoice Date", label: "Invoice Date" },

@@ -1,4 +1,5 @@
-// How dates are shown and reckoned (lib/dateDisplayFormat.ts).
+// How dates are shown and reckoned: @minty/shared/dates (owner 2026-10-21: one shared module) as
+// this app uses it, and the two helpers lib/dateDisplayFormat.ts keeps.
 //
 // Every case passes `timeZone` explicitly, so the suite says the same thing on a machine in
 // Hong Kong and one in London. The one case that matters most is the UTC-to-Hong-Kong rollover:
@@ -8,22 +9,21 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  BILLING_TIME_ZONE,
-  formatDateInTimeZoneForDisplay,
-  formatIsoDateAsDdMmmYyyy,
-  formatIsoDateForDisplay,
-  formatLocalDateForDisplay,
+  HK_TIME_ZONE as BILLING_TIME_ZONE,
+  formatDay as formatIsoDateForDisplay,
+  formatInstantDay,
   isoDateInTimeZone,
-  parseDdMmmYyyyToIso,
-} from "@/lib/dateDisplayFormat";
+} from "@minty/shared/dates";
 
-describe("BILLING_TIME_ZONE", () => {
+import { formatLocalDateForDisplay, parseDdMmmYyyyToIso } from "@/lib/dateDisplayFormat";
+
+describe("HK_TIME_ZONE", () => {
   it("is Hong Kong - display and date filtering must agree on it", () => {
     expect(BILLING_TIME_ZONE).toBe("Asia/Hong_Kong");
   });
 });
 
-describe("formatIsoDateForDisplay", () => {
+describe("formatDay (was formatIsoDateForDisplay / formatIsoDateAsDdMmmYyyy)", () => {
   it.each([
     ["2026-03-03", "03 Mar 2026"],
     ["2026-12-31", "31 Dec 2026"],
@@ -50,10 +50,6 @@ describe("formatIsoDateForDisplay", () => {
       expect(formatIsoDateForDisplay(raw)).toBe("");
     },
   );
-
-  it("formatIsoDateAsDdMmmYyyy is the same function under its other name", () => {
-    expect(formatIsoDateAsDdMmmYyyy("2026-03-03")).toBe(formatIsoDateForDisplay("2026-03-03"));
-  });
 });
 
 describe("formatLocalDateForDisplay", () => {
@@ -69,61 +65,57 @@ describe("formatLocalDateForDisplay", () => {
   });
 });
 
-describe("isoDateInTimeZone", () => {
+// owner 2026-10-21: one shared module (@minty/shared/dates) - the zone comes FIRST now.
+describe("isoDateInTimeZone(timeZone, date)", () => {
   it("rolls a UTC evening into the next Hong Kong day", () => {
-    expect(isoDateInTimeZone(new Date("2026-08-31T18:00:00Z"), BILLING_TIME_ZONE)).toBe("2026-09-01");
+    expect(isoDateInTimeZone(BILLING_TIME_ZONE, new Date("2026-08-31T18:00:00Z"))).toBe("2026-09-01");
   });
 
   it("keeps a UTC morning on the same Hong Kong day", () => {
-    expect(isoDateInTimeZone(new Date("2026-08-31T02:00:00Z"), BILLING_TIME_ZONE)).toBe("2026-08-31");
+    expect(isoDateInTimeZone(BILLING_TIME_ZONE, new Date("2026-08-31T02:00:00Z"))).toBe("2026-08-31");
   });
 
   it("is the UTC day when asked for UTC", () => {
-    expect(isoDateInTimeZone(new Date("2026-08-31T18:00:00Z"), "UTC")).toBe("2026-08-31");
+    expect(isoDateInTimeZone("UTC", new Date("2026-08-31T18:00:00Z"))).toBe("2026-08-31");
   });
 
   it("compares correctly with a plain string comparison against a date input", () => {
-    const day = isoDateInTimeZone(new Date("2026-08-31T18:00:00Z"), BILLING_TIME_ZONE);
+    const day = isoDateInTimeZone(BILLING_TIME_ZONE, new Date("2026-08-31T18:00:00Z"));
     expect(day >= "2026-09-01").toBe(true);
     expect(day <= "2026-09-01").toBe(true);
   });
 
   it("is empty for an invalid date", () => {
-    expect(isoDateInTimeZone(new Date("nonsense"), BILLING_TIME_ZONE)).toBe("");
+    expect(isoDateInTimeZone(BILLING_TIME_ZONE, new Date("nonsense"))).toBe("");
   });
 });
 
-describe("formatDateInTimeZoneForDisplay", () => {
+describe("formatInstantDay (was formatDateInTimeZoneForDisplay)", () => {
   it("shows the Hong Kong calendar day, padded, with no trailing dot on the month", () => {
-    const shown = formatDateInTimeZoneForDisplay(new Date("2026-02-28T18:00:00Z"), BILLING_TIME_ZONE);
+    const shown = formatInstantDay(new Date("2026-02-28T18:00:00Z"), BILLING_TIME_ZONE);
     expect(shown).toBe("01 Mar 2026");
     expect(shown).not.toContain(".");
   });
 
   it("pads a single-digit day", () => {
-    expect(formatDateInTimeZoneForDisplay(new Date("2026-03-03T02:00:00Z"), BILLING_TIME_ZONE)).toBe(
+    expect(formatInstantDay(new Date("2026-03-03T02:00:00Z"), BILLING_TIME_ZONE)).toBe(
       "03 Mar 2026",
     );
   });
 
   it("is empty for an invalid date", () => {
-    expect(formatDateInTimeZoneForDisplay(new Date("nonsense"), BILLING_TIME_ZONE)).toBe("");
+    expect(formatInstantDay(new Date("nonsense"), BILLING_TIME_ZONE)).toBe("");
   });
 
-  // CHARACTERISATION, not an endorsement. This formatter takes the month name from Intl's
-  // en-GB "short" month, and modern ICU spells September "Sept" (four letters); the ISO
-  // formatter above takes it from the module's own MONTHS_SHORT table, which says "Sep".
-  // So the same September day reads two ways depending on which column shows it, and the
-  // Intl spelling cannot be read back by parseDdMmmYyyyToIso, which wants exactly three
-  // letters. September is the only month where this bites.
-  it("spells September differently from the ISO formatter, and that spelling will not parse back", () => {
-    const viaIntl = formatDateInTimeZoneForDisplay(new Date("2026-09-01T02:00:00Z"), BILLING_TIME_ZONE);
-    const viaTable = formatIsoDateForDisplay("2026-09-01");
-    expect(viaIntl).toBe("01 Sept 2026");
-    expect(viaTable).toBe("01 Sep 2026");
-    expect(viaIntl).not.toBe(viaTable);
-    expect(parseDdMmmYyyyToIso(viaIntl)).toBeNull();
-    expect(parseDdMmmYyyyToIso(viaTable)).toBe("2026-09-01");
+  // owner 2026-10-21: one shared module (@minty/shared/dates). The instant formatter took its
+  // month from Intl's en-GB "short" month, which spells September "Sept" - so one September day
+  // read two ways depending on the column, and the Intl spelling did not parse back. Both
+  // formatters now take the month from one table: "Sep", and it reads back.
+  it("spells September 'Sep', as formatDay does, and that spelling parses back", () => {
+    const viaInstant = formatInstantDay(new Date("2026-09-01T02:00:00Z"), BILLING_TIME_ZONE);
+    expect(viaInstant).toBe("01 Sep 2026");
+    expect(viaInstant).toBe(formatIsoDateForDisplay("2026-09-01"));
+    expect(parseDdMmmYyyyToIso(viaInstant)).toBe("2026-09-01");
   });
 });
 

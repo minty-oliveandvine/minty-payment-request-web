@@ -1,4 +1,6 @@
-// How a failure becomes something a user can read (lib/api.ts's four error helpers).
+// How a failure becomes something a user can read. The helpers are @minty/shared/errorCopy's
+// since the shared-code refactor (owner 2026-10-21: one shared module) - they were lib/api.ts's -
+// and ApiError is @minty/shared/apiClient's; the shape-detectors stay in lib/api.ts.
 //
 // The oracle is docs/ERROR_COPY.md, clause by clause: `normalizeApiErrorDetail` flattens what
 // the server sent, `readsAsProse` refuses machinery, and whatever is refused falls back to the
@@ -8,19 +10,23 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ApiError,
-  XERO_RECONNECT_MESSAGE,
-  isDuplicateBillReferenceError,
-  isRawStatusText,
-  isXeroAuthError,
   normalizeApiErrorDetail,
   readsAsProse,
   resolveApiErrorMessage,
+} from "@minty/shared/errorCopy";
+
+import {
+  ApiError,
+  XERO_RECONNECT_MESSAGE,
+  isDuplicateBillReferenceError,
+  isXeroAuthError,
 } from "@/lib/api";
 
 const HOUSE_FALLBACK = "Something went wrong on my end. Mind trying again?";
 
 describe("ApiError", () => {
+  // Its third argument is the server's BODY now; `detail` is a getter over it (a text body is
+  // itself, an object's error/detail/message, else the message).
   it("keeps the server's words in detail and the readable copy in message", () => {
     const err = new ApiError(422, "That invoice number is taken.", '{"reference":"dup"}');
     expect(err.status).toBe(422);
@@ -28,6 +34,13 @@ describe("ApiError", () => {
     expect(err.detail).toBe('{"reference":"dup"}');
     expect(err.name).toBe("ApiError");
     expect(err).toBeInstanceOf(Error);
+  });
+
+  it("reads detail out of an object body", () => {
+    expect(new ApiError(422, "x", { detail: "Invoice number already exists" }).detail).toBe(
+      "Invoice number already exists",
+    );
+    expect(new ApiError(422, "x", { detail: [{ msg: "m" }] }).detail).toBe('[{"msg":"m"}]');
   });
 
   it("falls back to the message when no detail was given", () => {
@@ -116,25 +129,23 @@ describe("readsAsProse", () => {
     expect(readsAsProse(text)).toBe(false);
   });
 
-  // CHARACTERISATION, and two gaps in the guard worth knowing about before touching it.
-  //
-  // 1. `lib/api.ts:100` has a literal backspace byte (0x08) in front of `null,` in the regex -
-  //    `/traceback|exception|__|<BS>null,/i`. It is in the committed file, not introduced here,
-  //    and it is the only control byte in this repo's own source. The alternative therefore
-  //    matches a backspace followed by "null,", which no server sends, so the `null,` guard
-  //    never fires and a body carrying it reads as prose.
-  // 2. Only the literal word "exception" is matched, so a Python exception CLASS name
-  //    (ValueError, KeyError, TypeError) is not machinery as far as this guard is concerned.
-  //
-  // Both let text through that the guard exists to stop. Pinned, not fixed: fixing either
-  // changes what users see, which is a separate decision from adding tests.
-  it("lets a body with 'null,' in it through, because that guard's regex holds a backspace byte", () => {
-    expect(readsAsProse("detail: null, status: 500")).toBe(true);
+  // owner 2026-10-21: one shared module (@minty/shared/errorCopy). The two gaps the old guard
+  // had are closed: its `null,` alternative held a stray backspace byte and never fired, and only
+  // the word "exception" was matched, so a Python exception class name passed as prose.
+  it("refuses a body with 'null,' in it", () => {
+    expect(readsAsProse("detail: null, status: 500")).toBe(false);
   });
 
-  it("lets a Python exception class name through - only the word 'exception' is matched", () => {
-    expect(readsAsProse("ValueError: bad input")).toBe(true);
-    expect(readsAsProse("KeyError: entity_id")).toBe(true);
+  it("refuses a Python exception class name at the start", () => {
+    expect(readsAsProse("ValueError: bad input")).toBe(false);
+    expect(readsAsProse("KeyError: entity_id")).toBe(false);
+  });
+
+  // owner 2026-10-21: one shared module - a bare HTTP reason phrase is refused on its own,
+  // whatever statusText said (HTTP/2 sends none).
+  it("refuses a bare reason phrase", () => {
+    expect(readsAsProse("Internal Server Error")).toBe(false);
+    expect(readsAsProse("502 Bad Gateway")).toBe(false);
   });
 
   it("refuses a bare machine code, which is not a sentence however short", () => {
@@ -147,25 +158,15 @@ describe("readsAsProse", () => {
     expect(readsAsProse("Unauthorized")).toBe(false);
   });
 
-  it("refuses text longer than 300 characters", () => {
-    expect(readsAsProse(`${"word ".repeat(59)}end`)).toBe(true);
-    expect(readsAsProse("word ".repeat(70))).toBe(false);
+  // owner 2026-10-21: one shared module - 200 characters, not 300.
+  it("refuses text longer than 200 characters", () => {
+    expect(readsAsProse(`${"word ".repeat(39)}end`)).toBe(true);
+    expect(readsAsProse(`${"word ".repeat(40)}x`)).toBe(false);
   });
 
   it("refuses an empty or blank string", () => {
     expect(readsAsProse("")).toBe(false);
     expect(readsAsProse("   ")).toBe(false);
-  });
-});
-
-describe("isRawStatusText", () => {
-  it("spots the reason phrase having fallen through as the message", () => {
-    expect(isRawStatusText("Bad Gateway", "Bad Gateway")).toBe(true);
-    expect(isRawStatusText("", "Bad Gateway")).toBe(true);
-  });
-
-  it("leaves real copy alone", () => {
-    expect(isRawStatusText("I couldn't reach the server just now.", "Bad Gateway")).toBe(false);
   });
 });
 

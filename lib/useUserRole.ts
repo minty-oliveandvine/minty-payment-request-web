@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { decodeJwtPayload, getAuthSnapshot, getEntityIdSnapshot } from "./auth";
-import { useClientValue } from "./useClientValue";
+import { decodeJwtPayload } from "@minty/shared/auth";
+import { useClientValue } from "@minty/shared/clientValue";
+
+import { getAuthSnapshot, getEntityIdSnapshot } from "./auth";
 import { API_BASE } from "./apiBase";
 
 const ALL_BILL_ROLES = new Set(["cashier", "shop_manager", "accountant", "admin", "super_admin"]);
@@ -123,11 +125,11 @@ export type UserRoleInfo = {
 export function useUserRole(): UserRoleInfo {
   // The token and the cookie are client-only, so both are read through useClientValue: neutral
   // on the server and at hydration, the real claims once mounted.
-  const claims = useClientValue(getPermissionClaimsSnapshot, EMPTY_CLAIMS);
+  const claims = useClientValue(getPermissionClaimsSnapshot, () => EMPTY_CLAIMS);
   const role = claims.role || null;
   const systemRole = claims.systemRole;
   const tokenIsViewOnly = claims.isViewOnly;
-  const currentEntityId = useClientValue(getEntityIdSnapshot, "");
+  const currentEntityId = useClientValue(getEntityIdSnapshot, () => "");
 
   const [memberEntityIds, setMemberEntityIds] = useState<string[]>([]);
 

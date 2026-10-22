@@ -15,7 +15,8 @@ const matching = (query: string, mode: "contains" | "exact") =>
 describe("normalizeAmountForSearch", () => {
   it("keeps the digits and the decimal point, and nothing else", () => {
     expect(normalizeAmountForSearch("6,000.00")).toBe("6000.00");
-    expect(normalizeAmountForSearch("HK$ 1,500.00")).toBe("1500.00");
+    expect(normalizeAmountForSearch("HKD 1,500.00")).toBe("1500.00");
+    expect(normalizeAmountForSearch("HK$ 1,500.00")).toBe("1500.00"); // the older symbol shape
     expect(normalizeAmountForSearch("3,000")).toBe("3000");
   });
 
@@ -86,7 +87,7 @@ describe("rowMatchesSearch, exact mode", () => {
 
 describe("the unpaid amount", () => {
   it("is not searched in either mode - only the invoice total is", () => {
-    const row = billRow({ invoiceTotal: "6,000.00", unpaidAmount: "HK$ 1,234.00" });
+    const row = billRow({ invoiceTotal: "6,000.00", unpaidAmount: "HKD 1,234.00" });
     expect(rowMatchesSearch(row, "1234", "contains")).toBe(false);
     expect(rowMatchesSearch(row, "1234", "exact")).toBe(false);
     expect(rowMatchesSearch(row, "6000", "contains")).toBe(true);

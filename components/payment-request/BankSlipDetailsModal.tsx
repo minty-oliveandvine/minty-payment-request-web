@@ -3,7 +3,7 @@
 import { createPortal } from "react-dom";
 import type { ChangeEvent } from "react";
 import { useEffect, useId, useRef, useState } from "react";
-import { pushAppScrollLock } from "@/lib/appScrollRoot";
+import { pushAppScrollLock } from "@minty/shared/scrollLock";
 import { useEntityCurrency } from "@/lib/entityCurrency";
 import {
   ApiError,

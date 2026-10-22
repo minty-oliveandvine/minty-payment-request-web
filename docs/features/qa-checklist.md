@@ -54,7 +54,9 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       all, and Table view's Payment and Bankslip cells show "-" rather than a dead button.
 - [ ] The totals banner reflects only the rows currently shown (after filtering), not the whole
       list.
-- [ ] Every amount displays in the entity's own currency, never a bill's stored currency code.
+- [ ] Every amount displays in the entity's own currency, never a bill's stored currency code,
+      as "HKD 1,234.50" (code, one non-breaking space, two places; never "HK$"), including each row's
+      "of HKD …" invoice total and the Needs attention tiles' "HKD … unpaid".
 - [ ] The Add page for a company with no currency: the alert under Invoice amount links to
       Entity & Integration, and Submit for payment / Save as draft are disabled with that
       reason as their title.

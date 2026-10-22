@@ -6,11 +6,13 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { formatAmount } from "@minty/shared/money";
+
 import { PaymentRequestTotalsBanner } from "@/components/payment-request/PaymentRequestTotalsBanner";
 import { billRow } from "@/lib/__fixtures__/bills";
 
 const hkd = (invoice: string, unpaid: string, id: string) =>
-  billRow({ id, currencyCode: "HKD", invoiceTotal: invoice, unpaidAmount: `HK$ ${unpaid}` });
+  billRow({ id, currencyCode: "HKD", invoiceTotal: invoice, unpaidAmount: `HKD ${unpaid}` });
 
 const show = (props: Partial<Parameters<typeof PaymentRequestTotalsBanner>[0]> = {}) =>
   render(<PaymentRequestTotalsBanner allRows={[]} selectedRows={[]} {...props} />);
@@ -94,7 +96,7 @@ describe("the date range", () => {
 describe("several currencies", () => {
   const rows = [
     hkd("1,000.00", "1,000.00", "hk"),
-    billRow({ id: "us", currencyCode: "USD", invoiceTotal: "500.00", unpaidAmount: "US$ 500.00" }),
+    billRow({ id: "us", currencyCode: "USD", invoiceTotal: "500.00", unpaidAmount: "USD 500.00" }),
   ];
 
   it("never adds one currency to another", () => {
@@ -150,5 +152,30 @@ describe("the box itself", () => {
     show();
 
     expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+  });
+});
+
+// owner 2026-10-21: one money rule (@minty/shared/money). The figures were toLocaleString, which
+// ROUNDED a third decimal (9.999 -> "10.00"); they are formatAmount now, which cuts it.
+describe("the figure format", () => {
+  it("groups thousands with two decimals, cutting a third", () => {
+    expect(formatAmount(0)).toBe("0.00");
+    expect(formatAmount(1234567.5)).toBe("1,234,567.50");
+    expect(formatAmount(9.999)).toBe("9.99");
+    expect(formatAmount(0.1 + 0.2)).toBe("0.30");
+    expect(formatAmount(-120)).toBe("-120.00");
+  });
+
+  it("is the one the banner draws", () => {
+    show({ allRows: [hkd("9.999", "9.999", "a")] });
+
+    expect(figureFor("Total unpaid amount")).toBe("9.99");
+    expect(figureFor("Total invoice amount")).toBe("9.99");
+  });
+
+  it("sums float noise back to whole cents", () => {
+    show({ allRows: [hkd("0.10", "0.10", "a"), hkd("0.20", "0.20", "b")] });
+
+    expect(figureFor("Total unpaid amount")).toBe("0.30");
   });
 });

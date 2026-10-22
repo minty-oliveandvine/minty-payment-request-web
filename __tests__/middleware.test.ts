@@ -109,6 +109,19 @@ describe("the old /profile addresses", () => {
   it("does not touch a path that merely starts with the same letters", () => {
     expect(run("/profiles", SIGNED_IN).location).toBeNull();
   });
+
+  // Pins profileForward's quirks before it moves to @minty/shared (the shared-code refactor,
+  // 2026-10-21): `from=bills` is dropped ONLY on the way to /profile - a forwarded address
+  // carries its whole query, from=bills included.
+  it("carries from=bills on a FORWARDED address - only /profile drops it", () => {
+    expect(run("/profile/billing?from=bills&entity_id=e1").location).toBe(
+      handoff("/subscription/billing?from=bills&entity_id=e1"),
+    );
+  });
+
+  it("drops every from on /profile, not just from=bills, and re-encodes what is left", () => {
+    expect(run("/profile?from=elsewhere&entity_id=e%201").location).toBe(`${MINTY}/profile?entity_id=e+1`);
+  });
 });
 
 describe("a company's own page", () => {

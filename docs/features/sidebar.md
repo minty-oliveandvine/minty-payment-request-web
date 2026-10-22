@@ -102,11 +102,17 @@ The same reads minty-web makes, with this app's token:
 - The **Subscriptions Overview**: minty-subscription-api's `GET /api/me/subscriptions`
   (`SUBSCRIPTION_API_URL`, default `http://localhost:8000`), the same figures as
   minty-web's portal; a failed read (a 404 included - there is no dark switch since 2026-10-01)
-  shows the card's error with Try again; *Manage Subscription* goes to minty-web's portal. Its
-  types (`PortalEntity`, `PortalModule`) are minty-web's, in
-  `features/subscription/api/payerSubscriptions.ts`.
-- A 401 is refreshed once (`refreshToken`), then the browser goes back to Minty
-  (`redirectToLogin`); the initials' read never moves the page.
+  shows the card's error with Try again; *Manage Subscription* goes to minty-web's portal. The
+  walk and its types (`PortalEntity`, `PortalModule`) are `@minty/shared/portal`'s
+  (`fetchAllSubscriptions`), called by `loadSubscriptions` in
+  `features/subscription/routes/SubscriptionsOverviewCard.tsx`; a page of the wrong shape is a 502
+  "That came back in a shape I didn't expect. Mind trying again?".
+- The three clients are `@minty/shared/apiClient`'s `createBearerClient`, configured in
+  `components/ui/sidebarHost.ts`: `mintyApi` (Flask), `mintyQuietApi` (Flask, for the initials)
+  and `subscriptionApi`. A 401 is refreshed once (`refreshToken`) and retried, then the browser
+  goes back to Minty (`redirectToLogin`); `mintyQuietApi` only rejects, so the initials' read
+  (`@minty/shared/portal`'s `loadViewer`) never moves the page. My Profile's two calls are
+  `createProfileApi(mintyApi.json)` (`features/profile/api/profile.ts`).
 
 This app has no profile PAGE since 2026-10-01: `/profile` and the old portal addresses forward
 to minty-web through Minty ([payer-portal.md](payer-portal.md)). Where the initials or the

@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { getEntityIdSnapshot } from "@/lib/auth";
-import { useClientValue } from "@/lib/useClientValue";
+import { useClientValue } from "@minty/shared/clientValue";
 import { AccountCodeSettings } from "./AccountCodeSettings";
 import { getSettingsTabFromSearchParams, integrationTabUrl, SETTINGS_TAB_LABELS, SettingsPills } from "./SettingsPills";
 import { SettingsPlaceholder } from "./SettingsPlaceholder";
@@ -13,7 +13,7 @@ export function SettingsContent() {
   const tab = getSettingsTabFromSearchParams(searchParams.get("tab"));
   // Cookies are client-only, so this is read through useClientValue: "" on the server and at
   // hydration, the real company once mounted.
-  const entityId = useClientValue(getEntityIdSnapshot, "");
+  const entityId = useClientValue(getEntityIdSnapshot, () => "");
 
   return (
     <div className="mx-auto w-full max-w-[1024px] px-4 sm:px-6">

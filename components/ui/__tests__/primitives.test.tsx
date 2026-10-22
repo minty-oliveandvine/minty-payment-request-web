@@ -30,7 +30,7 @@ describe("Button", () => {
     const onClick = vi.fn();
     render(
       <Button kind="primary" processing processingLabel="Recording…" onClick={onClick}>
-        Record HK$4,800.00
+        Record HKD 4,800.00
       </Button>,
     );
     const b = screen.getByRole("button", { name: "Recording…" });
@@ -72,20 +72,20 @@ describe("Field", () => {
 
   it("an error replaces the helper, is linked to the control, and marks it invalid", () => {
     const { rerender } = render(
-      <Field label="Amount" helper="Unpaid: HK$4,800.00">
+      <Field label="Amount" helper="Unpaid: HKD 4,800.00">
         {(a) => <input {...a} />}
       </Field>,
     );
     const input = screen.getByRole("textbox", { name: "Amount" });
-    expect(input).toHaveAccessibleDescription("Unpaid: HK$4,800.00");
+    expect(input).toHaveAccessibleDescription("Unpaid: HKD 4,800.00");
     rerender(
-      <Field label="Amount" helper="Unpaid: HK$4,800.00" error="Enter HK$4,800.00 or less.">
+      <Field label="Amount" helper="Unpaid: HKD 4,800.00" error="Enter HKD 4,800.00 or less.">
         {(a) => <input {...a} />}
       </Field>,
     );
     expect(input).toHaveAttribute("aria-invalid", "true");
-    expect(input).toHaveAccessibleDescription("Enter HK$4,800.00 or less.");
-    expect(screen.queryByText("Unpaid: HK$4,800.00")).not.toBeInTheDocument();
+    expect(input).toHaveAccessibleDescription("Enter HKD 4,800.00 or less.");
+    expect(screen.queryByText("Unpaid: HKD 4,800.00")).not.toBeInTheDocument();
   });
 
   it("draws the error ring only when invalid", () => {

@@ -13,7 +13,7 @@
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { PdfJsCanvasPreview } from "@/components/PdfJsCanvasPreview";
-import { pushAppScrollLock } from "@/lib/appScrollRoot";
+import { pushAppScrollLock } from "@minty/shared/scrollLock";
 
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 3;

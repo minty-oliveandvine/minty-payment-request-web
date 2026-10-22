@@ -2,7 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useId } from "react";
-import { pushAppScrollLock } from "@/lib/appScrollRoot";
+import { pushAppScrollLock } from "@minty/shared/scrollLock";
 import { buildMintyEnterUrl } from "@/lib/mintyUrls";
 import type { SubscriptionNotice, NoticeSeverity } from "@/lib/subscriptionNotice";
 

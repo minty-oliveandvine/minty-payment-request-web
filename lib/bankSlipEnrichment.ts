@@ -3,16 +3,15 @@ import {
   listPaymentAttachments,
   type PaymentItem,
 } from "./api";
-import { currencyLabelForCode } from "./currencyDisplay";
-import { formatMoney } from "./amountFormat";
+import { formatMoney } from "@minty/shared/money";
 import type { BankSlipDetails, BankSlipFileEntry } from "@/components/payment-request/BankSlipDetailsModal";
-import { formatDateInTimeZoneForDisplay, formatIsoDateForDisplay } from "./dateDisplayFormat";
+import { HK_TIME_ZONE, formatDay, formatInstantDay } from "@minty/shared/dates";
 
 function formatApiDateTime(iso: string): string {
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
-    const datePart = formatDateInTimeZoneForDisplay(d, "Asia/Hong_Kong");
+    const datePart = formatInstantDay(d, HK_TIME_ZONE);
     const timePart = d.toLocaleTimeString("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
@@ -29,20 +28,18 @@ function formatBillDate(dateStr: string): string {
   if (!dateStr) return "";
   const head = dateStr.trim().slice(0, 10);
   if (/^\d{4}-\d{2}-\d{2}$/.test(head)) {
-    return formatIsoDateForDisplay(head) || dateStr;
+    return formatDay(head) || dateStr;
   }
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return dateStr;
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return formatIsoDateForDisplay(`${y}-${m}-${day}`) || dateStr;
+  return formatDay(`${y}-${m}-${day}`) || dateStr;
 }
 
 function formatPaymentDisplayAmount(currencyCode: string | undefined, amount: string): string {
-  const iso = currencyCode?.trim();
-  const symbol = iso ? currencyLabelForCode(iso) : "";
-  return formatMoney(amount, symbol) || amount.trim() || "—";
+  return formatMoney(amount, currencyCode) || amount.trim() || "—";
 }
 
 function directImagePreviewUrl(att: {

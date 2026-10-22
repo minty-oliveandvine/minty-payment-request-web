@@ -2,7 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useId, useRef, useState } from "react";
-import { pushAppScrollLock } from "@/lib/appScrollRoot";
+import { pushAppScrollLock } from "@minty/shared/scrollLock";
 import { ApiError } from "@/lib/api";
 import { formatFileSize, isAllowedAttachment, ATTACHMENT_ACCEPT } from "@/lib/fileAttachmentPreview";
 import { RequiredMark } from "@/components/RequiredMark";

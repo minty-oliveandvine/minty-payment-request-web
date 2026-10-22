@@ -1,6 +1,6 @@
 import type { BillCreatePayload, BillDetail } from "./api";
 import type { PaymentRequestDetailedInfoData } from "@/components/payment-request/PaymentRequestDetailedInfo";
-import { formatAmount, parseAmount } from "./amountFormat";
+import { formatAmount, parseAmount } from "@minty/shared/money";
 
 function toIsoDateOnly(value: string | null): string {
   if (!value) return "";

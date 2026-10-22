@@ -19,10 +19,10 @@ import { BillContactPicker } from "@/components/BillContactPicker";
 import { DateTextField } from "@/components/DateTextField";
 import { ThemedSelect, type ThemedSelectOption } from "@/components/ThemedSelect";
 import { Field, inputClass } from "@/components/ui/Field";
-import { acceptAmountInput, formatAmount, parseAmount, toAmountEditString } from "@/lib/amountFormat";
+import { acceptAmountInput, formatAmount, formatMoney, parseAmount, toAmountEditString } from "@minty/shared/money";
 import type { EntityBillContact } from "@/lib/api";
 import { mergeSelectOption } from "@/lib/billFormSelectOptions";
-import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
+import { formatDay } from "@minty/shared/dates";
 import { useEntityCurrency } from "@/lib/entityCurrency";
 
 /** Bill / request fields shown on the request's page. */
@@ -68,7 +68,7 @@ export type PaymentRequestDetailedInfoProps = {
 
 export function formatPaymentRequestDetailLongDate(iso: string): string {
   if (!iso) return "";
-  return formatIsoDateForDisplay(iso) || iso;
+  return formatDay(iso) || iso;
 }
 
 /** `noTranslate`: a code or a number the browser must not translate - put on the row, never as a
@@ -121,7 +121,7 @@ export function PaymentRequestDetailedInfo({
   const uid = useId();
   const currency = useEntityCurrency();
   const accountOptions = mergeSelectOption(accountOptionsProp ?? [], accountCode);
-  const money = (v: string | undefined) => (v ? `${currency ? `${currency} ` : ""}${v}` : "");
+  const money = (v: string | number | undefined) => formatMoney(v, currency);
 
   if (!isEditing) {
     const invoice = parseAmount(amount);
@@ -137,7 +137,7 @@ export function PaymentRequestDetailedInfo({
           </Row>
           {paidSoFar !== null ? (
             <Row term="Paid so far" amount>
-              {money(formatAmount(paidSoFar))}
+              {money(paidSoFar)}
             </Row>
           ) : null}
           {unpaidAmount != null ? (

@@ -6,12 +6,12 @@ import { ModuleGate } from "@/components/ModuleGate";
 import { SettingsContent } from "@/components/settings/SettingsContent";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getAuthSnapshot } from "@/lib/auth";
-import { useClientValue } from "@/lib/useClientValue";
+import { useClientValue } from "@minty/shared/clientValue";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export default function SettingsPage() {
   // The Xero status is read by the account-code card, the one part that depends on it.
-  const auth = useClientValue(getAuthSnapshot, null);
+  const auth = useClientValue(getAuthSnapshot, () => null);
   const pages = useCompanyPages();
 
   return (

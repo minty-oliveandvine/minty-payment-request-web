@@ -8,7 +8,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { unsignedToken } from "@/lib/__fixtures__/tokens";
+import { tokenExpiringIn, unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { claimSubscriptionNotice, fetchSubscriptionNotice } from "@/lib/subscriptionNotice";
@@ -199,5 +199,96 @@ describe("fetchSubscriptionNotice", () => {
     fetchMock.mockResolvedValueOnce(answer(401, { detail: "no" })); // the refresh
 
     await expect(fetchSubscriptionNotice()).resolves.toBeNull();
+  });
+
+  // Pins the token handling and the timeout before this moves to @minty/shared (the shared-code
+  // refactor, 2026-10-21).
+  const bearerOf = (call: number) => new Headers(fetchMock.mock.calls[call][1]?.headers).get("Authorization");
+
+  it("sends only the bearer - no company header, the company is in the path", async () => {
+    fetchMock.mockResolvedValueOnce(answer(200, NOTICE));
+
+    await fetchSubscriptionNotice();
+
+    const headers = new Headers(fetchMock.mock.calls[0][1]?.headers);
+    expect(headers.get("Authorization")).toMatch(/^Bearer /);
+    expect(headers.has("X-Entity-Id")).toBe(false);
+  });
+
+  it("percent-encodes the company id in the path", async () => {
+    setAuth(unsignedToken(), "a/b c", ENTITY_NAME);
+    fetchMock.mockResolvedValueOnce(answer(200, NOTICE));
+
+    await fetchSubscriptionNotice();
+
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      `${env.SUBSCRIPTION_API_URL}/api/entities/a%2Fb%20c/subscription-notice`,
+    );
+  });
+
+  it("refreshes a token inside the two-minute window first, then asks with the FRESH one", async () => {
+    const fresh = unsignedToken({ note: "fresh" });
+    setAuth(tokenExpiringIn(60), ENTITY_ID, ENTITY_NAME);
+    fetchMock.mockResolvedValueOnce(answer(200, { token: fresh }));
+    fetchMock.mockResolvedValueOnce(answer(200, NOTICE));
+
+    await expect(fetchSubscriptionNotice()).resolves.toEqual(NOTICE);
+
+    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PAYMENT_REQUEST_API_URL}/api/v1/auth/token/refresh`);
+    expect(bearerOf(1)).toBe(`Bearer ${fresh}`);
+  });
+
+  it("still asks, with the old token, when that up-front refresh fails - and says so", async () => {
+    const old = tokenExpiringIn(60);
+    setAuth(old, ENTITY_ID, ENTITY_NAME);
+    fetchMock.mockResolvedValueOnce(answer(401, { detail: "no" })); // the refresh
+    fetchMock.mockResolvedValueOnce(answer(200, NOTICE));
+
+    await expect(fetchSubscriptionNotice()).resolves.toEqual(NOTICE);
+
+    expect(bearerOf(1)).toBe(`Bearer ${old}`);
+    expect(warnedAbout("token expiring and refresh failed")).toBe(true);
+  });
+
+  it("retries a 401 with the fresh token", async () => {
+    const fresh = unsignedToken({ note: "fresh" });
+    fetchMock.mockResolvedValueOnce(answer(401, { detail: "expired" }));
+    fetchMock.mockResolvedValueOnce(answer(200, { token: fresh }));
+    fetchMock.mockResolvedValueOnce(answer(200, NOTICE));
+
+    await fetchSubscriptionNotice();
+
+    expect(bearerOf(2)).toBe(`Bearer ${fresh}`);
+  });
+
+  it("keeps the first 401 when the retry itself drops, and is null", async () => {
+    fetchMock.mockResolvedValueOnce(answer(401, { detail: "expired" }));
+    fetchMock.mockResolvedValueOnce(answer(200, { token: unsignedToken({ note: "fresh" }) }));
+    fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+    await expect(fetchSubscriptionNotice()).resolves.toBeNull();
+    expect(warnedAbout("server said 401")).toBe(true);
+  });
+
+  it("gives up after six seconds, quietly", async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock.mockImplementationOnce(
+        (_url, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+          }),
+      );
+
+      const pending = fetchSubscriptionNotice();
+      await vi.advanceTimersByTimeAsync(5999);
+      expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+
+      await expect(pending).resolves.toBeNull();
+      expect(warnedAbout("request failed")).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

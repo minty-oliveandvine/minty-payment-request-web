@@ -10,11 +10,12 @@ is `Minty/docs/features/authentication.md`; minty-payment-request-api's verifica
 ## Arriving: `/landing`
 
 Minty links **Payments** to `/landing?token=<jwt>&entity_id=&entity_name=&next=&from=`
-(`app/landing/page.tsx`). The page stores the token, the entity id and name in cookies
-(`lib/auth.ts`: `billing_token`, `billing_entity_id`, `billing_entity_name`, `SameSite=Lax`,
+(`app/landing/page.tsx`, `@minty/shared/landing`'s `useLandingHandoff` since 2026-10-21). The page
+stores the token, the entity id and name in cookies (`lib/auth.ts` over `@minty/shared/auth`'s
+`createCookieAuth`: `billing_token`, `billing_entity_id`, `billing_entity_name`, `SameSite=Lax`,
 `Secure` on https, **8 hours**) and forwards to `next` (Flask sends the company's list or its
 Payment Request Settings - see Addresses below; `/`, the company's list, when there is none; a path on this
-origin only - `lib/safeNext.ts`, a COPY of minty-web's: no `//host`, backslash or control
+origin only - `@minty/shared/safeNext`: no `//host`, backslash or control
 character, which until 2026-10-05 let `next=/%5Cevil.com` leave the site); `from` is
 ignored since 2026-10-01 (its `billing_from` cookie served only the deleted profile pages' back
 links). Without a token the middleware sends every page except `/landing` back into Minty's
@@ -25,7 +26,8 @@ since phase 2 (2026-10-05) - this app's `/module-selection` is gone.
 The old profile and payer-portal addresses (`/profile/*`) are forwarded by the middleware
 BEFORE that check - an old email link arrives with no cookie - to minty-web through Minty:
 `/profile` to Flask's `/profile` (its profile router), the portal pages to Flask's
-`/handoff/minty-web?next=<minty-web page>`, the query string kept ([payer-portal.md](payer-portal.md)).
+`/handoff/minty-web?next=<minty-web page>` (`@minty/shared/handoff`'s `hubHandoffUrl`), the query
+string kept ([payer-portal.md](payer-portal.md)).
 
 The cookies are readable by script on purpose (the app itself attaches the token); they
 are cleared client-side on logout and by `POST /api/auth/logout` on the backend. **Logout** (the
@@ -36,7 +38,7 @@ entity list with Minty still signed in.
 ## Addresses: `/entity/<shortid>/<name>/...` (2026-10-05)
 
 The pages live under the company's address, Flask's scheme (`Minty/docs/features/authentication.md`
-§3.2), built by `lib/companyPages.ts` from `lib/companyRef.ts` (a COPY of minty-web's):
+§3.2), built by `lib/companyPages.ts` from `@minty/shared/companyRef` (the one rule every app shares):
 
 | Page | Address |
 |---|---|
@@ -64,14 +66,19 @@ the sidebar and module selection take it from the cookie (`cookieCompanyPages`).
 
 ## Using the token
 
-`lib/api.ts::apiFetch` sends `Authorization: Bearer <token>` and `X-Entity-Id` on every
-call to minty-payment-request-api (`PAYMENT_REQUEST_API_URL`). The JWT itself lives **30
-minutes**; the cookie 8 hours; `lib/auth.ts::refreshToken` calls
-`POST /api/auth/token/refresh` when the token is expiring soon (`isTokenExpiringSoon`) so
-an open tab keeps working — a 401 that survives a refresh sends the person back to Minty
-(`/entity/<id>/enter`).
+`lib/api.ts::apiFetch` (a client from `@minty/shared/apiClient`'s `createBearerClient`) sends
+`Authorization: Bearer <token>` and `X-Entity-Id` on every call to minty-payment-request-api
+(`PAYMENT_REQUEST_API_URL`). The JWT itself lives **30 minutes**; the cookie 8 hours;
+`lib/auth.ts::refreshToken` calls `POST /api/v1/auth/token/refresh` when the token is expiring soon
+(`isTokenExpiringSoon(token)`, `@minty/shared/auth`) so an open tab keeps working. A token that
+has run out (or none at all) sends the person back to Minty with "Your session has ended. Signing
+you back in…" (the shared `SESSION_ENDED`); a 401 on a token that is still live is the server
+refusing this caller, so it is reported ("You don't have access to that. If you've just been added
+to a company, try picking it again from the company list.", or the server's own sentence) and the
+page stays - signing in again would only loop.
 
-The role and the module claims in the token (`lib/moduleClaims.ts`, `useUserRole`) are
+The role and the module claims in the token (`@minty/shared/auth`'s `moduleClaims` in
+`lib/moduleClaims.ts`'s `useEntitlements`, `useUserRole`) are
 read for the **first paint only**; `components/ModuleGate.tsx` then confirms the
 entitlement from `GET /api/auth/entitlements` and the backend re-checks role and
 membership on every call — the database decides, not the claim
@@ -112,13 +119,16 @@ with this app's token (`components/ui/sidebarHost.ts`; [sidebar.md](sidebar.md))
 ## Configuration
 
 `PAYMENT_REQUEST_API_URL` (minty-payment-request-api, default `http://localhost:8020`),
-`PETTY_CASH_URL` (Minty, default `http://localhost:8010` — one variable, no environment-name
-switch), `SUBSCRIPTION_API_URL` (minty-subscription-api, default `http://localhost:8000`); all
-read in `lib/env.ts` and inlined at build time (`next.config.ts` `env`).
+`PETTY_CASH_URL` (Minty, default `http://localhost:8000` — one variable, no environment-name
+switch), `SUBSCRIPTION_API_URL` (minty-subscription-api, default `http://localhost:8001`); all
+read in `lib/env.ts` through `@minty/shared/env`'s `envUrl` and inlined at build time
+(`next.config.ts` `env`). The defaults apply in development and tests only: a production build
+with one unset throws, naming it (CI and every Vercel environment set all three).
 
 ## Tests
 
-`e2e/01_handoff.spec.ts` (no token → module selection; the hand-off sets the cookies; the
-database entitlement decides). There is no unit-test runner in this repo — the Playwright
-suite is the test suite, and it mints its own token with the shared `SECRET_KEY`
-(`e2e/README.md`).
+Vitest: `lib/__tests__/auth.test.ts`, `apiFetch.test.ts`, `refreshToken.test.ts`,
+`moduleClaims.test.tsx`, `envDefaults.test.ts`, `app/landing/__tests__/page.test.tsx`,
+`__tests__/middleware.test.ts`. Playwright: `e2e/01_handoff.spec.ts` (no token → back to Minty;
+the hand-off sets the cookies; the database entitlement decides); it mints its own token with the
+shared `SECRET_KEY` (`e2e/README.md`).

@@ -5,8 +5,9 @@ export type SortKey = "contact" | "invoiceDate" | "status" | "submittedDate" | "
 
 /**
  * Parses a display amount to a number. Handles both row shapes: `invoiceTotal`
- * carries no currency symbol (`"6,000.00"`), `unpaidAmount` does (`"HK$ 1,500.00"`).
- * Returns null for blank/unparseable values.
+ * carries no currency code (`"6,000.00"`), `unpaidAmount` does (`"HKD 1,500.00"`,
+ * `"-HKD 120.00"`). Any non-numeric prefix is dropped, so an older symbol shape
+ * (`"HK$ 1,500.00"`) still reads. Returns null for blank/unparseable values.
  */
 export function parseRowAmount(s: string): number | null {
   const t = s.trim();

@@ -32,9 +32,9 @@ import {
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Button } from "@/components/ui/Button";
 import { useEntityCurrency } from "@/lib/entityCurrency";
-import { formatAmount, formatMoney, parseAmount } from "@/lib/amountFormat";
+import { formatAmount, formatMoney, parseAmount } from "@minty/shared/money";
 import { fetchBillBankSlipEnrichment, type BankSlipEnrichment } from "@/lib/bankSlipEnrichment";
-import { BILLING_TIME_ZONE, formatIsoDateForDisplay, isoDateInTimeZone } from "@/lib/dateDisplayFormat";
+import { HK_TIME_ZONE, formatDay, isoDateInTimeZone } from "@minty/shared/dates";
 import { getAuth } from "@/lib/auth";
 import { compareRows, type SortKey } from "@/lib/paymentRequestRowSort";
 import { rowMatchesSearch, type SearchMode } from "@/lib/paymentRequestSearch";
@@ -72,13 +72,13 @@ function toBillingIsoDate(dateStr: string): string {
   if (PLAIN_DATE_RE.test(s)) return s;
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return "";
-  return isoDateInTimeZone(d, BILLING_TIME_ZONE);
+  return isoDateInTimeZone(HK_TIME_ZONE, d);
 }
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "";
   const iso = toBillingIsoDate(dateStr);
-  return iso ? formatIsoDateForDisplay(iso) || dateStr : dateStr;
+  return iso ? formatDay(iso) || dateStr : dateStr;
 }
 
 function mapBillToRow(bill: BillListItem, entityCurrency = ""): PaymentRequestRow {
@@ -87,7 +87,6 @@ function mapBillToRow(bill: BillListItem, entityCurrency = ""): PaymentRequestRo
   // (entities.currency_id -> iso_code) — never the bill's stored code and
   // never a hardcoded default. Blank until the registry lookup resolves.
   const iso = entityCurrency;
-  const symbol = iso;
   const statusNorm = (bill.status ?? "").trim().toLowerCase().replace(/-/g, "_");
   const xeroActive =
     (bill.published ?? "").trim() === "published" ||
@@ -106,7 +105,8 @@ function mapBillToRow(bill: BillListItem, entityCurrency = ""): PaymentRequestRo
     status,
     submittedDate: formatDate(bill.created_at),
     submittedDateIso: toBillingIsoDate(bill.created_at),
-    unpaidAmount: formatMoney(bill.amount_due, symbol) || (symbol ? `${symbol} 0.00` : "0.00"),
+    // No usable amount_due reads as nothing owed: "HKD 0.00", or "0.00" with no currency yet.
+    unpaidAmount: formatMoney(bill.amount_due, iso) || formatMoney(0, iso),
     invoiceTotal: formatAmount(bill.amount),
     payment: "",
     paidDate: bill.paid_at ? formatDate(bill.paid_at) : "",

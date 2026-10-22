@@ -1,6 +1,8 @@
 // Every call this app makes to the Django API goes through one wrapper (lib/api.ts's
-// `apiFetch`). It is private, so it is exercised through the thin public functions that use it
-// - which is also the path the app itself takes.
+// `apiFetch`, over @minty/shared/apiClient's createBearerClient since the shared-code refactor,
+// 2026-10-21). It is private, so it is exercised through the thin public functions that use it
+// - which is also the path the app itself takes. Where the shared module decided differently,
+// the case says "owner 2026-10-21: one shared module (@minty/shared/<name>)".
 //
 // The two 401 branches are the most valuable cases in the file. Treating any 401 as an expired
 // session sent the person back through the handoff, which re-minted the SAME token and landed
@@ -106,6 +108,20 @@ describe("the request", () => {
     });
   });
 
+  it("leaves a zero page and page_size off, as it always has", async () => {
+    fetchMock.mockResolvedValueOnce(answer(200, []));
+    await fetchBills({ page: 0, page_size: 0, status: "" });
+    expect(String(fetchMock.mock.calls[0][0])).toBe(`${V1}/bills/`);
+  });
+
+  // owner 2026-10-21: one shared module (@minty/shared/apiClient) - Content-Type only with a JSON
+  // body (every call sent "application/json" before, a GET included).
+  it("sends no content type with a read", async () => {
+    fetchMock.mockResolvedValueOnce(answer(200, []));
+    await fetchBills();
+    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).has("Content-Type")).toBe(false);
+  });
+
   it("asks for the plain list when given no parameters", async () => {
     fetchMock.mockResolvedValueOnce(answer(200, []));
     await fetchBills();
@@ -120,9 +136,10 @@ describe("the answer", () => {
     await expect(fetchBills()).resolves.toEqual([row]);
   });
 
-  it("is undefined for a 204, which has no body to parse", async () => {
+  // owner 2026-10-21: one shared module (@minty/shared/apiClient) - an empty body is null.
+  it("is null for a 204, which has no body to parse", async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
-    await expect(deleteBillAttachment("bill-1", "att-1")).resolves.toBeUndefined();
+    await expect(deleteBillAttachment("bill-1", "att-1")).resolves.toBeNull();
   });
 });
 
@@ -144,22 +161,16 @@ describe("a failure", () => {
     expect((err as ApiError).detail).toBe("Internal Server Error");
   });
 
-  // CHARACTERISATION, and a real hole in the guard above.
-  //
-  // `isRawStatusText` recognises a bare reason phrase only by comparing it to `res.statusText`.
-  // HTTP/2 carries no reason phrase at all, so `res.statusText` is ALWAYS "" there - and
-  // production is HTTP/2 (Render, Vercel). A server that puts a reason phrase in its JSON
-  // `detail` therefore has it shown verbatim, which is the exact leak docs/ERROR_COPY.md
-  // records as fixed. It only holds today because the API sends real sentences.
-  //
-  // Pinned, not fixed: the fix is a change to what users see, which is a separate decision.
-  it("shows a bare reason phrase from the body when statusText is empty, as it is over HTTP/2", async () => {
+  // owner 2026-10-21: one shared module (@minty/shared/errorCopy). The old guard knew a bare
+  // reason phrase only by comparing it with `res.statusText` - which HTTP/2, production's
+  // protocol, never sends - so a phrase in the body's `detail` was shown verbatim. It is refused
+  // on its own now.
+  it("refuses a bare reason phrase from the body even when statusText is empty, as over HTTP/2", async () => {
     fetchMock.mockResolvedValueOnce(answer(500, { detail: "Internal Server Error" }));
 
     const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
 
-    expect(err.message).toBe("Internal Server Error");
-    expect(err.message).not.toBe("Something went wrong on my end. Mind trying again?");
+    expect(err.message).toBe("Something went wrong on my end. Mind trying again?");
   });
 
   it("falls back to the reason phrase when the body is not JSON at all", async () => {
@@ -228,7 +239,9 @@ describe("a 401", () => {
     expect(err.detail).toBe("entity_membership_revoked");
   });
 
-  it("with an EXPIRED token signs the person out and says the session expired", async () => {
+  // owner 2026-10-21: one shared module (@minty/shared/apiClient) - the copy is SESSION_ENDED
+  // (it was "Your session expired. Taking you back to sign in.").
+  it("with an EXPIRED token signs the person out and says the session has ended", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       const { api, auth } = await freshApi();
@@ -240,7 +253,7 @@ describe("a 401", () => {
       const err = (await api.fetchBills().catch((e: unknown) => e)) as ApiError;
 
       expect(err.status).toBe(401);
-      expect(err.message).toBe("Your session expired. Taking you back to sign in.");
+      expect(err.message).toBe("Your session has ended. Signing you back in…");
       expect(auth.getAuth()).toBeNull();
     } finally {
       consoleError.mockRestore();
@@ -293,9 +306,147 @@ describe("the session before the request", () => {
       const err = (await api.fetchBills().catch((e: unknown) => e)) as ApiError;
 
       expect(err.status).toBe(401);
-      expect(err.message).toBe("You're signed out. Taking you back to sign in.");
+      // owner 2026-10-21: one shared module (@minty/shared/apiClient) - SESSION_ENDED (it was
+      // "You're signed out. Taking you back to sign in.").
+      expect(err.message).toBe("Your session has ended. Signing you back in…");
       expect(fetchMock).not.toHaveBeenCalled();
     } finally {
+      consoleError.mockRestore();
+    }
+  });
+});
+
+// Pins the rest of apiFetch's edges before it moves to @minty/shared (the shared-code refactor,
+// 2026-10-21): what lands in `message` and `detail` for each body shape, and the 401 rules.
+describe("the edges of a failure", () => {
+  const failing = (status: number, body: string, statusText = "") =>
+    new Response(body, { status, statusText, headers: { "Content-Type": "application/json" } });
+
+  it("takes `message` when the body has no `detail`", async () => {
+    fetchMock.mockResolvedValueOnce(answer(409, { message: "Someone paid this bill a moment ago." }));
+
+    const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
+
+    expect(err.message).toBe("Someone paid this bill a moment ago.");
+    expect(err.detail).toBe("Someone paid this bill a moment ago.");
+  });
+
+  it("prefers `detail` over `message` when the body has both", async () => {
+    fetchMock.mockResolvedValueOnce(answer(409, { detail: "The detail wins here.", message: "Not this one." }));
+
+    const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
+
+    expect(err.message).toBe("The detail wins here.");
+  });
+
+  // owner 2026-10-21: one shared module (@minty/shared/apiClient) - ApiError keeps the BODY and
+  // `detail` reads it: with no error/detail/message field it is the message (it was '""').
+  it("keeps the body, and detail falls back to the message when the body names neither", async () => {
+    fetchMock.mockResolvedValueOnce(answer(404, { code: "missing" }));
+
+    const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
+
+    expect(err.message).toBe("I couldn't find that.");
+    expect(err.body).toEqual({ code: "missing" });
+    expect(err.detail).toBe("I couldn't find that.");
+  });
+
+  it("keeps an object-shaped detail as JSON in detail, and the flattened sentence in message", async () => {
+    const detail = [{ type: "missing", loc: ["body", "contact"], msg: "Field required" }];
+    fetchMock.mockResolvedValueOnce(answer(422, { detail }));
+
+    const err = (await createBill({}).catch((e: unknown) => e)) as ApiError;
+
+    expect(err.message).toBe("Field required");
+    expect(err.detail).toBe(JSON.stringify(detail));
+  });
+
+  // owner 2026-10-21: one shared module (@minty/shared/apiClient) - a text body is kept as it
+  // came, and is the detail (it was the reason phrase).
+  it("keeps a text body as the detail when the body is not JSON", async () => {
+    fetchMock.mockResolvedValueOnce(failing(502, "<html>502</html>", "Bad Gateway"));
+
+    const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
+
+    expect(err.message).toBe("I couldn't reach the server just now. Mind trying again?");
+    expect(err.detail).toBe("<html>502</html>");
+  });
+
+  it("falls back to the house line for a status with no copy, even with no body at all", async () => {
+    fetchMock.mockResolvedValueOnce(failing(418, ""));
+
+    const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
+
+    expect(err.status).toBe(418);
+    expect(err.message).toBe("Something went wrong on my end. Mind trying again?");
+  });
+});
+
+describe("the edges of a 401", () => {
+  const NO_ACCESS =
+    "You don't have access to that. If you've just been added to a company, try picking it again from the company list.";
+
+  it("with a live token asks for no refresh and makes no second attempt", async () => {
+    fetchMock.mockResolvedValueOnce(answer(401, { detail: "not_a_member" }));
+
+    await fetchBills().catch(() => undefined);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  // owner 2026-10-21: one shared module (@minty/shared/apiClient) - the text body is the detail
+  // (it was '""').
+  it("with a body that is not JSON says the no-access line, and keeps the text as detail", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("<html>401</html>", { status: 401 }));
+
+    const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
+
+    expect(err.message).toBe(NO_ACCESS);
+    expect(err.detail).toBe("<html>401</html>");
+  });
+
+  it("flattens a schema-shaped refusal and keeps the raw JSON in detail", async () => {
+    const detail = [{ msg: "You are not a member of that company any more." }];
+    fetchMock.mockResolvedValueOnce(answer(401, { detail }));
+
+    const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
+
+    expect(err.message).toBe("You are not a member of that company any more.");
+    expect(err.detail).toBe(JSON.stringify(detail));
+  });
+
+  it("reads `message` too", async () => {
+    fetchMock.mockResolvedValueOnce(answer(401, { message: "That company has closed its account." }));
+
+    const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
+
+    expect(err.message).toBe("That company has closed its account.");
+  });
+
+  it("from a token that ran out WHILE the request was in flight signs the person out", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const start = new Date("2026-10-21T09:00:00Z").getTime();
+      vi.setSystemTime(start);
+      const { api, auth } = await freshApi();
+      // Ten minutes left: no pre-emptive refresh. By the time the answer arrives it is gone.
+      auth.setAuth(tokenExpiringIn(600), ENTITY_ID, ENTITY_NAME);
+      fetchMock.mockImplementationOnce(async () => {
+        vi.setSystemTime(start + 700_000);
+        return answer(401, { detail: "You are not a member of that company any more." });
+      });
+
+      const err = (await api.fetchBills().catch((e: unknown) => e)) as ApiError;
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(err.status).toBe(401);
+      // The token's expiry decides, not the server's sentence. owner 2026-10-21: one shared
+      // module (@minty/shared/apiClient) - SESSION_ENDED.
+      expect(err.message).toBe("Your session has ended. Signing you back in…");
+      expect(auth.getAuth()).toBeNull();
+    } finally {
+      vi.useRealTimers();
       consoleError.mockRestore();
     }
   });

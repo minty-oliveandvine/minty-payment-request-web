@@ -18,7 +18,7 @@
 import { createPortal } from "react-dom";
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 
-import { pushAppScrollLock } from "@/lib/appScrollRoot";
+import { pushAppScrollLock } from "@minty/shared/scrollLock";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';

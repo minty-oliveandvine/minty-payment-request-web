@@ -131,7 +131,7 @@ describe("the drawer", () => {
     await loadedPayments();
     expect(fullPay()).toHaveAttribute("aria-checked", "true");
     expect(partPay()).toBeInTheDocument();
-    expect(record()).toHaveAccessibleName("Record HKD 6,000.00");
+    expect(record()).toHaveAccessibleName("Record HKD\u00a06,000.00");
   });
 
   it("reads the payments already on the request", async () => {
@@ -222,7 +222,7 @@ describe("paying part of it", () => {
     await userEvent.click(partPay());
 
     await userEvent.type(amountField(), "9000");
-    expect(amountField()).toHaveAccessibleDescription("Enter HKD 6,000.00 or less - that is what is unpaid.");
+    expect(amountField()).toHaveAccessibleDescription("Enter HKD\u00a06,000.00 or less - that is what is unpaid.");
     expect(amountField()).toHaveAttribute("aria-invalid", "true");
     expect(record()).toBeDisabled();
 
@@ -242,7 +242,7 @@ describe("paying part of it", () => {
 
     await userEvent.type(amountField(), "2000");
 
-    expect(amountField()).toHaveAccessibleDescription("Enter HKD 1,000.00 or less - that is what is unpaid.");
+    expect(amountField()).toHaveAccessibleDescription("Enter HKD\u00a01,000.00 or less - that is what is unpaid.");
   });
 
   it("asks for an amount when there is none, after the attempt - not before", async () => {

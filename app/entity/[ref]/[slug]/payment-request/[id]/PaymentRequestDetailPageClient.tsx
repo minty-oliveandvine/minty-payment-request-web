@@ -7,7 +7,7 @@ import { PaymentRequestDetailSkeleton } from "@/components/payment-request/Payme
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { getAuthSnapshot } from "@/lib/auth";
 import { fetchXeroStatus } from "@/lib/api";
-import { useClientValue } from "@/lib/useClientValue";
+import { useClientValue } from "@minty/shared/clientValue";
 import { useUserRole } from "@/lib/useUserRole";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
@@ -23,7 +23,7 @@ const PaymentRequestDetailBody = dynamic(
  */
 export function PaymentRequestDetailPageClient() {
   // The cookie is client-only: "" on the server and at hydration, the real company once mounted.
-  const auth = useClientValue(getAuthSnapshot, null);
+  const auth = useClientValue(getAuthSnapshot, () => null);
   const [xeroConnected, setXeroConnected] = useState<boolean>(false);
   const { isViewOnly, isReadOnly } = useUserRole();
   const pages = useCompanyPages();

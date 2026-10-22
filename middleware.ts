@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { AUTH_COOKIE_NAME, ENTITY_ID_COOKIE_NAME, ENTITY_NAME_COOKIE_NAME } from "@/lib/auth";
 import { COMPANY_PAGE, companyBase, companyPages, decodeSegment, isCanonicalRef } from "@/lib/companyPages";
 import { shortIdOf } from "@minty/shared/companyRef";
+import { hubHandoffUrl } from "@minty/shared/handoff";
 import { previewSetSlug, withReturnOrigin } from "@minty/shared/previewSibling";
 import { resolveMintyModuleUrl } from "@/lib/mintyEnv";
 
@@ -25,8 +26,12 @@ const PROFILE_FORWARDS: ReadonlyMap<string, string> = new Map([
   ["/profile/invoices", "/subscription/billing"],
 ]);
 
-/** Where an old `/profile` address goes now, or null when `pathname` is not one. */
-function profileForward(pathname: string, search: string): string | null {
+/**
+ * Where an old `/profile` address goes now, or null when `pathname` is not one. The hand-off is
+ * `@minty/shared/handoff`'s `hubHandoffUrl` (owner 2026-10-21: one shared module), naming the
+ * request's origin as `return_origin` - which `toFlask` sets again, to the same value.
+ */
+function profileForward(pathname: string, search: string, origin: string): string | null {
   if (pathname !== "/profile" && !pathname.startsWith("/profile/")) return null;
   const minty = resolveMintyModuleUrl().replace(/\/+$/, "");
   const query = search.startsWith("?") ? search.slice(1) : search;
@@ -41,7 +46,7 @@ function profileForward(pathname: string, search: string): string | null {
     return `${minty}/profile${rest ? `?${rest}` : ""}`;
   }
   const next = query ? `${target}?${query}` : target;
-  return `${minty}/handoff/minty-web?${new URLSearchParams({ next }).toString()}`;
+  return hubHandoffUrl(minty, next, null, origin);
 }
 
 /**
@@ -97,7 +102,7 @@ export function middleware(request: NextRequest) {
   const toFlask = (url: string) => flaskTrip(request, withReturnOrigin(url, request.nextUrl.origin));
 
   // Before the cookie check: an old email link arrives with no cookie at all.
-  const forward = profileForward(pathname, search);
+  const forward = profileForward(pathname, search, request.nextUrl.origin);
   if (forward) return toFlask(forward);
 
   // Redirects that depend on the cookie are 307s, never 308s: a browser keeps a 308 for good,
