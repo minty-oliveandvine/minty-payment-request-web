@@ -134,8 +134,9 @@ is fresh.
   closes once the caller has refreshed (a failed refresh is logged, never rolled back);
   `PaymentDeleteConfirmModal`);
 - the **Activity history** (`ActivityHistoryAccordion.tsx`) rendering the backend's audit
-  rows — "published Payment Request #… to Xero", "uploaded receipt.pdf", "submitted …".
-  It starts collapsed; opening it scrolls the section into view, closing it scrolls
+  rows — "submitted", "published to Xero", "uploaded receipt.pdf", "recorded a payment of
+  HKD 1,200.00". It sits on the request's own page, so an entry never repeats the request's
+  name. It starts collapsed; opening it scrolls the section into view, closing it scrolls
   back to where the page was. A failed read says so ("I couldn't load the history…") with
   Try again, never "No activity yet". The header's status badge sits after the title, and
   on its own line under the header below 640 px.

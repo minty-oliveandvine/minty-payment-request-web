@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { formatMoney } from "@/lib/amountFormat";
 import { fetchAuditHistory, type AuditItem } from "@/lib/api";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
 import { formatLocalDateForDisplay } from "@/lib/dateDisplayFormat";
@@ -17,7 +18,8 @@ type ActivityHistoryItem = {
 
 type ActivityHistoryAccordionProps = {
   billId: string;
-  billRef?: string;
+  /** The company's currency, for the amounts in payment entries. */
+  currencyCode?: string;
   refreshSignal?: number;
 };
 
@@ -39,18 +41,33 @@ function publishVerb(detail: string): string {
   return "published";
 }
 
+/** "a payment of HKD 1,200.00" from the backend's "Payment of 1200.00 …", else "a payment". */
+function paymentSubject(detail: string, currencyCode: string): string {
+  const m = detail.match(/Payment of ([\d,.]+)/);
+  const amount = m ? formatMoney(m[1], currencyCode) : "";
+  return amount ? `a payment of ${amount}` : "a payment";
+}
+
+/**
+ * The History panel sits on the payment request's own page, so an entry about the request itself
+ * has no subject ("" = none); the subject only names what is not the request: a file, a payment,
+ * Xero.
+ */
 const ACTION_MAP: Record<
   string,
-  { verb: string | ((detail: string) => string); subject: (detail: string, ref: string) => string }
+  {
+    verb: string | ((detail: string) => string);
+    subject: (detail: string, currencyCode: string) => string;
+  }
 > = {
-  created: { verb: "created", subject: (_d, r) => `Payment Request ${r}` },
-  edited: { verb: "updated", subject: (_d, r) => `Payment Request ${r}` },
-  submitted: { verb: "submitted", subject: (_d, r) => `Payment Request ${r}` },
-  marked_paid: { verb: "marked as paid", subject: (_d, r) => `Payment Request ${r}` },
-  voided: { verb: "voided", subject: (_d, r) => `Payment Request ${r}` },
-  cancelled: { verb: "cancelled", subject: (_d, r) => `Payment Request ${r}` },
-  status_changed: { verb: "updated status of", subject: (_d, r) => `Payment Request ${r}` },
-  published_to_xero: { verb: publishVerb, subject: (_d, r) => `Payment Request ${r} to Xero` },
+  created: { verb: "created", subject: () => "" },
+  edited: { verb: "updated", subject: () => "" },
+  submitted: { verb: "submitted", subject: () => "" },
+  marked_paid: { verb: "marked as paid", subject: () => "" },
+  voided: { verb: "voided", subject: () => "" },
+  cancelled: { verb: "cancelled", subject: () => "" },
+  status_changed: { verb: "changed the status", subject: () => "" },
+  published_to_xero: { verb: publishVerb, subject: () => "to Xero" },
   attachment_uploaded: {
     verb: "uploaded",
     subject: (d) => d.match(/File '(.+?)'/)?.[1] || "attachment",
@@ -59,21 +76,9 @@ const ACTION_MAP: Record<
     verb: "removed",
     subject: (d) => d.match(/Attachment '(.+?)'/)?.[1] || "attachment",
   },
-  payment_created: {
-    verb: "recorded",
-    subject: (d) => {
-      const m = d.match(/Payment of ([\d,.]+)/);
-      return m ? `Payment of ${m[1]}` : "Payment";
-    },
-  },
-  payment_updated: { verb: "updated", subject: () => "Payment" },
-  payment_deleted: {
-    verb: "deleted",
-    subject: (d) => {
-      const m = d.match(/Payment of ([\d,.]+)/);
-      return m ? `Payment of ${m[1]}` : "Payment";
-    },
-  },
+  payment_created: { verb: "recorded", subject: paymentSubject },
+  payment_updated: { verb: "updated", subject: () => "a payment" },
+  payment_deleted: { verb: "deleted", subject: paymentSubject },
 };
 
 function formatTimeLabel(iso: string): string {
@@ -286,7 +291,7 @@ function auditDisplayNameAndInitials(audit: AuditItem): { displayName: string; i
   return { displayName, initials: initialsFromDisplayName(displayName) };
 }
 
-function auditToItem(audit: AuditItem, billRef: string): ActivityHistoryItem {
+function auditToItem(audit: AuditItem, currencyCode: string): ActivityHistoryItem {
   const { displayName, initials } = auditDisplayNameAndInitials(audit);
 
   const mapping = ACTION_MAP[audit.action];
@@ -295,7 +300,7 @@ function auditToItem(audit: AuditItem, billRef: string): ActivityHistoryItem {
     typeof mappedVerb === "function"
       ? mappedVerb(audit.detail)
       : (mappedVerb ?? audit.action.replace(/_/g, " "));
-  const subject = mapping?.subject(audit.detail, billRef) ?? `Payment Request ${billRef}`;
+  const subject = mapping?.subject(audit.detail, currencyCode) ?? "";
 
   return {
     id: audit.id,
@@ -356,7 +361,7 @@ function ActivityHistoryTimelineSkeleton() {
 
 export function ActivityHistoryAccordion({
   billId,
-  billRef,
+  currencyCode = "",
   refreshSignal = 0,
 }: ActivityHistoryAccordionProps) {
   const [open, setOpen] = useState(false);
@@ -369,8 +374,7 @@ export function ActivityHistoryAccordion({
   } | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
-  const ref = billRef || `#${billId.slice(0, 8)}`;
-  const key = `${billId}|${ref}|${refreshSignal}|${retryCount}`;
+  const key = `${billId}|${currencyCode}|${refreshSignal}|${retryCount}`;
   const current = loaded?.key === key ? loaded : null;
   const loading = Boolean(billId) && !current;
   const items = current?.items ?? [];
@@ -382,7 +386,7 @@ export function ActivityHistoryAccordion({
     fetchAuditHistory(billId)
       .then((audits) => {
         if (!cancelled)
-          setLoaded({ key, items: audits.map((a) => auditToItem(a, ref)), failed: false });
+          setLoaded({ key, items: audits.map((a) => auditToItem(a, currencyCode)), failed: false });
       })
       .catch((err: unknown) => {
         console.error("[payment request] the history did not load", err);
@@ -391,7 +395,7 @@ export function ActivityHistoryAccordion({
     return () => {
       cancelled = true;
     };
-  }, [billId, ref, key]);
+  }, [billId, currencyCode, key]);
 
   /** Where the page was scrolled before History opened, so closing it can go back there. */
   const returnScrollRef = useRef<ScrollPosition[] | null>(null);
@@ -483,8 +487,15 @@ export function ActivityHistoryAccordion({
                             </div>
                             <p className="min-w-0 flex-1 text-sm leading-snug">
                               <span className="font-bold text-[#333333]">{item.userName}</span>
-                              <span className="font-normal text-[#666666]"> {item.verb} </span>
-                              <span className="font-bold text-[#666666]">{item.subjectBold}</span>
+                              <span className="font-normal text-[#666666]"> {item.verb}</span>
+                              {item.subjectBold ? (
+                                <>
+                                  {" "}
+                                  <span className="font-bold text-[#666666]">
+                                    {item.subjectBold}
+                                  </span>
+                                </>
+                              ) : null}
                             </p>
                           </div>
                           <time

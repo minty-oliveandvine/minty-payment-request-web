@@ -23,7 +23,7 @@ const answer = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 const show = (props: Partial<Parameters<typeof ActivityHistoryAccordion>[0]> = {}) =>
-  render(<ActivityHistoryAccordion billId={BILL_ID} billRef="PR-0001" {...props} />);
+  render(<ActivityHistoryAccordion billId={BILL_ID} currencyCode="HKD" {...props} />);
 
 const header = () => screen.getByRole("button", { name: /History/ });
 const list = () => screen.getByRole("region", { name: "Activity history list" });
@@ -107,7 +107,7 @@ describe("the read", () => {
     await waitFor(() => expect(auditCalls()).toHaveLength(1));
 
     view.rerender(
-      <ActivityHistoryAccordion billId={BILL_ID} billRef="PR-0001" refreshSignal={1} />,
+      <ActivityHistoryAccordion billId={BILL_ID} currencyCode="HKD" refreshSignal={1} />,
     );
 
     await waitFor(() => expect(auditCalls()).toHaveLength(2));
@@ -124,22 +124,89 @@ describe("what it shows", () => {
     expect(within(list()).getAllByText(/Olive Vine/).length).toBeGreaterThan(0);
   });
 
-  it("names the payment request the entry is about", async () => {
+  it("does not repeat the payment request it sits on", async () => {
     show();
     await userEvent.click(header());
 
     await waitFor(() => expect(list()).toBeInTheDocument());
-    expect(within(list()).getAllByText(/PR-0001/).length).toBeGreaterThan(0);
+    expect(list()).not.toHaveTextContent(/Payment Request/);
+    expect(list()).not.toHaveTextContent(`#${BILL_ID.slice(0, 8)}`);
+    expect(within(list()).getAllByRole("paragraph")[1]).toHaveTextContent(/^Olive Vine submitted$/);
   });
 
-  it("falls back to a short id when the request has no Payment No.", async () => {
-    show({ billRef: "" });
+  it("writes a payment's amount with the company's currency", async () => {
+    fetchMock.mockImplementation(async () =>
+      answer(200, [
+        audit({
+          id: "a1",
+          action: "payment_created",
+          detail: "Payment of 1200.00 created (bank_transfer)",
+        }),
+        audit({ id: "a2", action: "payment_deleted", detail: "Payment of 50.5 deleted" }),
+        audit({ id: "a3", action: "payment_updated", detail: "Payment 9f1c updated" }),
+      ]),
+    );
+    show();
     await userEvent.click(header());
 
     await waitFor(() => expect(list()).toBeInTheDocument());
-    expect(
-      within(list()).getAllByText(new RegExp(`#${BILL_ID.slice(0, 8)}`)).length,
-    ).toBeGreaterThan(0);
+    // Read raw, so the exact spacing is what is checked.
+    const subjects = within(list())
+      .getAllByRole("paragraph")
+      .map((p) => p.lastElementChild?.textContent);
+    expect(subjects).toEqual(["a payment of HKD 1,200.00", "a payment of HKD 50.50", "a payment"]);
+  });
+
+  it("says a Xero entry was to Xero", async () => {
+    fetchMock.mockImplementation(async () =>
+      answer(200, [audit({ action: "published_to_xero", detail: "Published to Xero as INV-1" })]),
+    );
+    show();
+    await userEvent.click(header());
+
+    await waitFor(() => expect(list()).toBeInTheDocument());
+    expect(within(list()).getByText("to Xero")).toBeInTheDocument();
+  });
+
+  it("shows an action it does not know by its own words alone", async () => {
+    fetchMock.mockImplementation(async () =>
+      answer(200, [audit({ action: "reminder_sent", detail: "" })]),
+    );
+    show();
+    await userEvent.click(header());
+
+    await waitFor(() => expect(list()).toBeInTheDocument());
+    expect(within(list()).getByRole("paragraph")).toHaveTextContent(/^Olive Vine reminder sent$/);
+  });
+
+  it("names the file an attachment entry is about", async () => {
+    fetchMock.mockImplementation(async () =>
+      answer(200, [
+        audit({ id: "a1", action: "attachment_uploaded", detail: "File 'receipt.pdf' uploaded" }),
+        audit({ id: "a2", action: "attachment_deleted", detail: "Attachment 'old.png' removed" }),
+      ]),
+    );
+    show();
+    await userEvent.click(header());
+
+    await waitFor(() => expect(list()).toBeInTheDocument());
+    expect(within(list()).getByText("receipt.pdf")).toBeInTheDocument();
+    expect(within(list()).getByText("old.png")).toBeInTheDocument();
+  });
+
+  it("tells a Xero republish from a first publish", async () => {
+    fetchMock.mockImplementation(async () =>
+      answer(200, [
+        audit({ id: "a1", action: "published_to_xero", detail: "Published to Xero as INV-1" }),
+        audit({ id: "a2", action: "published_to_xero", detail: "Updated Xero invoice INV-1" }),
+      ]),
+    );
+    show();
+    await userEvent.click(header());
+
+    await waitFor(() => expect(list()).toBeInTheDocument());
+    expect(within(list()).getByText(/^\s*published\s*$/)).toBeInTheDocument();
+    expect(within(list()).getByText(/^\s*republished\s*$/)).toBeInTheDocument();
   });
 
   it("says it is loading rather than showing an empty trail", async () => {
