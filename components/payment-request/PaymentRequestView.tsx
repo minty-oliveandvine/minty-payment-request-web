@@ -36,7 +36,7 @@ import {
 } from "@/lib/api";
 import type { InvoiceAttachmentPreviewItem } from "./InvoiceAttachmentPreview";
 import { useEntityCurrency } from "@/lib/entityCurrency";
-import { formatAmount, formatMoney, parseAmount } from "@/lib/amountFormat";
+import { formatAmount, formatMoney, parseAmount } from "@minty/shared/money";
 import { fetchBillBankSlipEnrichment, type BankSlipEnrichment } from "@/lib/bankSlipEnrichment";
 import {
   BILLING_TIME_ZONE,

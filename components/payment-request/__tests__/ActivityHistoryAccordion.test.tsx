@@ -7,6 +7,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CODE_SPACE } from "@minty/shared/money";
 
 import { ActivityHistoryAccordion } from "@/components/payment-request/ActivityHistoryAccordion";
 import { audit } from "@/lib/__fixtures__/bills";
@@ -150,11 +151,15 @@ describe("what it shows", () => {
     await userEvent.click(header());
 
     await waitFor(() => expect(list()).toBeInTheDocument());
-    // Read raw, so the exact spacing is what is checked.
+    // Read raw: the default matcher collapses the non-breaking space the money rule requires.
     const subjects = within(list())
       .getAllByRole("paragraph")
       .map((p) => p.lastElementChild?.textContent);
-    expect(subjects).toEqual(["a payment of HKD 1,200.00", "a payment of HKD 50.50", "a payment"]);
+    expect(subjects).toEqual([
+      `a payment of HKD${CODE_SPACE}1,200.00`,
+      `a payment of HKD${CODE_SPACE}50.50`,
+      "a payment",
+    ]);
   });
 
   it("says a Xero entry was to Xero", async () => {

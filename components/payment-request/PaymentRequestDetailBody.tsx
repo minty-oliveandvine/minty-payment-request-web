@@ -32,7 +32,7 @@ import {
   formatMoney,
   isWithinAmountLimits,
   parseAmount,
-} from "@/lib/amountFormat";
+} from "@minty/shared/money";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
 import {
   billHasRemainingCountablePayments,

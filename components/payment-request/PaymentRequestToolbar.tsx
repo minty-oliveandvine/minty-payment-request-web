@@ -6,7 +6,7 @@ import { DateTextField } from "@/components/DateTextField";
 import { PaymentRequestModal } from "@/components/PaymentRequestModal";
 import { ThemedSelect } from "@/components/ThemedSelect";
 import { useUserRole } from "@/lib/useUserRole";
-import { acceptAmountInput, formatAmount, toAmountEditString } from "@/lib/amountFormat";
+import { acceptAmountInput, formatAmount, toAmountEditString } from "@minty/shared/money";
 
 const FILTER_DATE_TYPE_OPTIONS = [
   { value: "Invoice Date", label: "Invoice Date" },

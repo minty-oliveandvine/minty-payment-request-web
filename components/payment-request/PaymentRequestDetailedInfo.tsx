@@ -10,7 +10,7 @@ import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
 import type { ThemedSelectOption } from "@/components/ThemedSelect";
 import { mergeSelectOption } from "@/lib/billFormSelectOptions";
 import type { EntityBillContact } from "@/lib/api";
-import { acceptAmountInput, formatAmount, toAmountEditString } from "@/lib/amountFormat";
+import { acceptAmountInput, formatAmount, toAmountEditString } from "@minty/shared/money";
 
 /** Bill / request fields shown in the “Detailed Information” card. */
 export type PaymentRequestDetailedInfoData = {

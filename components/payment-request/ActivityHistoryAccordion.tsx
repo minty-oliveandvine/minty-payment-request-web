@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { formatMoney } from "@/lib/amountFormat";
+import { formatMoney } from "@minty/shared/money";
 import { fetchAuditHistory, type AuditItem } from "@/lib/api";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
 import { formatLocalDateForDisplay } from "@/lib/dateDisplayFormat";

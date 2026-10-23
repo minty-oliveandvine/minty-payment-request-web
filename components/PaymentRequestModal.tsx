@@ -45,7 +45,7 @@ import {
   formatAmount,
   toAmountEditString,
   toAmountString,
-} from "@/lib/amountFormat";
+} from "@minty/shared/money";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 import { joinNames, uploadEachAttachment } from "@/lib/uploadAttachments";
 import { useToast } from "@/components/Toast";

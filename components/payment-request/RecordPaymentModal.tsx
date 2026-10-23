@@ -33,7 +33,7 @@ import {
   formatMoney,
   parseAmount,
   toAmountEditString,
-} from "@/lib/amountFormat";
+} from "@minty/shared/money";
 
 export type RecordPaymentModalProps = {
   open: boolean;

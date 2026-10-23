@@ -1,6 +1,8 @@
-// How money is shown and typed (lib/amountFormat.ts). All string work, never parseFloat, so a
-// 12-digit amount keeps every digit - the cases below that go through a float are the ones that
-// prove the 8dp bridge in numberToPlainString still collapses the noise.
+// How money is shown and typed - @minty/shared/money, which replaced this app's own
+// lib/amountFormat.ts (owner 2026-10-21: one money rule). Kept here as the consumer-side proof
+// that the shared module still behaves the way these screens rely on. All string work, never
+// parseFloat, so a 12-digit amount keeps every digit - the cases below that go through a float
+// are the ones that prove the 8dp bridge in numberToPlainString still collapses the noise.
 
 import { describe, expect, it } from "vitest";
 
@@ -16,7 +18,7 @@ import {
   parseAmount,
   toAmountEditString,
   toAmountString,
-} from "@/lib/amountFormat";
+} from "@minty/shared/money";
 
 describe("the limits", () => {
   it("are 11 digits before the point and 2 after", () => {
@@ -125,14 +127,29 @@ describe("isWithinAmountLimits", () => {
 });
 
 describe("formatMoney", () => {
-  it("puts the currency label in front", () => {
-    expect(formatMoney(12000, "HKD")).toBe("HKD 12,000.00");
-    expect(formatMoney("1500.5", "HK$")).toBe("HK$ 1,500.50");
+  // owner 2026-10-21: one money rule (@minty/shared/money) - the ISO code, a non-breaking
+  // space, the currency's places; never a symbol, so this app no longer passes "HK$".
+  it("puts the currency code in front", () => {
+    expect(formatMoney(12000, "HKD")).toBe("HKD\u00a012,000.00");
+    expect(formatMoney("1500.5", "USD")).toBe("USD\u00a01,500.50");
   });
 
-  it("drops the space when there is no label", () => {
+  it("trims and upper-cases the code", () => {
+    expect(formatMoney("1500.5", " hkd ")).toBe("HKD\u00a01,500.50");
+  });
+
+  it("writes a negative with the sign first", () => {
+    expect(formatMoney(-120, "HKD")).toBe("-HKD\u00a0120.00");
+  });
+
+  it("cuts extra decimals rather than rounding", () => {
+    expect(formatMoney("9.999", "HKD")).toBe("HKD\u00a09.99");
+  });
+
+  it("drops the space when there is no code", () => {
     expect(formatMoney(12000, "")).toBe("12,000.00");
     expect(formatMoney(12000, "   ")).toBe("12,000.00");
+    expect(formatMoney(12000, null)).toBe("12,000.00");
   });
 
   it("is empty when the amount is not usable, label or not", () => {

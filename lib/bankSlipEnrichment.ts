@@ -1,6 +1,6 @@
 import { fetchPayments, listPaymentAttachments, type PaymentItem } from "./api";
 import { currencyLabelForCode } from "./currencyDisplay";
-import { formatMoney } from "./amountFormat";
+import { formatMoney } from "@minty/shared/money";
 import type {
   BankSlipDetails,
   BankSlipFileEntry,

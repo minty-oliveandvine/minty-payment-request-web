@@ -7,7 +7,7 @@ import { DateTextField } from "@/components/DateTextField";
 import { ThemedSelect, type ThemedSelectOption } from "@/components/ThemedSelect";
 import { mergeSelectOption } from "@/lib/billFormSelectOptions";
 import { useEntityCurrency } from "@/lib/entityCurrency";
-import { acceptAmountInput, formatAmount, toAmountEditString } from "@/lib/amountFormat";
+import { acceptAmountInput, formatAmount, toAmountEditString } from "@minty/shared/money";
 import {
   formatPaymentRequestDetailLongDate,
   paymentRequestDetailAmountValueInputClass,

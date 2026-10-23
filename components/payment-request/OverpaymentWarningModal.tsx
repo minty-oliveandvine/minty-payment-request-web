@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import type { PaymentItem } from "@/lib/api";
 import { formatDateInTimeZoneForDisplay, formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
-import { formatMoney } from "@/lib/amountFormat";
+import { formatMoney } from "@minty/shared/money";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 export type OverpaymentWarningModalProps = {
