@@ -15,6 +15,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Payment Request",
   description: "Payment Request",
+  // A shared link's preview card: the image is app/opengraph-image.png (and twitter-image.png).
+  openGraph: { siteName: "Minty", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
