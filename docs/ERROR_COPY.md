@@ -10,7 +10,7 @@ write-up lives in the Minty repo as `docs/features/ERROR_MESSAGE_LEAKS.md`.
 
 1. Under two sentences.
 2. First person -- not `Error:`, not `Failed to`.
-3. Name the specific thing: *"that invoice"*, not *"the operation"*.
+3. Name the specific thing: _"that invoice"_, not _"the operation"_.
 4. Warm close, no blame. Drop the apology when retrying won't help (a validation
    error, a hard limit) and state the requirement instead:
    `Files need to be under 10MB.`
@@ -24,9 +24,9 @@ House fallback for unknown causes:
 
 Two clients, both normalising:
 
-| File | Talks to | Error type |
-|---|---|---|
-| `lib/api.ts` | the Django billing backend (`API_BASE/api/v1`) | `ApiError` |
+| File                                                             | Talks to                                                                                             | Error type                                                         |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `lib/api.ts`                                                     | the Django billing backend (`API_BASE/api/v1`)                                                       | `ApiError`                                                         |
 | `components/ui/sidebarHost.ts` (`mintyFetch`, `billingApiFetch`) | Flask's `/api/me/profile` and minty-subscription-api's `/api/me/subscriptions` - the sidebar's reads | `ApiError` (the backend's `error` sentence, else `HOUSE_FALLBACK`) |
 
 `lib/subscriptionNotice.ts` (Flask's subscription notice) is deliberately silent: a failed
@@ -62,10 +62,10 @@ narrow to `ApiError`:
 ```ts
 // Wrong: apiFetch does not wrap network failures, so a dropped connection is a
 // raw TypeError and the user reads "Failed to fetch".
-err instanceof Error ? err.message : "I couldn't load that. Mind trying again?"
+err instanceof Error ? err.message : "I couldn't load that. Mind trying again?";
 
 // Right:
-err instanceof ApiError ? err.message : "I couldn't load that. Mind trying again?"
+err instanceof ApiError ? err.message : "I couldn't load that. Mind trying again?";
 ```
 
 ## Deliberate exceptions

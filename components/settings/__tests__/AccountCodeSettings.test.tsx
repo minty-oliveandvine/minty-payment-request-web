@@ -129,7 +129,9 @@ describe("with Xero connected", () => {
     show();
 
     await screen.findByRole("list", { name: "Account codes" });
-    const asked = fetchMock.mock.calls.map(([u]) => String(u)).find((u) => u.includes("/entity-bill-accounts/"))!;
+    const asked = fetchMock.mock.calls
+      .map(([u]) => String(u))
+      .find((u) => u.includes("/entity-bill-accounts/"))!;
     expect(asked).toBe(`${V1}/entity-bill-accounts/?include_inactive=true`);
   });
 
@@ -162,7 +164,9 @@ describe("with Xero connected", () => {
 
     expect(tick(ACCOUNTS[1])).toBeInTheDocument();
     expect(
-      screen.queryByRole("checkbox", { name: `Include ${labelOf(ACCOUNTS[0])} in payment account dropdown` }),
+      screen.queryByRole("checkbox", {
+        name: `Include ${labelOf(ACCOUNTS[0])} in payment account dropdown`,
+      }),
     ).not.toBeInTheDocument();
 
     await userEvent.clear(screen.getByRole("searchbox"));
@@ -244,9 +248,7 @@ describe("Save", () => {
       await userEvent.click(tick(ACCOUNTS[2]));
       await userEvent.click(saveButton());
 
-      await waitFor(() =>
-        expect(toastText()).toContain("Keep at least one account code ticked."),
-      );
+      await waitFor(() => expect(toastText()).toContain("Keep at least one account code ticked."));
     } finally {
       consoleError.mockRestore();
     }
@@ -272,7 +274,9 @@ describe("Save", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       // 310 on goes through; 200 off is refused.
-      serve({ save: (id) => (id === "account-200" ? answer(500, { detail: "no" }) : answer(200, {})) });
+      serve({
+        save: (id) => (id === "account-200" ? answer(500, { detail: "no" }) : answer(200, {})),
+      });
       show();
       await screen.findByRole("list", { name: "Account codes" });
 

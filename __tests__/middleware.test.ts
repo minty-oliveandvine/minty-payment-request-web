@@ -108,7 +108,11 @@ describe("a company's own page", () => {
   });
 
   it.each([
-    ["the list", `${BASE}/payment-request`, `${MINTY}/entity/360812e1/olive-and-vine/payment-request`],
+    [
+      "the list",
+      `${BASE}/payment-request`,
+      `${MINTY}/entity/360812e1/olive-and-vine/payment-request`,
+    ],
     [
       "one request",
       `${BASE}/payment-request/PR-0001`,
@@ -131,9 +135,9 @@ describe("a company's own page", () => {
   });
 
   it("hands it to Flask when the token is gone but the company cookie is not", () => {
-    expect(run(`${BASE}/payment-request`, { entityId: ENTITY_ID, entityName: ENTITY_NAME }).location).toBe(
-      `${MINTY}/entity/360812e1/olive-and-vine/payment-request`,
-    );
+    expect(
+      run(`${BASE}/payment-request`, { entityId: ENTITY_ID, entityName: ENTITY_NAME }).location,
+    ).toBe(`${MINTY}/entity/360812e1/olive-and-vine/payment-request`);
   });
 
   it("percent-encodes a request id on the way to Flask once, not twice", () => {
@@ -155,7 +159,9 @@ describe("a company's own page", () => {
   });
 
   it("corrects a capital in the short id, keeping the query", () => {
-    expect(run("/entity/360812E1/olive-and-vine/payment-request?status=Draft", SIGNED_IN)).toMatchObject({
+    expect(
+      run("/entity/360812E1/olive-and-vine/payment-request?status=Draft", SIGNED_IN),
+    ).toMatchObject({
       status: 307,
       location: `${APP}${BASE}/payment-request?status=Draft`,
     });
@@ -188,7 +194,9 @@ describe("the addresses from before company addresses", () => {
   });
 
   it("keeps the query", () => {
-    expect(run("/?status=Draft", SIGNED_IN).location).toBe(`${APP}${BASE}/payment-request?status=Draft`);
+    expect(run("/?status=Draft", SIGNED_IN).location).toBe(
+      `${APP}${BASE}/payment-request?status=Draft`,
+    );
   });
 
   it("sends an unknown legacy page back into Minty when there is no cookie", () => {
@@ -207,7 +215,9 @@ describe("the addresses from before company addresses", () => {
 describe("/landing", () => {
   it("always passes, token or no token - it is where the token arrives", () => {
     expect(run("/landing", {})).toMatchObject({ rewritten: true, location: null });
-    expect(run("/landing?token=a.b.c&next=/payment-request", {})).toMatchObject({ rewritten: true });
+    expect(run("/landing?token=a.b.c&next=/payment-request", {})).toMatchObject({
+      rewritten: true,
+    });
     expect(run("/landing/anything", {})).toMatchObject({ rewritten: true });
     expect(run("/landing", SIGNED_IN)).toMatchObject({ rewritten: true });
   });

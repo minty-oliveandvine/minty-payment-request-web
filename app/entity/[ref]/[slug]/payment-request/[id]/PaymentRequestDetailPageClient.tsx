@@ -12,7 +12,10 @@ import { useUserRole } from "@/lib/useUserRole";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
 const PaymentRequestDetailBody = dynamic(
-  () => import("@/components/payment-request/PaymentRequestDetailBody").then((m) => ({ default: m.PaymentRequestDetailBody })),
+  () =>
+    import("@/components/payment-request/PaymentRequestDetailBody").then((m) => ({
+      default: m.PaymentRequestDetailBody,
+    })),
   { loading: () => <PaymentRequestDetailSkeleton /> },
 );
 
@@ -29,7 +32,9 @@ export function PaymentRequestDetailPageClient() {
     if (!auth?.token) return;
     fetchXeroStatus()
       .then(setXeroConnected)
-      .catch((err: unknown) => console.error("[payment request] the Xero status did not load", err));
+      .catch((err: unknown) =>
+        console.error("[payment request] the Xero status did not load", err),
+      );
   }, [auth?.token]);
 
   const showReadOnlyBanner = isViewOnly && isReadOnly(auth?.entityId ?? "");
@@ -52,7 +57,10 @@ export function PaymentRequestDetailPageClient() {
           aria-live="polite"
           className="flex items-center gap-2 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 sm:px-6"
         >
-          <span className="material-symbols-outlined shrink-0 text-[18px] leading-none text-amber-600" aria-hidden>
+          <span
+            className="material-symbols-outlined shrink-0 text-[18px] leading-none text-amber-600"
+            aria-hidden
+          >
             visibility
           </span>
           <span>Read-only access — you are not a member of this entity.</span>

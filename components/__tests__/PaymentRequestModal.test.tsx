@@ -63,7 +63,10 @@ function serve({
     if (path.endsWith("/currencies/")) return answer(200, []);
     if (init?.method === "POST") {
       // An upload's body is FormData, which only a string body could be parsed from.
-      posted.push({ path, body: typeof init.body === "string" ? JSON.parse(init.body) : (init.body ?? null) });
+      posted.push({
+        path,
+        body: typeof init.body === "string" ? JSON.parse(init.body) : (init.body ?? null),
+      });
       if (/\/bills\/[^/]+\/attachments$/.test(path)) {
         const sent = init.body instanceof FormData ? (init.body.get("files") as File) : null;
         return (upload ?? (() => answer(201, [billAttachment()])))(sent as File);
@@ -306,7 +309,9 @@ describe("uploading the invoice after the request exists", () => {
   /** Everything Confirm insists on, and the files to attach. */
   async function fillForConfirm(...files: File[]) {
     await userEvent.type(within(dialog()).getByPlaceholderText("0.00"), "6000");
-    fireEvent.change(document.getElementById("pr-invoice-date")!, { target: { value: "2026-03-03" } });
+    fireEvent.change(document.getElementById("pr-invoice-date")!, {
+      target: { value: "2026-03-03" },
+    });
     fireEvent.change(document.getElementById("pr-due-date")!, { target: { value: "2026-03-31" } });
     await userEvent.click(document.getElementById("pr-contact")!);
     await userEvent.click(await screen.findByRole("option", { name: "ABC Furniture" }));
@@ -369,10 +374,14 @@ describe("uploading the invoice after the request exists", () => {
   it("names only the file that failed when several were sent", async () => {
     const { posted } = serve({
       submit: () => answer(201, SENT),
-      upload: (f) => (f.name === "second.pdf" ? answer(500, { detail: "boom" }) : answer(201, [billAttachment()])),
+      upload: (f) =>
+        f.name === "second.pdf" ? answer(500, { detail: "boom" }) : answer(201, [billAttachment()]),
     });
     show();
-    await fillForConfirm(file("first.pdf", "application/pdf"), file("second.pdf", "application/pdf"));
+    await fillForConfirm(
+      file("first.pdf", "application/pdf"),
+      file("second.pdf", "application/pdf"),
+    );
 
     await userEvent.click(confirm());
 
@@ -392,7 +401,9 @@ describe("uploading the invoice after the request exists", () => {
     await userEvent.click(saveDraft());
 
     await waitFor(() =>
-      expect(router.push).toHaveBeenCalledWith("/entity/360812e1/olive-and-vine/payment-request/PR-0101"),
+      expect(router.push).toHaveBeenCalledWith(
+        "/entity/360812e1/olive-and-vine/payment-request/PR-0101",
+      ),
     );
     expect(onClose).toHaveBeenCalled();
     expect(warning()?.textContent).toContain(
@@ -423,7 +434,9 @@ describe("the company's currency", () => {
     serve();
     await showFresh();
 
-    await waitFor(() => expect(within(dialog()).getByLabelText("Currency")).toHaveTextContent("HKD"));
+    await waitFor(() =>
+      expect(within(dialog()).getByLabelText("Currency")).toHaveTextContent("HKD"),
+    );
     expect(saveDraft()).toBeEnabled();
   });
 
@@ -457,7 +470,9 @@ describe("the company's currency", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Try again" }));
 
-      await waitFor(() => expect(within(dialog()).getByLabelText("Currency")).toHaveTextContent("HKD"));
+      await waitFor(() =>
+        expect(within(dialog()).getByLabelText("Currency")).toHaveTextContent("HKD"),
+      );
       expect(saveDraft()).toBeEnabled();
     } finally {
       consoleError.mockRestore();

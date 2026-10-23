@@ -5,16 +5,16 @@ with a token, work on payment requests against minty-payment-request-api, set th
 and see their profile and subscriptions overview in the sidebar drawer (managing subscriptions
 is minty-web's). Nothing is decided here that a backend does not re-check.
 
-| Feature | Document |
-|---|---|
+| Feature                                                                                                                                                     | Document                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Arriving with Minty's token, the cookies, the company addresses (`/entity/<shortid>/<name>/...`), refresh, what the role changes on screen, the module gate | [authentication.md](authentication.md) — the system-wide picture is `Minty/docs/features/authentication.md` |
-| The list (tabs, filters, table / easy view), the Add Payment dialog, the detail page (attachments, payments, publish, activity) | [payment-requests.md](payment-requests.md) |
-| Payment Request Settings (`/entity/<shortid>/<name>/settings/payment-request`), the maintenance page | [settings.md](settings.md) |
-| The old payer portal (`/profile/*`) — moved to minty-web on 2026-10-01; its addresses forward there | [payer-portal.md](payer-portal.md) |
-| The sidebar on every page - the menu and My Profile, copied from minty-web for `@minty/shared` | [sidebar.md](sidebar.md) |
-| Toasts - `components/Toast.tsx`, minty-web's card (white, a bold label, no colour or icon) | `Minty/docs/features/toasts.md` - the system-wide rule and the look, value for value |
-| User-facing error copy | [../ERROR_COPY.md](../ERROR_COPY.md) |
-| Manual QA checklist to run by hand before a release | [qa-checklist.md](qa-checklist.md) |
+| The list (tabs, filters, table / easy view), the Add Payment dialog, the detail page (attachments, payments, publish, activity)                             | [payment-requests.md](payment-requests.md)                                                                  |
+| Payment Request Settings (`/entity/<shortid>/<name>/settings/payment-request`), the maintenance page                                                        | [settings.md](settings.md)                                                                                  |
+| The old payer portal (`/profile/*`) — moved to minty-web on 2026-10-01; its addresses forward there                                                         | [payer-portal.md](payer-portal.md)                                                                          |
+| The sidebar on every page - the menu and My Profile, copied from minty-web for `@minty/shared`                                                              | [sidebar.md](sidebar.md)                                                                                    |
+| Toasts - `components/Toast.tsx`, minty-web's card (white, a bold label, no colour or icon)                                                                  | `Minty/docs/features/toasts.md` - the system-wide rule and the look, value for value                        |
+| User-facing error copy                                                                                                                                      | [../ERROR_COPY.md](../ERROR_COPY.md)                                                                        |
+| Manual QA checklist to run by hand before a release                                                                                                         | [qa-checklist.md](qa-checklist.md)                                                                          |
 
 Link previews (owner, 2026-10-23): a link to any page of this app, pasted into a chat app, previews with one card - the Minty cat mark (`Minty/static/img/new_logo.png`, the flat drawing) centred on a white 1200x630 PNG. It is `app/opengraph-image.png` and `app/twitter-image.png` (alt text "Minty" in the `.alt.txt` beside each), which Next attaches to every route that sets no image of its own, plus `openGraph`/`twitter` in `app/layout.tsx`. The same file sits in minty-web, minty-petty-cash-web, minty-payment-request-web and minty-onboarding-web, and `app/__tests__/linkPreview.test.ts` pins its size and sha256 in each: a new card goes into all four, with the new hash. There is no `metadataBase`; on Vercel Next makes the image URL absolute from the deployment's own address. Previews never name a company or show report data.
 

@@ -33,10 +33,11 @@ const answer = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 const pills = (activeTab: SettingsTabId = "bill") =>
-  render(<SettingsPills activeTab={activeTab} entityId={ENTITY_ID} module1Url={env.PETTY_CASH_URL} />);
+  render(
+    <SettingsPills activeTab={activeTab} entityId={ENTITY_ID} module1Url={env.PETTY_CASH_URL} />,
+  );
 
-const names = () =>
-  screen.getAllByRole("link").map((a) => a.textContent?.trim());
+const names = () => screen.getAllByRole("link").map((a) => a.textContent?.trim());
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
@@ -147,11 +148,15 @@ describe("the pills on screen", () => {
     // /handoff/petty-cash-web mints that app's token and lands on `next`.
     pills();
 
-    const href = (await screen.findByRole("link", { name: "Petty Cash Settings" })).getAttribute("href")!;
+    const href = (await screen.findByRole("link", { name: "Petty Cash Settings" })).getAttribute(
+      "href",
+    )!;
     const url = new URL(href);
     expect(url.origin + url.pathname).toBe(`${env.PETTY_CASH_URL}/handoff/petty-cash-web`);
     expect(url.searchParams.get("entity_id")).toBe(ENTITY_ID);
-    expect(url.searchParams.get("next")).toBe("/entity/360812e1/olive-and-vine/settings/petty-cash");
+    expect(url.searchParams.get("next")).toBe(
+      "/entity/360812e1/olive-and-vine/settings/petty-cash",
+    );
   });
 
   it("carry no token in any address - a settings link is never a credential", async () => {

@@ -86,7 +86,9 @@ function sortColumnDescription(key: SortKey): string {
     case "submittedDate":
       return "Sort by submitted date (oldest first or newest first)." + suffix;
     case "paidDate":
-      return "Sort by paid date (oldest first or newest first); rows without a date go last." + suffix;
+      return (
+        "Sort by paid date (oldest first or newest first); rows without a date go last." + suffix
+      );
     case "status":
       return "Sort by status in billing order, then A–Z." + suffix;
     case "unpaidAmount":
@@ -253,24 +255,18 @@ const actionBodyCellBg = "bg-secondary/8";
 const TABLE_SKELETON_ROW_COUNT = 6;
 const MOBILE_SKELETON_CARD_COUNT = 6;
 
-const statusTagClass =
-  `inline-flex rounded-lg bg-[#EDEDED] text-xs font-medium text-[#C0C0C0] sm:text-sm ${STATUS_TAG_UNIFORM}`;
+const statusTagClass = `inline-flex rounded-lg bg-[#EDEDED] text-xs font-medium text-[#C0C0C0] sm:text-sm ${STATUS_TAG_UNIFORM}`;
 
 /** Paid: #656565 text, border-primary/25. Payment Requested: secondary text + tinted fill, no border. */
-const statusTagPaidClass =
-  `inline-flex rounded-lg border border-primary/25 bg-transparent text-xs font-semibold text-[#656565] sm:text-sm ${STATUS_TAG_UNIFORM}`;
+const statusTagPaidClass = `inline-flex rounded-lg border border-primary/25 bg-transparent text-xs font-semibold text-[#656565] sm:text-sm ${STATUS_TAG_UNIFORM}`;
 
-const statusTagPartiallyPaidClass =
-  `inline-flex rounded-lg bg-[#70ebba]/10 text-xs font-semibold text-[#70ebba] sm:text-sm ${STATUS_TAG_UNIFORM}`;
+const statusTagPartiallyPaidClass = `inline-flex rounded-lg bg-[#70ebba]/10 text-xs font-semibold text-[#70ebba] sm:text-sm ${STATUS_TAG_UNIFORM}`;
 
-const statusTagPaymentRequestedClass =
-  `inline-flex rounded-lg bg-secondary/10 text-xs font-semibold text-secondary sm:text-sm ${STATUS_TAG_UNIFORM}`;
+const statusTagPaymentRequestedClass = `inline-flex rounded-lg bg-secondary/10 text-xs font-semibold text-secondary sm:text-sm ${STATUS_TAG_UNIFORM}`;
 
-const statusTagReturnedClass =
-  `inline-flex rounded-lg bg-[#EA9713]/10 text-xs font-semibold text-[#EA9713] sm:text-sm ${STATUS_TAG_UNIFORM}`;
+const statusTagReturnedClass = `inline-flex rounded-lg bg-[#EA9713]/10 text-xs font-semibold text-[#EA9713] sm:text-sm ${STATUS_TAG_UNIFORM}`;
 
-const statusTagVoidedClass =
-  `inline-flex rounded-lg text-xs font-semibold text-[#FF6B6B] sm:text-sm ${STATUS_TAG_UNIFORM}`;
+const statusTagVoidedClass = `inline-flex rounded-lg text-xs font-semibold text-[#FF6B6B] sm:text-sm ${STATUS_TAG_UNIFORM}`;
 
 const viewPaymentsButtonClass =
   "box-border inline-flex h-10 min-h-10 w-max max-w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-secondary/15 px-3 text-xs font-medium text-secondary transition-colors hover:bg-secondary/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:bg-[#F5F5F5] disabled:text-primary/40 disabled:hover:bg-[#F5F5F5] sm:h-[42px] sm:min-h-[42px] sm:px-4 sm:text-sm";
@@ -395,7 +391,9 @@ const SELECTOR_TITLE: Record<ColumnSelectorKey, PaymentRequestColumnTitle> = {
   unpaidAmount: "Unpaid Amount",
 };
 
-const NON_SELECTOR_TITLES: PaymentRequestColumnTitle[] = COLUMN_TITLES.filter((title) => !TITLE_SELECTOR_KEY[title]);
+const NON_SELECTOR_TITLES: PaymentRequestColumnTitle[] = COLUMN_TITLES.filter(
+  (title) => !TITLE_SELECTOR_KEY[title],
+);
 
 function skeletonDesktopTdClass(title: PaymentRequestColumnTitle): string {
   if (title === "Supplier / Description") return contactCellClass;
@@ -528,10 +526,17 @@ export function PaymentRequestTable({
   const [rowDeletePending, setRowDeletePending] = useState(false);
   /** Row whose (re)publish is in flight. The menu closes on click, so without this the
       row gave no sign that a Xero round trip was running. */
-  const [rowPublishPending, setRowPublishPending] = useState<{ rowId: string; mode: "publish" | "republish" } | null>(null);
+  const [rowPublishPending, setRowPublishPending] = useState<{
+    rowId: string;
+    mode: "publish" | "republish";
+  } | null>(null);
   const [columnsMenu, setColumnsMenu] = useState<ColumnsMenuState | null>(null);
-  const [columnVisibility, setColumnVisibility] = useState<Record<ColumnSelectorKey, boolean>>(() => ({ ...DEFAULT_COLUMN_VISIBILITY }));
-  const [columnVisibilityDraft, setColumnVisibilityDraft] = useState<Record<ColumnSelectorKey, boolean>>(() => ({ ...DEFAULT_COLUMN_VISIBILITY }));
+  const [columnVisibility, setColumnVisibility] = useState<Record<ColumnSelectorKey, boolean>>(
+    () => ({ ...DEFAULT_COLUMN_VISIBILITY }),
+  );
+  const [columnVisibilityDraft, setColumnVisibilityDraft] = useState<
+    Record<ColumnSelectorKey, boolean>
+  >(() => ({ ...DEFAULT_COLUMN_VISIBILITY }));
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -541,16 +546,15 @@ export function PaymentRequestTable({
   const statusFilterKey = statusFilters.join("|");
 
   /** "Select all" means everything selectable on this page — selection spans pages. */
-  const selectableVisibleRows = useMemo(
-    () => rows.filter((r) => r.status !== "Voided"),
-    [rows],
-  );
+  const selectableVisibleRows = useMemo(() => rows.filter((r) => r.status !== "Voided"), [rows]);
 
   const allSelected =
     selectableVisibleRows.length > 0 && selectableVisibleRows.every((r) => selectedIds.has(r.id));
-  const someSelected =
-    selectableVisibleRows.some((r) => selectedIds.has(r.id)) && !allSelected;
-  const visibleSelectorCount = COLUMN_SELECTOR_ITEMS.reduce((n, item) => n + (columnVisibility[item.key] ? 1 : 0), 0);
+  const someSelected = selectableVisibleRows.some((r) => selectedIds.has(r.id)) && !allSelected;
+  const visibleSelectorCount = COLUMN_SELECTOR_ITEMS.reduce(
+    (n, item) => n + (columnVisibility[item.key] ? 1 : 0),
+    0,
+  );
   const tableColCount = 1 + visibleSelectorCount + 2 + 2;
   const orderedTableTitles = useMemo(
     () => [...DEFAULT_COLUMN_ORDER.map((key) => SELECTOR_TITLE[key]), ...NON_SELECTOR_TITLES],
@@ -585,7 +589,10 @@ export function PaymentRequestTable({
   }, [someSelected]);
 
   const toggleAll = () => {
-    onToggleAll?.(selectableVisibleRows.map((r) => r.id), !allSelected);
+    onToggleAll?.(
+      selectableVisibleRows.map((r) => r.id),
+      !allSelected,
+    );
   };
 
   const rowMenuRow = rowMenu ? rows.find((r) => r.id === rowMenu.rowId) : undefined;
@@ -618,7 +625,11 @@ export function PaymentRequestTable({
   }, [rowDeleteConfirmId, rows]);
 
   const runRowPublish = useCallback(
-    async (rowId: string, mode: "publish" | "republish", handler?: (rowId: string) => void | Promise<void>) => {
+    async (
+      rowId: string,
+      mode: "publish" | "republish",
+      handler?: (rowId: string) => void | Promise<void>,
+    ) => {
       if (!handler) return;
       setRowPublishPending({ rowId, mode });
       try {
@@ -718,7 +729,12 @@ export function PaymentRequestTable({
       {headerSlot ? <div className="mb-3 flex justify-end">{headerSlot}</div> : null}
       <div className="flex flex-col gap-3 lg:hidden" role="list" aria-label="Payment requests">
         {loading ? (
-          <div className="flex flex-col gap-3" role="status" aria-busy="true" aria-label="Loading payment requests">
+          <div
+            className="flex flex-col gap-3"
+            role="status"
+            aria-busy="true"
+            aria-label="Loading payment requests"
+          >
             {Array.from({ length: MOBILE_SKELETON_CARD_COUNT }, (_, i) => (
               <div
                 key={`sk-card-${i}`}
@@ -755,7 +771,9 @@ export function PaymentRequestTable({
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-xl border border-gray-200 bg-[#F5F5F5] px-4 py-8 text-center text-sm text-primary/70">No payment requests match this status.</div>
+          <div className="rounded-xl border border-gray-200 bg-[#F5F5F5] px-4 py-8 text-center text-sm text-primary/70">
+            No payment requests match this status.
+          </div>
         ) : (
           rows.map((row) => {
             const isPaid = row.status === "Paid";
@@ -778,37 +796,83 @@ export function PaymentRequestTable({
                       : statusTagClass;
             const articleClassName = `rounded-xl border border-gray-200 p-4 shadow-sm transition-colors ${isVoided ? "bg-[#F5F5F5]" : isPaid ? "bg-[#F5F5F5]" : isPaymentRequested ? "bg-secondary/10" : isPartiallyPaid ? "bg-[#70ebba]/10" : isReturned ? "bg-[#EA9713]/10" : "bg-[#F5F5F5]"} ${isVoided ? "cursor-pointer active:bg-gray-200/60" : isPaid ? "cursor-pointer active:bg-gray-200/60" : isPaymentRequested ? "cursor-pointer active:bg-secondary/20" : isPartiallyPaid ? "cursor-pointer active:bg-[#70ebba]/20" : isReturned ? "cursor-pointer active:bg-[#EA9713]/20" : "cursor-pointer active:bg-gray-200/60"}`;
             return (
-              <article key={row.id} role="listitem" className={`${articleClassName} relative`} onClick={() => { onRowClick?.(row.id, row.reference, row.status); }}>
-                <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
+              <article
+                key={row.id}
+                role="listitem"
+                className={`${articleClassName} relative`}
+                onClick={() => {
+                  onRowClick?.(row.id, row.reference, row.status);
+                }}
+              >
+                <RowLinkOverlay
+                  rowId={row.id}
+                  reference={row.reference}
+                  status={row.status}
+                  label={`Open ${row.contactTitle}`}
+                />
                 <div className="flex gap-3">
-                  <div className="relative z-[1] hidden shrink-0 pt-0.5 sm:block" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" checked={selectedIds.has(row.id)} disabled={isVoided} onChange={() => onToggleRow?.(row.id)} className={`${HEADER_CHECKBOX_CLASS} disabled:cursor-not-allowed disabled:opacity-40`} aria-label={isVoided ? `Voided — cannot select ${row.contactTitle}` : `Select row ${row.contactTitle}`} suppressHydrationWarning />
+                  <div
+                    className="relative z-[1] hidden shrink-0 pt-0.5 sm:block"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(row.id)}
+                      disabled={isVoided}
+                      onChange={() => onToggleRow?.(row.id)}
+                      className={`${HEADER_CHECKBOX_CLASS} disabled:cursor-not-allowed disabled:opacity-40`}
+                      aria-label={
+                        isVoided
+                          ? `Voided — cannot select ${row.contactTitle}`
+                          : `Select row ${row.contactTitle}`
+                      }
+                      suppressHydrationWarning
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start gap-2">
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-semibold leading-snug text-primary">{row.contactTitle}</h3>
+                        <h3 className="text-sm font-semibold leading-snug text-primary">
+                          {row.contactTitle}
+                        </h3>
                         {row.contactCaption ? (
-                          <p className="mt-0.5 min-w-0 max-w-full text-xs leading-snug text-primary/60" title={row.contactCaption}>
+                          <p
+                            className="mt-0.5 min-w-0 max-w-full text-xs leading-snug text-primary/60"
+                            title={row.contactCaption}
+                          >
                             {truncateMobileBillDescription(row.contactCaption)}
                           </p>
                         ) : null}
                       </div>
                       {row.status ? (
-                        <div className="relative z-[1] shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="relative z-[1] shrink-0 pt-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <span className={statusBadgeClass}>{row.status}</span>
                         </div>
                       ) : null}
                     </div>
                     <div className="mt-4 flex min-w-0 items-start justify-between gap-3">
                       <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className="text-[10px] font-medium uppercase tracking-wide text-primary/45">Invoice date</span>
-                        <span className="text-sm font-semibold tabular-nums text-primary">{row.invoiceDate}</span>
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
+                          Invoice date
+                        </span>
+                        <span className="text-sm font-semibold tabular-nums text-primary">
+                          {row.invoiceDate}
+                        </span>
                       </div>
                       {row.unpaidAmount || row.invoiceTotal ? (
                         <div className="shrink-0 space-y-0.5 text-right">
                           {row.unpaidAmount ? (
-                            <p className={"text-base font-semibold tabular-nums " + unpaidAmountTextClass(row.status)}>{row.unpaidAmount}</p>
+                            <p
+                              className={
+                                "text-base font-semibold tabular-nums " +
+                                unpaidAmountTextClass(row.status)
+                              }
+                            >
+                              {row.unpaidAmount}
+                            </p>
                           ) : null}
                           {row.invoiceTotal ? (
                             <p className="text-[11px] tabular-nums text-primary/55">
@@ -818,33 +882,76 @@ export function PaymentRequestTable({
                         </div>
                       ) : null}
                     </div>
-                    <div className="relative z-[1] mt-4 flex min-h-[2.5rem] min-w-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div
+                      className="relative z-[1] mt-4 flex min-h-[2.5rem] min-w-0 items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="flex min-w-0 min-h-10 flex-1 flex-wrap items-center gap-2">
                         {!isVoided && !isDraft && !isReturned && isElevated ? (
                           isPaid ? (
-                            <button type="button" aria-label={`View payments for ${row.contactTitle}`} onClick={(e) => { e.stopPropagation(); onRecordPayment?.(row.id, true); }} className={viewPaymentsButtonClass}>
+                            <button
+                              type="button"
+                              aria-label={`View payments for ${row.contactTitle}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRecordPayment?.(row.id, true);
+                              }}
+                              className={viewPaymentsButtonClass}
+                            >
                               <span className="whitespace-nowrap">View payments</span>
                             </button>
                           ) : (
-                            <button type="button" aria-label={`Record payment for ${row.contactTitle}`} onClick={(e) => { e.stopPropagation(); onRecordPayment?.(row.id); }} className={recordPaymentButtonClass}>
+                            <button
+                              type="button"
+                              aria-label={`Record payment for ${row.contactTitle}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRecordPayment?.(row.id);
+                              }}
+                              className={recordPaymentButtonClass}
+                            >
                               <span className="whitespace-nowrap">Record Payment</span>
-                              <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>add</span>
+                              <span
+                                className="material-symbols-outlined shrink-0 text-[20px] leading-none"
+                                aria-hidden
+                              >
+                                add
+                              </span>
                             </button>
                           )
                         ) : isReturned ? (
-                          <button type="button" disabled aria-label={`Returned — record payment not available for ${row.contactTitle}`} className={recordPaymentButtonClass}>
+                          <button
+                            type="button"
+                            disabled
+                            aria-label={`Returned — record payment not available for ${row.contactTitle}`}
+                            className={recordPaymentButtonClass}
+                          >
                             <span className="whitespace-nowrap">Record Payment</span>
-                            <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>add</span>
+                            <span
+                              className="material-symbols-outlined shrink-0 text-[20px] leading-none"
+                              aria-hidden
+                            >
+                              add
+                            </span>
                           </button>
                         ) : !isVoided && !isDraft && isPaid && !isElevated ? (
-                          <button type="button" disabled aria-label={`Insufficient permissions — view payments not available for ${row.contactTitle}`} className={viewPaymentsButtonClass}>
+                          <button
+                            type="button"
+                            disabled
+                            aria-label={`Insufficient permissions — view payments not available for ${row.contactTitle}`}
+                            className={viewPaymentsButtonClass}
+                          >
                             <span className="whitespace-nowrap">View payments</span>
                           </button>
                         ) : null}
                       </div>
                       <div className="flex h-10 min-h-10 shrink-0 items-center justify-end">
                         {row.bankslipState ? (
-                          <BankSlipLoadState state={row.bankslipState} contactTitle={row.contactTitle} onRetry={onRetryBankSlips} />
+                          <BankSlipLoadState
+                            state={row.bankslipState}
+                            contactTitle={row.contactTitle}
+                            onRetry={onRetryBankSlips}
+                          />
                         ) : row.bankslipFileCount != null && row.bankslipFileCount > 0 ? (
                           <button
                             type="button"
@@ -861,18 +968,51 @@ export function PaymentRequestTable({
                                   : `View bank slip — ${row.bankslipFileCount} file${row.bankslipFileCount === 1 ? "" : "s"} uploaded`
                             }
                           >
-                            <span className="text-sm font-semibold tabular-nums">{row.bankslipFileCount}</span>
-                            <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>draft</span>
+                            <span className="text-sm font-semibold tabular-nums">
+                              {row.bankslipFileCount}
+                            </span>
+                            <span
+                              className="material-symbols-outlined shrink-0 text-[20px] leading-none"
+                              aria-hidden
+                            >
+                              draft
+                            </span>
                           </button>
                         ) : bankslipReadOnly || isViewOnly ? (
-                          <div className={uploadBankslipReadOnlyClass} aria-label={isVoided ? `Voided — upload not available for ${row.contactTitle}` : isDraft ? `Draft — upload not available for ${row.contactTitle}` : `Upload not available for ${row.contactTitle}`}>
+                          <div
+                            className={uploadBankslipReadOnlyClass}
+                            aria-label={
+                              isVoided
+                                ? `Voided — upload not available for ${row.contactTitle}`
+                                : isDraft
+                                  ? `Draft — upload not available for ${row.contactTitle}`
+                                  : `Upload not available for ${row.contactTitle}`
+                            }
+                          >
                             <span className="whitespace-nowrap">Upload</span>
-                            <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>upload_file</span>
+                            <span
+                              className="material-symbols-outlined shrink-0 text-[20px] leading-none"
+                              aria-hidden
+                            >
+                              upload_file
+                            </span>
                           </div>
                         ) : (
-                          <button type="button" className={uploadBankslipButtonClass} onClick={(e) => { e.stopPropagation(); setBankSlipDetailsRowId(row.id); }}>
+                          <button
+                            type="button"
+                            className={uploadBankslipButtonClass}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setBankSlipDetailsRowId(row.id);
+                            }}
+                          >
                             <span className="whitespace-nowrap">Upload</span>
-                            <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>upload_file</span>
+                            <span
+                              className="material-symbols-outlined shrink-0 text-[20px] leading-none"
+                              aria-hidden
+                            >
+                              upload_file
+                            </span>
                           </button>
                         )}
                       </div>
@@ -889,8 +1029,20 @@ export function PaymentRequestTable({
           <table className="min-w-[82rem] w-full border-collapse text-left">
             <thead>
               <tr>
-                <th scope="col" className="w-12 min-w-[2.75rem] border-b border-gray-200 bg-[#9CA3AF] px-2 py-3 text-center sm:px-3 sm:py-3.5">
-                  <input ref={headerCheckboxRef} type="checkbox" checked={allSelected} onChange={toggleAll} disabled={selectableVisibleRows.length === 0} className={`${HEADER_CHECKBOX_CLASS} disabled:cursor-not-allowed disabled:opacity-40`} aria-label="Select all rows" suppressHydrationWarning />
+                <th
+                  scope="col"
+                  className="w-12 min-w-[2.75rem] border-b border-gray-200 bg-[#9CA3AF] px-2 py-3 text-center sm:px-3 sm:py-3.5"
+                >
+                  <input
+                    ref={headerCheckboxRef}
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    disabled={selectableVisibleRows.length === 0}
+                    className={`${HEADER_CHECKBOX_CLASS} disabled:cursor-not-allowed disabled:opacity-40`}
+                    aria-label="Select all rows"
+                    suppressHydrationWarning
+                  />
                 </th>
                 {orderedTableTitles.map((title) => {
                   const selectorKey = TITLE_SELECTOR_KEY[title];
@@ -898,13 +1050,26 @@ export function PaymentRequestTable({
                   const sortKeyForCol = SORTABLE_TITLE[title];
                   const sortActive = sortKeyForCol != null && sort.key === sortKeyForCol;
                   const thBase = `border-b border-gray-200 px-4 py-3 text-left text-xs sm:px-5 sm:py-3.5 sm:text-sm ${isActionColumnTitle(title) ? "bg-secondary text-white" : "bg-[#9CA3AF] text-white"} ${title === "Supplier / Description" ? "min-w-[14rem]" : title === "Payment" || title === "Bankslip" ? "min-w-[11rem] whitespace-nowrap" : title === "Invoice Date" || title === "Paid Date" ? "min-w-[9rem] whitespace-nowrap" : title === "Status" ? "min-w-0 whitespace-nowrap sm:min-w-[11rem]" : title === "Unpaid Amount" ? "min-w-[13rem] whitespace-nowrap" : "min-w-[7rem] whitespace-nowrap"}`;
-                  const hoverSort = title === "Paid Date" ? "hover:bg-white/15 focus-visible:outline-white/60" : "hover:bg-black/10 focus-visible:outline-white/60";
+                  const hoverSort =
+                    title === "Paid Date"
+                      ? "hover:bg-white/15 focus-visible:outline-white/60"
+                      : "hover:bg-black/10 focus-visible:outline-white/60";
                   return (
-                    <th key={title} scope="col" aria-sort={sortActive ? (sort.dir === "asc" ? "ascending" : "descending") : undefined} className={thBase}>
+                    <th
+                      key={title}
+                      scope="col"
+                      aria-sort={
+                        sortActive ? (sort.dir === "asc" ? "ascending" : "descending") : undefined
+                      }
+                      className={thBase}
+                    >
                       {sortKeyForCol ? (
                         <div className="flex min-w-0 items-center gap-1 sm:gap-1.5">
                           <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
-                          <span id={`${sortDescriptionIdPrefix}-${sortKeyForCol}`} className="sr-only">
+                          <span
+                            id={`${sortDescriptionIdPrefix}-${sortKeyForCol}`}
+                            className="sr-only"
+                          >
                             {sortColumnDescription(sortKeyForCol)}
                           </span>
                           <button
@@ -915,8 +1080,19 @@ export function PaymentRequestTable({
                             title={sortColumnTooltip(sortKeyForCol)}
                             onClick={() => onSortColumn?.(sortKeyForCol)}
                           >
-                            <span className="inline-flex size-5 items-center justify-center" aria-hidden>
-                              <span className={`material-symbols-outlined block text-[18px] leading-none ${sortActive ? "opacity-100" : "opacity-60"}`}>{sortActive ? (sort.dir === "asc" ? "expand_less" : "expand_more") : "expand_more"}</span>
+                            <span
+                              className="inline-flex size-5 items-center justify-center"
+                              aria-hidden
+                            >
+                              <span
+                                className={`material-symbols-outlined block text-[18px] leading-none ${sortActive ? "opacity-100" : "opacity-60"}`}
+                              >
+                                {sortActive
+                                  ? sort.dir === "asc"
+                                    ? "expand_less"
+                                    : "expand_more"
+                                  : "expand_more"}
+                              </span>
                             </span>
                           </button>
                         </div>
@@ -926,10 +1102,31 @@ export function PaymentRequestTable({
                     </th>
                   );
                 })}
-                <th scope="col" colSpan={2} aria-label="Actions" className="border-b border-gray-200 bg-secondary px-2 py-2 text-right text-white sm:px-3 sm:py-2.5">
-                  <button type="button" data-columns-menu-trigger className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-white/40 bg-white/15 px-3 text-sm font-medium text-white transition-colors hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label="Columns" aria-expanded={columnsMenu ? "true" : "false"} aria-haspopup="dialog" onClick={(e) => { e.stopPropagation(); toggleColumnsMenu(e.currentTarget); }}>
+                <th
+                  scope="col"
+                  colSpan={2}
+                  aria-label="Actions"
+                  className="border-b border-gray-200 bg-secondary px-2 py-2 text-right text-white sm:px-3 sm:py-2.5"
+                >
+                  <button
+                    type="button"
+                    data-columns-menu-trigger
+                    className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-white/40 bg-white/15 px-3 text-sm font-medium text-white transition-colors hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                    aria-label="Columns"
+                    aria-expanded={columnsMenu ? "true" : "false"}
+                    aria-haspopup="dialog"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleColumnsMenu(e.currentTarget);
+                    }}
+                  >
                     <span>Columns</span>
-                    <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden>vertical_split</span>
+                    <span
+                      className="material-symbols-outlined text-[18px] leading-none"
+                      aria-hidden
+                    >
+                      vertical_split
+                    </span>
                   </button>
                 </th>
               </tr>
@@ -952,231 +1149,418 @@ export function PaymentRequestTable({
                         </td>
                       );
                     })}
-                    <td className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg}`}>
+                    <td
+                      className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg}`}
+                    >
                       <div className="mx-auto h-10 w-10 animate-pulse rounded-md bg-gray-200" />
                     </td>
-                    <td className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg}`}>
+                    <td
+                      className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg}`}
+                    >
                       <div className="mx-auto h-9 w-9 animate-pulse rounded-full bg-gray-200" />
                     </td>
                   </tr>
                 ))
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={tableColCount} className="border-b border-gray-100 px-4 py-8 text-center text-sm text-primary/70 sm:px-5">No payment requests match this status.</td>
+                  <td
+                    colSpan={tableColCount}
+                    className="border-b border-gray-100 px-4 py-8 text-center text-sm text-primary/70 sm:px-5"
+                  >
+                    No payment requests match this status.
+                  </td>
                 </tr>
               ) : null}
               {!loading &&
                 rows.map((row) => {
-                const isPaid = row.status === "Paid";
-                const isPartiallyPaid = row.status === "Partially Paid";
-                const isVoided = row.status === "Voided";
-                const isPaymentRequested = row.status === "Payment Requested";
-                const isDraft = row.status === "Draft";
-                const isReturned = row.status === "Returned";
-                const bankslipReadOnly = isVoided || isDraft;
-                const xeroConnected = !isDraft && row.xeroActive;
-                const isRowPublishing = rowPublishPending?.rowId === row.id;
-                return (
-                  <tr key={row.id} className={`transition-colors duration-150 ease-out cursor-pointer hover:bg-gray-50`} onClick={() => { onRowClick?.(row.id, row.reference, row.status); }}>
-                    <td className="border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3">
-                      <input type="checkbox" checked={selectedIds.has(row.id)} disabled={isVoided} onChange={() => onToggleRow?.(row.id)} onClick={(e) => e.stopPropagation()} className={`${HEADER_CHECKBOX_CLASS} disabled:cursor-not-allowed disabled:opacity-40`} aria-label={isVoided ? `Voided — cannot select ${row.contactTitle}` : `Select row ${row.contactTitle}`} suppressHydrationWarning />
-                    </td>
-                    {orderedTableTitles.map((title) => {
-                      const selectorKey = TITLE_SELECTOR_KEY[title];
-                      if (selectorKey && !columnVisibility[selectorKey]) return null;
-                      switch (title) {
-                        case "Supplier / Description":
-                          return (
-                            <td key={title} className={`${contactCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
-                              <div className="flex min-w-0 flex-col gap-0.5">
-                                <span className="text-sm font-semibold text-primary sm:text-base">{row.contactTitle}</span>
-                                {row.contactCaption ? <span className="text-xs text-primary/65 sm:text-sm">{row.contactCaption}</span> : null}
-                              </div>
-                            </td>
-                          );
-                        case "Invoice Date":
-                          return (
-                            <td key={title} className={`${singleLineDateCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
-                              {row.invoiceDate}
-                            </td>
-                          );
-                        case "Status":
-                          return (
-                            <td key={title} className={`${singleLineStatusCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
-                              {row.status ? (
-                                <span
-                                  className={
-                                    isPaid
-                                      ? statusTagPaidClass
-                                      : isPartiallyPaid
-                                        ? statusTagPartiallyPaidClass
-                                        : isVoided
-                                          ? statusTagVoidedClass
-                                          : isPaymentRequested
-                                            ? statusTagPaymentRequestedClass
-                                            : isReturned
-                                              ? statusTagReturnedClass
-                                              : statusTagClass
-                                  }
-                                >
-                                  {row.status}
-                                </span>
-                              ) : null}
-                            </td>
-                          );
-                        case "Submitted Date":
-                          return (
-                            <td key={title} className={`${invoiceDateCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
-                              {row.submittedDate}
-                            </td>
-                          );
-                        case "Unpaid Amount":
-                          return (
-                            <td key={title} className={`${unpaidAmountCellClass} relative`}>
-                              <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
-                              {row.unpaidAmount || row.invoiceTotal ? (
+                  const isPaid = row.status === "Paid";
+                  const isPartiallyPaid = row.status === "Partially Paid";
+                  const isVoided = row.status === "Voided";
+                  const isPaymentRequested = row.status === "Payment Requested";
+                  const isDraft = row.status === "Draft";
+                  const isReturned = row.status === "Returned";
+                  const bankslipReadOnly = isVoided || isDraft;
+                  const xeroConnected = !isDraft && row.xeroActive;
+                  const isRowPublishing = rowPublishPending?.rowId === row.id;
+                  return (
+                    <tr
+                      key={row.id}
+                      className={`transition-colors duration-150 ease-out cursor-pointer hover:bg-gray-50`}
+                      onClick={() => {
+                        onRowClick?.(row.id, row.reference, row.status);
+                      }}
+                    >
+                      <td className="border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(row.id)}
+                          disabled={isVoided}
+                          onChange={() => onToggleRow?.(row.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`${HEADER_CHECKBOX_CLASS} disabled:cursor-not-allowed disabled:opacity-40`}
+                          aria-label={
+                            isVoided
+                              ? `Voided — cannot select ${row.contactTitle}`
+                              : `Select row ${row.contactTitle}`
+                          }
+                          suppressHydrationWarning
+                        />
+                      </td>
+                      {orderedTableTitles.map((title) => {
+                        const selectorKey = TITLE_SELECTOR_KEY[title];
+                        if (selectorKey && !columnVisibility[selectorKey]) return null;
+                        switch (title) {
+                          case "Supplier / Description":
+                            return (
+                              <td key={title} className={`${contactCellClass} relative`}>
+                                <RowLinkOverlay
+                                  rowId={row.id}
+                                  reference={row.reference}
+                                  status={row.status}
+                                  label={`Open ${row.contactTitle}`}
+                                />
                                 <div className="flex min-w-0 flex-col gap-0.5">
-                                  {row.unpaidAmount ? <span className={"whitespace-nowrap text-sm font-semibold sm:text-base " + unpaidAmountTextClass(row.status)}>{row.unpaidAmount}</span> : null}
-                                  {row.invoiceTotal ? (
-                                    <span className="whitespace-nowrap text-xs text-primary/65 tabular-nums sm:text-sm">
-                                      (Inv total {entityCurrency} {row.invoiceTotal})
+                                  <span className="text-sm font-semibold text-primary sm:text-base">
+                                    {row.contactTitle}
+                                  </span>
+                                  {row.contactCaption ? (
+                                    <span className="text-xs text-primary/65 sm:text-sm">
+                                      {row.contactCaption}
                                     </span>
                                   ) : null}
                                 </div>
-                              ) : null}
-                            </td>
-                          );
-                        case "Payment": {
-                          const canViewPaid = isPaid && !isVoided && !isDraft && isElevated;
-                          const canRecord = !isPaid && !isVoided && !isDraft && !isReturned && isElevated;
-                          const disabledViewPaid = isPaid && !isVoided && !isDraft && !isElevated;
-                          return (
-                            <td key={title} className={`${dataCellBase} align-middle text-left ${actionBodyCellBg} relative`}>
-                              <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
-                              <div className="relative z-[1] inline-flex">
-                              <button
-                                type="button"
-                                disabled={!canViewPaid && !canRecord}
-                                aria-label={
-                                  isVoided
-                                    ? `Voided — record payment not available for ${row.contactTitle}`
-                                    : isDraft
-                                      ? `Draft — record payment not available for ${row.contactTitle}`
-                                      : isReturned
-                                        ? `Returned — record payment not available for ${row.contactTitle}`
-                                        : canViewPaid
-                                          ? `View payments for ${row.contactTitle}`
-                                          : disabledViewPaid
-                                            ? `Insufficient permissions — view payments not available for ${row.contactTitle}`
-                                            : !isElevated
-                                              ? `Insufficient permissions — record payment not available for ${row.contactTitle}`
-                                              : `Record payment for ${row.contactTitle}`
-                                }
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (canViewPaid) {
-                                    onRecordPayment?.(row.id, true);
-                                    return;
-                                  }
-                                  if (canRecord) onRecordPayment?.(row.id);
-                                }}
-                                className={canViewPaid || disabledViewPaid ? viewPaymentsButtonClass : recordPaymentButtonClass}
+                              </td>
+                            );
+                          case "Invoice Date":
+                            return (
+                              <td key={title} className={`${singleLineDateCellClass} relative`}>
+                                <RowLinkOverlay
+                                  rowId={row.id}
+                                  reference={row.reference}
+                                  status={row.status}
+                                  label={`Open ${row.contactTitle}`}
+                                />
+                                {row.invoiceDate}
+                              </td>
+                            );
+                          case "Status":
+                            return (
+                              <td key={title} className={`${singleLineStatusCellClass} relative`}>
+                                <RowLinkOverlay
+                                  rowId={row.id}
+                                  reference={row.reference}
+                                  status={row.status}
+                                  label={`Open ${row.contactTitle}`}
+                                />
+                                {row.status ? (
+                                  <span
+                                    className={
+                                      isPaid
+                                        ? statusTagPaidClass
+                                        : isPartiallyPaid
+                                          ? statusTagPartiallyPaidClass
+                                          : isVoided
+                                            ? statusTagVoidedClass
+                                            : isPaymentRequested
+                                              ? statusTagPaymentRequestedClass
+                                              : isReturned
+                                                ? statusTagReturnedClass
+                                                : statusTagClass
+                                    }
+                                  >
+                                    {row.status}
+                                  </span>
+                                ) : null}
+                              </td>
+                            );
+                          case "Submitted Date":
+                            return (
+                              <td key={title} className={`${invoiceDateCellClass} relative`}>
+                                <RowLinkOverlay
+                                  rowId={row.id}
+                                  reference={row.reference}
+                                  status={row.status}
+                                  label={`Open ${row.contactTitle}`}
+                                />
+                                {row.submittedDate}
+                              </td>
+                            );
+                          case "Unpaid Amount":
+                            return (
+                              <td key={title} className={`${unpaidAmountCellClass} relative`}>
+                                <RowLinkOverlay
+                                  rowId={row.id}
+                                  reference={row.reference}
+                                  status={row.status}
+                                  label={`Open ${row.contactTitle}`}
+                                />
+                                {row.unpaidAmount || row.invoiceTotal ? (
+                                  <div className="flex min-w-0 flex-col gap-0.5">
+                                    {row.unpaidAmount ? (
+                                      <span
+                                        className={
+                                          "whitespace-nowrap text-sm font-semibold sm:text-base " +
+                                          unpaidAmountTextClass(row.status)
+                                        }
+                                      >
+                                        {row.unpaidAmount}
+                                      </span>
+                                    ) : null}
+                                    {row.invoiceTotal ? (
+                                      <span className="whitespace-nowrap text-xs text-primary/65 tabular-nums sm:text-sm">
+                                        (Inv total {entityCurrency} {row.invoiceTotal})
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+                              </td>
+                            );
+                          case "Payment": {
+                            const canViewPaid = isPaid && !isVoided && !isDraft && isElevated;
+                            const canRecord =
+                              !isPaid && !isVoided && !isDraft && !isReturned && isElevated;
+                            const disabledViewPaid = isPaid && !isVoided && !isDraft && !isElevated;
+                            return (
+                              <td
+                                key={title}
+                                className={`${dataCellBase} align-middle text-left ${actionBodyCellBg} relative`}
                               >
-                                <span className="whitespace-nowrap">{canViewPaid || disabledViewPaid ? "View payments" : "Record Payment"}</span>
-                                {canViewPaid || disabledViewPaid ? null : (
-                                  <span className="material-symbols-outlined shrink-0 text-[20px] leading-none sm:text-[22px]" aria-hidden>
-                                    add
+                                <RowLinkOverlay
+                                  rowId={row.id}
+                                  reference={row.reference}
+                                  status={row.status}
+                                  label={`Open ${row.contactTitle}`}
+                                />
+                                <div className="relative z-[1] inline-flex">
+                                  <button
+                                    type="button"
+                                    disabled={!canViewPaid && !canRecord}
+                                    aria-label={
+                                      isVoided
+                                        ? `Voided — record payment not available for ${row.contactTitle}`
+                                        : isDraft
+                                          ? `Draft — record payment not available for ${row.contactTitle}`
+                                          : isReturned
+                                            ? `Returned — record payment not available for ${row.contactTitle}`
+                                            : canViewPaid
+                                              ? `View payments for ${row.contactTitle}`
+                                              : disabledViewPaid
+                                                ? `Insufficient permissions — view payments not available for ${row.contactTitle}`
+                                                : !isElevated
+                                                  ? `Insufficient permissions — record payment not available for ${row.contactTitle}`
+                                                  : `Record payment for ${row.contactTitle}`
+                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (canViewPaid) {
+                                        onRecordPayment?.(row.id, true);
+                                        return;
+                                      }
+                                      if (canRecord) onRecordPayment?.(row.id);
+                                    }}
+                                    className={
+                                      canViewPaid || disabledViewPaid
+                                        ? viewPaymentsButtonClass
+                                        : recordPaymentButtonClass
+                                    }
+                                  >
+                                    <span className="whitespace-nowrap">
+                                      {canViewPaid || disabledViewPaid
+                                        ? "View payments"
+                                        : "Record Payment"}
+                                    </span>
+                                    {canViewPaid || disabledViewPaid ? null : (
+                                      <span
+                                        className="material-symbols-outlined shrink-0 text-[20px] leading-none sm:text-[22px]"
+                                        aria-hidden
+                                      >
+                                        add
+                                      </span>
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            );
+                          }
+                          case "Paid Date":
+                            return (
+                              <td
+                                key={title}
+                                className={`${singleLineDateCellClass} ${actionBodyCellBg} relative`}
+                              >
+                                <RowLinkOverlay
+                                  rowId={row.id}
+                                  reference={row.reference}
+                                  status={row.status}
+                                  label={`Open ${row.contactTitle}`}
+                                />
+                                {row.paidDate.trim() ? (
+                                  row.paidDate
+                                ) : (
+                                  <span
+                                    className="text-primary/40 tabular-nums"
+                                    aria-label="No paid date"
+                                  >
+                                    -
                                   </span>
                                 )}
-                              </button>
-                              </div>
-                            </td>
-                          );
-                        }
-                        case "Paid Date":
-                          return (
-                            <td key={title} className={`${singleLineDateCellClass} ${actionBodyCellBg} relative`}>
-                              <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
-                              {row.paidDate.trim() ? row.paidDate : <span className="text-primary/40 tabular-nums" aria-label="No paid date">-</span>}
-                            </td>
-                          );
-                        case "Bankslip":
-                          return (
-                            <td key={title} className={`${invoiceDateCellClass} ${actionBodyCellBg} relative`}>
-                              <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
-                              <div className="relative z-[1] flex items-center justify-end gap-2">
-                                <div>
-                                  {row.bankslipState ? (
-                                    <BankSlipLoadState state={row.bankslipState} contactTitle={row.contactTitle} onRetry={onRetryBankSlips} />
-                                  ) : row.bankslipFileCount != null && row.bankslipFileCount > 0 ? (
-                                    <button
-                                      type="button"
-                                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:gap-2 ${bankslipReadOnly ? "text-primary/40" : "text-secondary"}`}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setBankSlipDetailsRowId(row.id);
-                                      }}
-                                      aria-label={
-                                        isVoided
-                                          ? `View bank slip — voided, ${row.bankslipFileCount} file${row.bankslipFileCount === 1 ? "" : "s"}`
-                                          : isDraft
-                                            ? `View bank slip — draft, ${row.bankslipFileCount} file${row.bankslipFileCount === 1 ? "" : "s"}`
-                                            : `View bank slip — ${row.bankslipFileCount} file${row.bankslipFileCount === 1 ? "" : "s"} uploaded`
-                                      }
-                                    >
-                                      <span className="text-sm font-semibold tabular-nums sm:text-base">{row.bankslipFileCount}</span>
-                                      <span className="material-symbols-outlined shrink-0 text-[20px] leading-none sm:text-[22px]" aria-hidden>draft</span>
-                                    </button>
-                                  ) : bankslipReadOnly || isViewOnly ? (
-                                    <div
-                                      className={uploadBankslipReadOnlyClass}
-                                      aria-label={
-                                        isVoided
-                                          ? `Voided — upload not available for ${row.contactTitle}`
-                                          : isDraft
-                                            ? `Draft — upload not available for ${row.contactTitle}`
-                                            : `Upload not available for ${row.contactTitle}`
-                                      }
-                                    >
-                                      <span className="whitespace-nowrap">Upload</span>
-                                      <span className="material-symbols-outlined shrink-0 text-[20px] leading-none sm:text-[22px]" aria-hidden>upload_file</span>
+                              </td>
+                            );
+                          case "Bankslip":
+                            return (
+                              <td
+                                key={title}
+                                className={`${invoiceDateCellClass} ${actionBodyCellBg} relative`}
+                              >
+                                <RowLinkOverlay
+                                  rowId={row.id}
+                                  reference={row.reference}
+                                  status={row.status}
+                                  label={`Open ${row.contactTitle}`}
+                                />
+                                <div className="relative z-[1] flex items-center justify-end gap-2">
+                                  <div>
+                                    {row.bankslipState ? (
+                                      <BankSlipLoadState
+                                        state={row.bankslipState}
+                                        contactTitle={row.contactTitle}
+                                        onRetry={onRetryBankSlips}
+                                      />
+                                    ) : row.bankslipFileCount != null &&
+                                      row.bankslipFileCount > 0 ? (
+                                      <button
+                                        type="button"
+                                        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:gap-2 ${bankslipReadOnly ? "text-primary/40" : "text-secondary"}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setBankSlipDetailsRowId(row.id);
+                                        }}
+                                        aria-label={
+                                          isVoided
+                                            ? `View bank slip — voided, ${row.bankslipFileCount} file${row.bankslipFileCount === 1 ? "" : "s"}`
+                                            : isDraft
+                                              ? `View bank slip — draft, ${row.bankslipFileCount} file${row.bankslipFileCount === 1 ? "" : "s"}`
+                                              : `View bank slip — ${row.bankslipFileCount} file${row.bankslipFileCount === 1 ? "" : "s"} uploaded`
+                                        }
+                                      >
+                                        <span className="text-sm font-semibold tabular-nums sm:text-base">
+                                          {row.bankslipFileCount}
+                                        </span>
+                                        <span
+                                          className="material-symbols-outlined shrink-0 text-[20px] leading-none sm:text-[22px]"
+                                          aria-hidden
+                                        >
+                                          draft
+                                        </span>
+                                      </button>
+                                    ) : bankslipReadOnly || isViewOnly ? (
+                                      <div
+                                        className={uploadBankslipReadOnlyClass}
+                                        aria-label={
+                                          isVoided
+                                            ? `Voided — upload not available for ${row.contactTitle}`
+                                            : isDraft
+                                              ? `Draft — upload not available for ${row.contactTitle}`
+                                              : `Upload not available for ${row.contactTitle}`
+                                        }
+                                      >
+                                        <span className="whitespace-nowrap">Upload</span>
+                                        <span
+                                          className="material-symbols-outlined shrink-0 text-[20px] leading-none sm:text-[22px]"
+                                          aria-hidden
+                                        >
+                                          upload_file
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        className={uploadBankslipButtonClass}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setBankSlipDetailsRowId(row.id);
+                                        }}
+                                      >
+                                        <span className="whitespace-nowrap">Upload</span>
+                                        <span
+                                          className="material-symbols-outlined shrink-0 text-[20px] leading-none sm:text-[22px]"
+                                          aria-hidden
+                                        >
+                                          upload_file
+                                        </span>
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="relative group inline-block">
+                                    <span className="material-symbols-outlined text-[16px] cursor-pointer text-black hover:text-stone-800 block">
+                                      info
+                                    </span>
+                                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block bg-gray-950 text-white text-xs rounded-md py-2 px-3 whitespace-nowrap shadow-lg z-20 pointer-events-none">
+                                      {row.contactCaption?.trim()
+                                        ? row.contactCaption
+                                        : "No description added"}
+                                      <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-950"></div>
                                     </div>
-                                  ) : (
-                                    <button type="button" className={uploadBankslipButtonClass} onClick={(e) => { e.stopPropagation(); setBankSlipDetailsRowId(row.id); }}><span className="whitespace-nowrap">Upload</span><span className="material-symbols-outlined shrink-0 text-[20px] leading-none sm:text-[22px]" aria-hidden>upload_file</span></button>
-                                  )}
-                                </div>
-                                <div className="relative group inline-block">
-                                  <span className="material-symbols-outlined text-[16px] cursor-pointer text-black hover:text-stone-800 block">
-                                    info
-                                  </span>
-                                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block bg-gray-950 text-white text-xs rounded-md py-2 px-3 whitespace-nowrap shadow-lg z-20 pointer-events-none">
-                                    {row.contactCaption?.trim() ? row.contactCaption : "No description added"}
-                                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-950"></div>
                                   </div>
                                 </div>
-                              </div>
-                            </td>
-                          );
-                        default:
-                          return null;
-                      }
-                    })}
-                    <td className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg} relative`}>
-                      <RowLinkOverlay rowId={row.id} reference={row.reference} status={row.status} label={`Open ${row.contactTitle}`} />
-                      <img src={xeroConnected ? "/xero-active.png" : "/xero-inactive.png"} alt={xeroConnected ? "Xero connected" : "Xero not connected"} width={40} height={40} className="mx-auto h-10 w-10 max-h-10 max-w-10 object-contain" />
-                    </td>
-                    <td className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg}`}>
-                      <button type="button" data-row-menu-trigger disabled={isVoided || isRowPublishing} className={rowMenuButtonClass} aria-label={isRowPublishing ? `${rowPublishPending?.mode === "republish" ? "Republishing" : "Publishing"} ${row.contactTitle} to Xero` : isVoided ? `Voided — row actions not available for ${row.contactTitle}` : `More options for ${row.contactTitle}`} aria-busy={isRowPublishing ? true : undefined} aria-expanded={rowMenu?.rowId === row.id ? "true" : "false"} aria-haspopup={isVoided || isRowPublishing ? undefined : "menu"} onClick={(e) => { e.stopPropagation(); if (isVoided || isRowPublishing) return; toggleRowMenu(row.id, e.currentTarget); }}>
-                        <span className={`material-symbols-outlined text-[22px] leading-none${isRowPublishing ? " animate-spin text-secondary" : ""}`} aria-hidden>{isRowPublishing ? "progress_activity" : "more_vert"}</span>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                              </td>
+                            );
+                          default:
+                            return null;
+                        }
+                      })}
+                      <td
+                        className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg} relative`}
+                      >
+                        <RowLinkOverlay
+                          rowId={row.id}
+                          reference={row.reference}
+                          status={row.status}
+                          label={`Open ${row.contactTitle}`}
+                        />
+                        <img
+                          src={xeroConnected ? "/xero-active.png" : "/xero-inactive.png"}
+                          alt={xeroConnected ? "Xero connected" : "Xero not connected"}
+                          width={40}
+                          height={40}
+                          className="mx-auto h-10 w-10 max-h-10 max-w-10 object-contain"
+                        />
+                      </td>
+                      <td
+                        className={`border-b border-gray-100 px-2 py-3 text-center align-middle sm:px-3 ${actionBodyCellBg}`}
+                      >
+                        <button
+                          type="button"
+                          data-row-menu-trigger
+                          disabled={isVoided || isRowPublishing}
+                          className={rowMenuButtonClass}
+                          aria-label={
+                            isRowPublishing
+                              ? `${rowPublishPending?.mode === "republish" ? "Republishing" : "Publishing"} ${row.contactTitle} to Xero`
+                              : isVoided
+                                ? `Voided — row actions not available for ${row.contactTitle}`
+                                : `More options for ${row.contactTitle}`
+                          }
+                          aria-busy={isRowPublishing ? true : undefined}
+                          aria-expanded={rowMenu?.rowId === row.id ? "true" : "false"}
+                          aria-haspopup={isVoided || isRowPublishing ? undefined : "menu"}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isVoided || isRowPublishing) return;
+                            toggleRowMenu(row.id, e.currentTarget);
+                          }}
+                        >
+                          <span
+                            className={`material-symbols-outlined text-[22px] leading-none${isRowPublishing ? " animate-spin text-secondary" : ""}`}
+                            aria-hidden
+                          >
+                            {isRowPublishing ? "progress_activity" : "more_vert"}
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
@@ -1198,14 +1582,53 @@ export function PaymentRequestTable({
       ) : null}
       {rowMenu
         ? createPortal(
-            <div data-row-menu-panel role="menu" aria-label="Row actions" className="fixed z-[400] rounded-lg border border-gray-200 bg-white py-1 shadow-lg" style={{ top: rowMenu.top, left: rowMenu.left, minWidth: ROW_MENU_MIN_WIDTH_PX }}>
+            <div
+              data-row-menu-panel
+              role="menu"
+              aria-label="Row actions"
+              className="fixed z-[400] rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+              style={{ top: rowMenu.top, left: rowMenu.left, minWidth: ROW_MENU_MIN_WIDTH_PX }}
+            >
               {showRowMenuPublish ? (
-                <button type="button" role="menuitem" className="block w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-primary transition-colors hover:bg-gray-100" onClick={() => { const id = rowMenu.rowId; setRowMenu(null); void runRowPublish(id, "publish", onRowPublish); }}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-primary transition-colors hover:bg-gray-100"
+                  onClick={() => {
+                    const id = rowMenu.rowId;
+                    setRowMenu(null);
+                    void runRowPublish(id, "publish", onRowPublish);
+                  }}
+                >
                   Publish
                 </button>
               ) : null}
-              {showRowMenuRepublish ? <button type="button" role="menuitem" className="block w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-primary transition-colors hover:bg-gray-100" onClick={() => { const id = rowMenu.rowId; setRowMenu(null); void runRowPublish(id, "republish", onRowRepublish); }}>Republish</button> : null}
-              <button type="button" role="menuitem" disabled={isRowMenuDeleteDisabled} className="block w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => { if (isRowMenuDeleteDisabled) return; const id = rowMenu.rowId; setRowMenu(null); setRowDeleteConfirmId(id); }}>
+              {showRowMenuRepublish ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-primary transition-colors hover:bg-gray-100"
+                  onClick={() => {
+                    const id = rowMenu.rowId;
+                    setRowMenu(null);
+                    void runRowPublish(id, "republish", onRowRepublish);
+                  }}
+                >
+                  Republish
+                </button>
+              ) : null}
+              <button
+                type="button"
+                role="menuitem"
+                disabled={isRowMenuDeleteDisabled}
+                className="block w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  if (isRowMenuDeleteDisabled) return;
+                  const id = rowMenu.rowId;
+                  setRowMenu(null);
+                  setRowDeleteConfirmId(id);
+                }}
+              >
                 {rowMenuRow?.status === "Draft" ? "Delete" : "Void"}
               </button>
             </div>,
@@ -1214,10 +1637,18 @@ export function PaymentRequestTable({
         : null}
       {columnsMenu
         ? createPortal(
-            <div data-columns-menu-panel role="dialog" aria-label="Columns selector" className="fixed z-[400] w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg" style={{ top: columnsMenu.top, left: columnsMenu.left }}>
+            <div
+              data-columns-menu-panel
+              role="dialog"
+              aria-label="Columns selector"
+              className="fixed z-[400] w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+              style={{ top: columnsMenu.top, left: columnsMenu.left }}
+            >
               <div className="border-b border-gray-200 px-3 py-2">
                 <h3 className="text-sm font-semibold text-primary">Columns</h3>
-                <p className="mt-1 text-xs leading-snug text-primary/65">Select columns to show in the table.</p>
+                <p className="mt-1 text-xs leading-snug text-primary/65">
+                  Select columns to show in the table.
+                </p>
               </div>
               <ul className="max-h-[min(22rem,55dvh)] overflow-y-auto overscroll-contain py-1">
                 {COLUMN_SELECTOR_ITEMS.map((item) => (
@@ -1229,7 +1660,10 @@ export function PaymentRequestTable({
                         className={HEADER_CHECKBOX_CLASS}
                         checked={columnVisibilityDraft[item.key]}
                         onChange={() =>
-                          setColumnVisibilityDraft((prev) => ({ ...prev, [item.key]: !prev[item.key] }))
+                          setColumnVisibilityDraft((prev) => ({
+                            ...prev,
+                            [item.key]: !prev[item.key],
+                          }))
                         }
                         aria-label={`Toggle ${item.label} column`}
                         suppressHydrationWarning

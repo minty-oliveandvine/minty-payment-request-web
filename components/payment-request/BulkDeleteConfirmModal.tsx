@@ -27,7 +27,8 @@ export function BulkDeleteConfirmModal({
       title="Void selected payments?"
       confirmLabel={pending ? "Voiding…" : "Void Payments"}
     >
-      Are you sure you want to void {selectedCount} selected bill{selectedCount === 1 ? "" : "s"}? They will be marked as voided and can no longer be edited.
+      Are you sure you want to void {selectedCount} selected bill{selectedCount === 1 ? "" : "s"}?
+      They will be marked as voided and can no longer be edited.
     </ConfirmDialog>
   );
 }

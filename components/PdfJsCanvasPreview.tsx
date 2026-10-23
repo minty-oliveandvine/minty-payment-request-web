@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { getAuth, isTokenExpired, isTokenExpiringSoon, redirectToLogin, refreshToken } from "@/lib/auth";
+import {
+  getAuth,
+  isTokenExpired,
+  isTokenExpiringSoon,
+  redirectToLogin,
+  refreshToken,
+} from "@/lib/auth";
 import { API_BASE } from "@/lib/apiBase";
 
 // pdf.js runtime assets (worker, cMaps, standard fonts) are self-hosted under
@@ -38,7 +44,8 @@ const FONT_OPTIONS = {
  * clear message instead of one generic line. pdf.js tags its errors via `name`.
  */
 function describePdfError(err: unknown): string {
-  const name = typeof err === "object" && err && "name" in err ? String((err as { name: unknown }).name) : "";
+  const name =
+    typeof err === "object" && err && "name" in err ? String((err as { name: unknown }).name) : "";
   switch (name) {
     case "InvalidPDFException":
       return "This file looks damaged or isn't a valid PDF, so it can't be previewed.";
@@ -224,7 +231,9 @@ function PdfJsProxyFetcher({
 
   if (fetchError) {
     return (
-      <div className={`${className} flex flex-col items-center gap-2 py-8 text-center text-sm text-primary/70`}>
+      <div
+        className={`${className} flex flex-col items-center gap-2 py-8 text-center text-sm text-primary/70`}
+      >
         <span className="material-symbols-outlined text-[28px] text-primary/40" aria-hidden>
           description
         </span>
@@ -235,9 +244,14 @@ function PdfJsProxyFetcher({
 
   if (!blobUrl) {
     return (
-      <div className={`${className} flex min-h-[200px] items-center justify-center py-8 text-sm text-primary/60`}>
+      <div
+        className={`${className} flex min-h-[200px] items-center justify-center py-8 text-sm text-primary/60`}
+      >
         <span className="inline-flex items-center gap-2">
-          <span className="material-symbols-outlined animate-spin text-secondary text-[22px]" aria-hidden>
+          <span
+            className="material-symbols-outlined animate-spin text-secondary text-[22px]"
+            aria-hidden
+          >
             progress_activity
           </span>
           Loading PDF…
@@ -288,7 +302,11 @@ function PdfJsCanvasRenderer({
       try {
         const pdfjs = await import("pdfjs-dist");
         configureWorker(pdfjs);
-        const loadingTask = pdfjs.getDocument({ url: src, withCredentials: false, ...FONT_OPTIONS });
+        const loadingTask = pdfjs.getDocument({
+          url: src,
+          withCredentials: false,
+          ...FONT_OPTIONS,
+        });
         // Encrypted PDFs: pdf.js invokes onPassword instead of rejecting. Show a
         // password prompt and hand the entered value back via updatePassword.
         loadingTask.onPassword = (updatePassword: (password: string) => void, reason: number) => {
@@ -299,7 +317,7 @@ function PdfJsCanvasRenderer({
         };
         pdfDoc = await loadingTask.promise;
         const pageLimit = Math.min(pdfDoc.numPages, Math.max(1, maxPages));
-        const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio ?? 1 : 1, 2);
+        const dpr = Math.min(typeof window !== "undefined" ? (window.devicePixelRatio ?? 1) : 1, 2);
 
         for (let p = 1; p <= pageLimit; p++) {
           if (cancelled) return;
@@ -315,8 +333,7 @@ function PdfJsCanvasRenderer({
           canvas.style.maxWidth = `${viewport.width}px`;
           canvas.style.width = "100%";
           canvas.style.height = "auto";
-          canvas.className =
-            "mx-auto block rounded border border-gray-200 bg-white shadow-sm";
+          canvas.className = "mx-auto block rounded border border-gray-200 bg-white shadow-sm";
           const ctx = canvas.getContext("2d");
           if (!ctx) throw new Error("2D context unavailable");
           ctx.scale(dpr, dpr);
@@ -369,7 +386,10 @@ function PdfJsCanvasRenderer({
       {status === "loading" ? (
         <div className="flex min-h-[200px] items-center justify-center py-8 text-sm text-primary/60">
           <span className="inline-flex items-center gap-2">
-            <span className="material-symbols-outlined animate-spin text-secondary text-[22px]" aria-hidden>
+            <span
+              className="material-symbols-outlined animate-spin text-secondary text-[22px]"
+              aria-hidden
+            >
               progress_activity
             </span>
             Loading PDF…
@@ -430,7 +450,10 @@ function PdfJsCanvasRenderer({
           <p>{errorMessage}</p>
         </div>
       ) : null}
-      <div ref={hostRef} className={status === "ready" ? "flex w-full flex-col items-stretch gap-3" : "hidden"} />
+      <div
+        ref={hostRef}
+        className={status === "ready" ? "flex w-full flex-col items-stretch gap-3" : "hidden"}
+      />
     </div>
   );
 }

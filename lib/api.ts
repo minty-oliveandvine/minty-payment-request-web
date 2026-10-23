@@ -159,10 +159,7 @@ export function resolveApiErrorMessage(
 ): string {
   const raw = normalizeApiErrorDetail(detail, statusText).trim();
   if (raw && !isRawStatusText(raw, statusText) && readsAsProse(raw)) return raw;
-  return (
-    STATUS_FALLBACK_MESSAGES[status] ??
-    "Something went wrong on my end. Mind trying again?"
-  );
+  return STATUS_FALLBACK_MESSAGES[status] ?? "Something went wrong on my end. Mind trying again?";
 }
 
 /**
@@ -329,8 +326,7 @@ async function fetchAttachmentDownloadJson(path: string): Promise<{
   if (!url) return null;
 
   const mimeRaw = data.mime_type;
-  const mime_type =
-    typeof mimeRaw === "string" && mimeRaw.trim() ? mimeRaw.trim() : undefined;
+  const mime_type = typeof mimeRaw === "string" && mimeRaw.trim() ? mimeRaw.trim() : undefined;
 
   const nestedAtt = data.attachment as Record<string, unknown> | undefined;
   const file_size =
@@ -658,7 +654,10 @@ export function deleteBill(billId: string): Promise<{ message: string }> {
  *   "returned"          → bill is currently Returned → transitions back to submitted (Payment Requested)
  *   "void"              → bill is currently Returned → transitions to Voided
  */
-export function returnBill(billId: string, status: "payment_requested" | "returned" | "void"): Promise<BillDetail> {
+export function returnBill(
+  billId: string,
+  status: "payment_requested" | "returned" | "void",
+): Promise<BillDetail> {
   return apiFetch<BillDetail>(`/bills/${billId}/return/`, {
     method: "POST",
     body: JSON.stringify({ status }),
@@ -685,13 +684,10 @@ export async function uploadBillAttachments(
     form.append("files", optimized);
   }
 
-  return apiFetch<BillAttachment[]>(
-    `/bills/${billId}/attachments`,
-    {
-      method: "POST",
-      body: form,
-    }
-  );
+  return apiFetch<BillAttachment[]>(`/bills/${billId}/attachments`, {
+    method: "POST",
+    body: form,
+  });
 }
 
 export function deleteBillAttachment(billId: string, attachmentId: string): Promise<void> {
@@ -743,10 +739,7 @@ export function fetchPayments(billId: string): Promise<PaymentListResponse> {
   return apiFetch(`/bills/${billId}/payments`);
 }
 
-export function createPayment(
-  billId: string,
-  payload: PaymentCreatePayload,
-): Promise<PaymentItem> {
+export function createPayment(billId: string, payload: PaymentCreatePayload): Promise<PaymentItem> {
   return apiFetch(`/bills/${billId}/payments`, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -764,10 +757,7 @@ export function updatePayment(
   });
 }
 
-export function deletePayment(
-  billId: string,
-  paymentId: string,
-): Promise<{ message: string }> {
+export function deletePayment(billId: string, paymentId: string): Promise<{ message: string }> {
   return apiFetch(`/bills/${billId}/payments/${paymentId}`, {
     method: "DELETE",
   });
@@ -918,9 +908,7 @@ export function fetchEntityBillContacts(): Promise<EntityBillContact[]> {
 }
 
 /** Create a contact in Xero and persist `xero_contact_sync` (same auth as list). */
-export function createEntityBillContact(payload: {
-  name: string;
-}): Promise<EntityBillContact> {
+export function createEntityBillContact(payload: { name: string }): Promise<EntityBillContact> {
   return apiFetch<EntityBillContact>("/entity-bill-contacts/", {
     method: "POST",
     body: JSON.stringify(payload),

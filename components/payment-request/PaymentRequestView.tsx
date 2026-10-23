@@ -32,13 +32,17 @@ import {
   XERO_RECONNECT_MESSAGE,
   type BillAttachment,
   type BillListItem,
-  type BillDetail
+  type BillDetail,
 } from "@/lib/api";
 import type { InvoiceAttachmentPreviewItem } from "./InvoiceAttachmentPreview";
 import { useEntityCurrency } from "@/lib/entityCurrency";
 import { formatAmount, formatMoney, parseAmount } from "@/lib/amountFormat";
 import { fetchBillBankSlipEnrichment, type BankSlipEnrichment } from "@/lib/bankSlipEnrichment";
-import { BILLING_TIME_ZONE, formatIsoDateForDisplay, isoDateInTimeZone } from "@/lib/dateDisplayFormat";
+import {
+  BILLING_TIME_ZONE,
+  formatIsoDateForDisplay,
+  isoDateInTimeZone,
+} from "@/lib/dateDisplayFormat";
 import { getAuth } from "@/lib/auth";
 import { compareRows, type SortKey } from "@/lib/paymentRequestRowSort";
 import { rowMatchesSearch, type SearchMode } from "@/lib/paymentRequestSearch";
@@ -112,12 +116,12 @@ function mapBillToRow(bill: BillListItem, entityCurrency = ""): PaymentRequestRo
 }
 
 const STATUS_LABEL_TO_API: Record<string, string> = {
-  "Draft": "draft",
+  Draft: "draft",
   "Payment Requested": "submitted",
-  "Paid": "paid",
+  Paid: "paid",
   "Partially Paid": "partially_paid",
-  "Voided": "void",
-  "Returned": "returned",
+  Voided: "void",
+  Returned: "returned",
 };
 
 type EnrichmentEntry = { epoch: number; value: BankSlipEnrichment };
@@ -184,14 +188,19 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
   const [datasetTruncated, setDatasetTruncated] = useState(false);
   /** False while the fetch-all loop is still committing pages. */
   const [datasetComplete, setDatasetComplete] = useState(false);
-  const [recordPaymentTarget, setRecordPaymentTarget] = useState<{ billId: string; readOnly: boolean } | null>(null);
+  const [recordPaymentTarget, setRecordPaymentTarget] = useState<{
+    billId: string;
+    readOnly: boolean;
+  } | null>(null);
   const [easyViewPayBillId, setEasyViewPayBillId] = useState<string | null>(null);
   const [easyViewPayReadOnly, setEasyViewPayReadOnly] = useState(false);
   const [easyViewDraftBillId, setEasyViewDraftBillId] = useState<string | null>(null);
   const [easyViewDraftDeleteOpen, setEasyViewDraftDeleteOpen] = useState(false);
   const [easyViewDraftDeletePending, setEasyViewDraftDeletePending] = useState(false);
   const [easyViewSelectedBillId, setEasyViewSelectedBillId] = useState<string | null>(null);
-  const [easyViewInvoiceAttachments, setEasyViewInvoiceAttachments] = useState<InvoiceAttachmentPreviewItem[]>([]);
+  const [easyViewInvoiceAttachments, setEasyViewInvoiceAttachments] = useState<
+    InvoiceAttachmentPreviewItem[]
+  >([]);
   const [easyViewInvoiceLoading, setEasyViewInvoiceLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
@@ -200,12 +209,20 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
   const [easyViewPayBill, setEasyViewPayBill] = useState<BillDetail | null>(null);
   // Each view keeps its own sort (the table exposes 6 keys, easy view 4), but both
   // live here because the page slice has to be taken *after* sorting.
-  const [tableSort, setTableSort] = useState<{ key: SortKey | null; dir: "asc" | "desc" }>({ key: "status", dir: "asc" });
-  const [easySort, setEasySort] = useState<{ key: EasyViewSortKey; dir: "asc" | "desc" }>({ key: "status", dir: "asc" });
+  const [tableSort, setTableSort] = useState<{ key: SortKey | null; dir: "asc" | "desc" }>({
+    key: "status",
+    dir: "asc",
+  });
+  const [easySort, setEasySort] = useState<{ key: EasyViewSortKey; dir: "asc" | "desc" }>({
+    key: "status",
+    dir: "asc",
+  });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
   // Bank-slip counts, keyed by bill id and stamped with the load that produced them.
-  const [enrichmentById, setEnrichmentById] = useState<Map<string, EnrichmentEntry>>(() => new Map());
+  const [enrichmentById, setEnrichmentById] = useState<Map<string, EnrichmentEntry>>(
+    () => new Map(),
+  );
   const [enrichEpoch, setEnrichEpoch] = useState(0);
   /** A failed bank slip lookup's Retry: re-reads the counts of the rows on screen. */
   const retryBankSlips = useCallback(() => setEnrichEpoch((e) => e + 1), []);
@@ -221,7 +238,10 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
         // No count yet, or the lookup failed: unknown is not zero, so the row offers no upload.
         if (!e) return { ...r, bankslipState: "loading" as const };
         if (e.failed) {
-          return { ...r, bankslipState: entry.epoch < enrichEpoch ? ("loading" as const) : ("error" as const) };
+          return {
+            ...r,
+            bankslipState: entry.epoch < enrichEpoch ? ("loading" as const) : ("error" as const),
+          };
         }
         return {
           ...r,
@@ -245,8 +265,10 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
     let result = showVoided ? enrichedBills : enrichedBills.filter((r) => r.status !== "Voided");
     if (xeroStatus === "published") result = result.filter((r) => r.xeroActive === true);
     else if (xeroStatus === "draft") result = result.filter((r) => r.xeroActive !== true);
-    if (statusFilters.length > 0) result = result.filter((r) => statusFilters.some((s) => s === r.status));
-    if (debouncedSearch) result = result.filter((r) => rowMatchesSearch(r, debouncedSearch, searchMode));
+    if (statusFilters.length > 0)
+      result = result.filter((r) => statusFilters.some((s) => s === r.status));
+    if (debouncedSearch)
+      result = result.filter((r) => rowMatchesSearch(r, debouncedSearch, searchMode));
     // Dates are matched here rather than server-side so the comparison uses the same
     // Hong Kong calendar date the column shows. The API compares `created_at` (a UTC
     // timestamp) against a date coerced to midnight, which drops the whole end day —
@@ -262,7 +284,16 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
       });
     }
     return result;
-  }, [enrichedBills, xeroStatus, statusFilters, debouncedSearch, searchMode, dateType, startDate, endDate]);
+  }, [
+    enrichedBills,
+    xeroStatus,
+    statusFilters,
+    debouncedSearch,
+    searchMode,
+    dateType,
+    startDate,
+    endDate,
+  ]);
 
   const totalItems = filteredBills.length;
   const pageCount = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -294,7 +325,10 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
     () => filteredBills.filter((r) => selectedIds.has(r.id)),
     [filteredBills, selectedIds],
   );
-  const activeSelectedIds = useMemo(() => activeSelectedRows.map((r) => r.id), [activeSelectedRows]);
+  const activeSelectedIds = useMemo(
+    () => activeSelectedRows.map((r) => r.id),
+    [activeSelectedRows],
+  );
   const bulkActionsEnabled = activeSelectedIds.length >= 2;
 
   const onToggleRow = useCallback(
@@ -338,7 +372,8 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
     (easyViewBankSlipSourceRow.status === "Voided" || easyViewBankSlipSourceRow.status === "Draft");
 
   const selectionContainsPaid = useMemo(
-    () => activeSelectedRows.some((row) => row.status === "Paid" || row.status === "Partially Paid"),
+    () =>
+      activeSelectedRows.some((row) => row.status === "Paid" || row.status === "Partially Paid"),
     [activeSelectedRows],
   );
 
@@ -407,7 +442,11 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
       // The list endpoint returns a bare array with no count envelope, so the whole
       // set is walked here and paged/sorted/searched in the browser.
       for (let pageNum = 1; ; pageNum += 1) {
-        const chunk = await fetchBills({ ...baseParams, page: pageNum, page_size: FETCH_PAGE_SIZE });
+        const chunk = await fetchBills({
+          ...baseParams,
+          page: pageNum,
+          page_size: FETCH_PAGE_SIZE,
+        });
         // A newer loadBills started while we were fetching — discard this stale
         // response so it can't overwrite the fresher list.
         if (seq !== loadSeqRef.current) return;
@@ -443,7 +482,11 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
       setDatasetComplete(true);
     } catch (err) {
       if (seq === loadSeqRef.current) {
-        setLoadError(err instanceof ApiError ? err.message : "Your payments didn't come through. Mind trying again?");
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Your payments didn't come through. Mind trying again?",
+        );
       }
     } finally {
       if (seq === loadSeqRef.current) setLoading(false);
@@ -462,7 +505,11 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
   }, [tablePageRows, easyPageRows]);
 
   const enrichTargetsKey = useMemo(
-    () => enrichTargets.map((r) => r.id).sort().join(","),
+    () =>
+      enrichTargets
+        .map((r) => r.id)
+        .sort()
+        .join(","),
     [enrichTargets],
   );
 
@@ -584,17 +631,16 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
     }
 
     const fetchBillDetail = async () => {
-    try {
-      const bill = await fetchBill(easyViewPayBillId);
-      setEasyViewPayBill(bill);
-    } catch (e) {
-      console.error("Failed to fetch bill for easy view modal:", e);
-    }
-  };
+      try {
+        const bill = await fetchBill(easyViewPayBillId);
+        setEasyViewPayBill(bill);
+      } catch (e) {
+        console.error("Failed to fetch bill for easy view modal:", e);
+      }
+    };
 
-  fetchBillDetail();
-}, [easyViewPayBillId]);
-
+    fetchBillDetail();
+  }, [easyViewPayBillId]);
 
   const easyViewDraftDetailActions = useMemo<EasyViewDraftDetailActions>(
     () => ({
@@ -615,7 +661,9 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
     fetchBill(easyViewSelectedBillId)
       .then((detail) => {
         if (cancelled) return;
-        setEasyViewInvoiceAttachments(mapBillAttachmentsToPreviewItems(detail.id, detail.attachments ?? []));
+        setEasyViewInvoiceAttachments(
+          mapBillAttachmentsToPreviewItems(detail.id, detail.attachments ?? []),
+        );
       })
       .catch(() => {
         if (!cancelled) setEasyViewInvoiceAttachments([]);
@@ -670,19 +718,33 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
   /** Any change to what the list contains sends the user back to page 1. */
   useEffect(() => {
     setPage(1);
-  }, [statusFilterKey, debouncedSearch, searchMode, minAmount, maxAmount, dateType, startDate, endDate, xeroStatus]);
+  }, [
+    statusFilterKey,
+    debouncedSearch,
+    searchMode,
+    minAmount,
+    maxAmount,
+    dateType,
+    startDate,
+    endDate,
+    xeroStatus,
+  ]);
 
   useEffect(() => {
     if (page !== safePage) setPage(safePage);
   }, [page, safePage]);
 
   const onTableSortColumn = useCallback((key: SortKey) => {
-    setTableSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+    setTableSort((s) =>
+      s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+    );
     setPage(1);
   }, []);
 
   const onEasySortChange = useCallback((key: EasyViewSortKey) => {
-    setEasySort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+    setEasySort((s) =>
+      s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+    );
     setPage(1);
   }, []);
 
@@ -713,7 +775,9 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
       setBulkDeleteModalOpen(false);
     } catch (err) {
       showToast(
-        err instanceof ApiError ? err.message : "Those payments are being a bit stubborn. Mind trying again?",
+        err instanceof ApiError
+          ? err.message
+          : "Those payments are being a bit stubborn. Mind trying again?",
         "error",
       );
     } finally {
@@ -729,7 +793,9 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
       setSelectedIds(new Set());
     } catch (err) {
       showToast(
-        err instanceof ApiError ? err.message : "Those payments didn't quite make it over. Mind trying again?",
+        err instanceof ApiError
+          ? err.message
+          : "Those payments didn't quite make it over. Mind trying again?",
         "error",
       );
     }
@@ -812,7 +878,10 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
           aria-live="polite"
           className="mx-auto flex w-full max-w-[1920px] items-center gap-2 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 sm:px-6"
         >
-          <span className="material-symbols-outlined shrink-0 text-[18px] leading-none text-amber-600" aria-hidden>
+          <span
+            className="material-symbols-outlined shrink-0 text-[18px] leading-none text-amber-600"
+            aria-hidden
+          >
             visibility
           </span>
           <span>Read-only access — you are not a member of this entity.</span>
@@ -825,7 +894,11 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
         {loadError ? (
           <div className="px-4 py-8 text-center sm:px-6">
             <p className="text-sm text-red-600">{loadError}</p>
-            <button type="button" onClick={loadBills} className="mt-2 text-sm font-medium text-secondary hover:underline">
+            <button
+              type="button"
+              onClick={loadBills}
+              className="mt-2 text-sm font-medium text-secondary hover:underline"
+            >
               Retry
             </button>
           </div>
@@ -848,7 +921,9 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 selectedBillId={easyViewSelectedBillId}
                 invoiceAttachments={easyViewInvoiceAttachments}
                 invoiceAttachmentsLoading={easyViewInvoiceLoading}
-                onRowClick={(rowId, reference, status) => router.push(pages.request(rowId, reference, status))}
+                onRowClick={(rowId, reference, status) =>
+                  router.push(pages.request(rowId, reference, status))
+                }
                 onPaymentRequestedPay={(rowId) => {
                   const isClosing = easyViewPayBillId === rowId;
                   setEasyViewPayReadOnly(false);
@@ -911,8 +986,12 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                 onToggleRow={onToggleRow}
                 onToggleAll={onToggleAll}
                 headerSlot={totalsBanner}
-                onRecordPayment={(rowId, readOnly) => setRecordPaymentTarget({ billId: rowId, readOnly: readOnly ?? false })}
-                onRowClick={(rowId, reference, status) => router.push(pages.request(rowId, reference, status))}
+                onRecordPayment={(rowId, readOnly) =>
+                  setRecordPaymentTarget({ billId: rowId, readOnly: readOnly ?? false })
+                }
+                onRowClick={(rowId, reference, status) =>
+                  router.push(pages.request(rowId, reference, status))
+                }
                 onRowDelete={async (rowId) => {
                   try {
                     await deleteBill(rowId);
@@ -920,7 +999,9 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                     await loadBills();
                   } catch (err) {
                     showToast(
-                      err instanceof ApiError ? err.message : "This payment's being a bit stubborn. Mind trying again?",
+                      err instanceof ApiError
+                        ? err.message
+                        : "This payment's being a bit stubborn. Mind trying again?",
                       "error",
                     );
                     await loadBills();
@@ -933,7 +1014,9 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
                     await loadBills();
                   } catch (err) {
                     showToast(
-                      err instanceof ApiError ? err.message : "This payment didn't quite make it over. Mind trying again?",
+                      err instanceof ApiError
+                        ? err.message
+                        : "This payment didn't quite make it over. Mind trying again?",
                       "error",
                     );
                   }
@@ -981,11 +1064,13 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
         onClose={() => setRecordPaymentTarget(null)}
         billId={recordPaymentTarget?.billId ?? ""}
         billStatus={
-          recordPaymentTarget ? rawBills.find((b) => b.id === recordPaymentTarget.billId)?.status : undefined
+          recordPaymentTarget
+            ? rawBills.find((b) => b.id === recordPaymentTarget.billId)?.status
+            : undefined
         }
         contactTitle={
           recordPaymentTarget
-            ? rawBills.find((b) => b.id === recordPaymentTarget.billId)?.contact?.trim() ?? ""
+            ? (rawBills.find((b) => b.id === recordPaymentTarget.billId)?.contact?.trim() ?? "")
             : ""
         }
         readOnly={isViewOnly || (recordPaymentTarget?.readOnly ?? false)}

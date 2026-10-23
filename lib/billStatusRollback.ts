@@ -10,6 +10,9 @@ export function billStatusShouldRollbackWhenNoPayments(status: string): boolean 
 }
 
 /** True if this bill still has at least one payment that counts toward balance / history (positive amount). */
-export function billHasRemainingCountablePayments(billId: string, payments: PaymentItem[]): boolean {
+export function billHasRemainingCountablePayments(
+  billId: string,
+  payments: PaymentItem[],
+): boolean {
   return payments.some((p) => p.bill_id === billId && shouldShowPaymentInHistory(p));
 }

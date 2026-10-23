@@ -152,9 +152,7 @@ describe("items per page", () => {
       />,
     );
 
-    const ids = [first, second].map(
-      (r) => r.container.querySelector("label")!.getAttribute("for"),
-    );
+    const ids = [first, second].map((r) => r.container.querySelector("label")!.getAttribute("for"));
     expect(ids[0]).not.toBe(ids[1]);
     second.unmount();
     first.unmount();

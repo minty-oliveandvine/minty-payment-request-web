@@ -34,9 +34,7 @@ const answer = (status: number, body: unknown) =>
 /** Renders the hook's three fields as text, so nothing here reads internal state. */
 function Probe({ label = "probe" }: { label?: string }) {
   const { requestId, pending, error } = useRequestId();
-  return (
-    <p aria-label={label}>{`id=${requestId} pending=${pending} error=${error ?? ""}`}</p>
-  );
+  return <p aria-label={label}>{`id=${requestId} pending=${pending} error=${error ?? ""}`}</p>;
 }
 
 const shown = (label = "probe") => screen.getByLabelText(label).textContent;
@@ -183,7 +181,9 @@ describe("forgetRequest", () => {
     rememberRequest(COMPANY, "PR-FORGET-1", "bill-voided");
     forgetRequest(COMPANY, "pr-forget-1");
     params.id = "PR-FORGET-1";
-    fetchMock.mockResolvedValueOnce(answer(200, bill({ id: "bill-live", reference: "PR-FORGET-1" })));
+    fetchMock.mockResolvedValueOnce(
+      answer(200, bill({ id: "bill-live", reference: "PR-FORGET-1" })),
+    );
 
     render(<Probe />);
 
@@ -194,13 +194,17 @@ describe("forgetRequest", () => {
 
   it("forces a fresh lookup of one that was looked up before", async () => {
     params.id = "PR-FORGET-2";
-    fetchMock.mockResolvedValueOnce(answer(200, bill({ id: "bill-old", reference: "PR-FORGET-2" })));
+    fetchMock.mockResolvedValueOnce(
+      answer(200, bill({ id: "bill-old", reference: "PR-FORGET-2" })),
+    );
     const first = render(<Probe />);
     await waitFor(() => expect(shown()).toContain("id=bill-old"));
     first.unmount();
 
     forgetRequest(COMPANY, "PR-FORGET-2");
-    fetchMock.mockResolvedValueOnce(answer(200, bill({ id: "bill-new", reference: "PR-FORGET-2" })));
+    fetchMock.mockResolvedValueOnce(
+      answer(200, bill({ id: "bill-new", reference: "PR-FORGET-2" })),
+    );
     render(<Probe />);
 
     await waitFor(() => expect(shown()).toBe("id=bill-new pending=false error="));
@@ -234,7 +238,9 @@ describe("a Payment No. that names nothing", () => {
     render(<Probe />);
 
     await waitFor(() =>
-      expect(shown()).toBe("id= pending=false error=Something went wrong on my end. Mind trying again?"),
+      expect(shown()).toBe(
+        "id= pending=false error=Something went wrong on my end. Mind trying again?",
+      ),
     );
   });
 

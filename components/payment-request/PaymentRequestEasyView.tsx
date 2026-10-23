@@ -11,7 +11,10 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
-import { InvoiceAttachmentPreview, type InvoiceAttachmentPreviewItem } from "./InvoiceAttachmentPreview";
+import {
+  InvoiceAttachmentPreview,
+  type InvoiceAttachmentPreviewItem,
+} from "./InvoiceAttachmentPreview";
 import { type EasyViewDraftDetailActions } from "./EasyViewDraftDetailedInformation";
 import { EasyViewDraftDetailBody, EasyViewReadonlyBillDetailBody } from "./EasyViewDraftDetailBody";
 import { useEntityCurrency } from "@/lib/entityCurrency";
@@ -62,7 +65,8 @@ const EASY_VIEW_ROW_GRID = `grid w-full min-w-0 grid-cols-1 gap-4 ${EASY_VIEW_GR
 
 const EASY_VIEW_HEADER_GRID = `mb-3 hidden min-w-0 md:grid ${EASY_VIEW_GRID_COLS} md:gap-x-3 md:items-end md:px-0`;
 
-const EASY_VIEW_HEADER_CELL = "text-left text-xs font-medium text-[#656565] sm:text-sm pt-0 pb-0 translate-y-[15px]";
+const EASY_VIEW_HEADER_CELL =
+  "text-left text-xs font-medium text-[#656565] sm:text-sm pt-0 pb-0 translate-y-[15px]";
 
 const EASY_VIEW_BANKSLIP_VOIDED_BTN =
   "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent text-primary/40 transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:gap-2";
@@ -75,7 +79,10 @@ const EASY_VIEW_BANKSLIP_SLOT =
   "flex h-10 w-24 shrink-0 items-center justify-center sm:h-[42px] sm:w-[6.5rem]";
 
 /** Sortable columns exposed in easy view (same `compareRows` as the main table). */
-export type EasyViewSortKey = Extract<SortKey, "contact" | "submittedDate" | "unpaidAmount" | "status">;
+export type EasyViewSortKey = Extract<
+  SortKey,
+  "contact" | "submittedDate" | "unpaidAmount" | "status"
+>;
 
 function EasyViewBankSlipControl({
   row,
@@ -116,7 +123,10 @@ function EasyViewBankSlipControl({
       }
     >
       <span className="text-sm font-semibold tabular-nums text-inherit sm:text-base">{n}</span>
-      <span className="material-symbols-outlined shrink-0 text-[20px] leading-none text-inherit sm:text-[22px]" aria-hidden>
+      <span
+        className="material-symbols-outlined shrink-0 text-[20px] leading-none text-inherit sm:text-[22px]"
+        aria-hidden
+      >
         draft
       </span>
     </button>
@@ -216,7 +226,10 @@ function EasyViewStatusCell({
   onPaidStatusOpen: (rowId: string) => void;
   onDraftBillOpen: (rowId: string) => void;
 }) {
-  const stop = (e: ReactMouseEvent) => { e.stopPropagation(); e.preventDefault(); };
+  const stop = (e: ReactMouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
   const statusHoverClass =
     "transition-[filter,box-shadow] hover:brightness-95 hover:shadow-sm active:brightness-90";
 
@@ -399,7 +412,8 @@ export function PaymentRequestEasyView({
 
   /** "Select all" means everything selectable on this page — selection spans pages. */
   const selectableRows = useMemo(() => rows.filter((r) => r.status !== "Voided"), [rows]);
-  const allSelected = selectableRows.length > 0 && selectableRows.every((r) => selectedIds.has(r.id));
+  const allSelected =
+    selectableRows.length > 0 && selectableRows.every((r) => selectedIds.has(r.id));
   const someSelected = selectableRows.some((r) => selectedIds.has(r.id)) && !allSelected;
 
   useEffect(() => {
@@ -421,7 +435,9 @@ export function PaymentRequestEasyView({
       typeof CSS !== "undefined" && typeof CSS.escape === "function"
         ? CSS.escape(selectedBillId)
         : String(selectedBillId).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-    const row = listScrollRef.current.querySelector(`[data-easy-view-row="${escaped}"]`) as HTMLElement | null;
+    const row = listScrollRef.current.querySelector(
+      `[data-easy-view-row="${escaped}"]`,
+    ) as HTMLElement | null;
     if (!row) {
       setInvoiceAsideOffsetY(0);
       return;
@@ -531,7 +547,11 @@ export function PaymentRequestEasyView({
     }
     // 0 statuses → "All"; exactly one → use that for tinting; multiple → neutral.
     const tintingStatus =
-      activeStatuses.length === 0 ? "All" : activeStatuses.length === 1 ? activeStatuses[0]! : "All";
+      activeStatuses.length === 0
+        ? "All"
+        : activeStatuses.length === 1
+          ? activeStatuses[0]!
+          : "All";
     return easyViewMainBackgroundClass(tintingStatus);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBillId, payPanelBillId, draftDetailBillId, rows, activeStatusKey]);
@@ -561,7 +581,10 @@ export function PaymentRequestEasyView({
     >
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-[18px] font-semibold text-black" title={headerStatusLabel}>
+          <span
+            className="min-w-0 truncate text-[18px] font-semibold text-black"
+            title={headerStatusLabel}
+          >
             {headerStatusLabel}
           </span>
           {totalsBanner}
@@ -615,23 +638,33 @@ export function PaymentRequestEasyView({
               <div className={easyViewHeaderCheckboxTd}>
                 <div className="h-4 w-4 shrink-0 rounded bg-gray-200/90 animate-pulse" />
               </div>
-              <div className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}>
+              <div
+                className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}
+              >
                 <div className="h-3.5 w-[min(100%,11rem)] rounded-md bg-gray-200/90 animate-pulse" />
                 <div className="size-7 shrink-0 rounded bg-gray-200/90 animate-pulse" />
               </div>
-              <div className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}>
+              <div
+                className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}
+              >
                 <div className="h-3.5 w-[min(100%,9.5rem)] rounded-md bg-gray-200/90 animate-pulse" />
                 <div className="size-7 shrink-0 rounded bg-gray-200/90 animate-pulse" />
               </div>
-              <div className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}>
+              <div
+                className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}
+              >
                 <div className="h-3.5 w-[min(100%,6rem)] rounded-md bg-gray-200/90 animate-pulse" />
                 <span className="size-7 shrink-0" aria-hidden />
               </div>
-              <div className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}>
+              <div
+                className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}
+              >
                 <div className="h-3.5 w-[min(100%,7.5rem)] rounded-md bg-gray-200/90 animate-pulse" />
                 <div className="size-7 shrink-0 rounded bg-gray-200/90 animate-pulse" />
               </div>
-              <div className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}>
+              <div
+                className={`${EASY_VIEW_HEADER_CELL} ${EASY_VIEW_TD_BASE} flex items-end justify-start gap-1 pb-1`}
+              >
                 <div className="h-3.5 w-[min(100%,5rem)] rounded-md bg-gray-200/90 animate-pulse" />
                 <div className="size-7 shrink-0 rounded bg-gray-200/90 animate-pulse" />
               </div>
@@ -643,7 +676,12 @@ export function PaymentRequestEasyView({
                   ref={headerCheckboxRef}
                   type="checkbox"
                   checked={allSelected}
-                  onChange={() => onToggleAll(selectableRows.map((r) => r.id), !allSelected)}
+                  onChange={() =>
+                    onToggleAll(
+                      selectableRows.map((r) => r.id),
+                      !allSelected,
+                    )
+                  }
                   disabled={selectableRows.length === 0}
                   className={`${HEADER_CHECKBOX_CLASS} shrink-0 disabled:cursor-not-allowed disabled:opacity-40`}
                   aria-label="Select all rows"
@@ -732,7 +770,10 @@ export function PaymentRequestEasyView({
                     <div className="h-4 w-[9.5rem] max-w-full shrink-0 animate-pulse rounded-md bg-gray-200 tabular-nums" />
                   </div>
                   <div className={easyViewAttachmentTd}>
-                    <div className="flex flex-row flex-nowrap items-center gap-1.5 sm:gap-2" aria-hidden>
+                    <div
+                      className="flex flex-row flex-nowrap items-center gap-1.5 sm:gap-2"
+                      aria-hidden
+                    >
                       <div className={EASY_VIEW_BANKSLIP_SLOT}>
                         <div className="h-9 w-14 max-w-full animate-pulse rounded-lg bg-gray-200" />
                       </div>
@@ -804,7 +845,9 @@ export function PaymentRequestEasyView({
                       >
                         <div className={easyViewContactTd}>
                           <div className="flex min-w-0 flex-col gap-0.5">
-                            <span className="text-sm font-semibold text-primary sm:text-base">{row.contactTitle}</span>
+                            <span className="text-sm font-semibold text-primary sm:text-base">
+                              {row.contactTitle}
+                            </span>
                           </div>
                         </div>
                         <div className={easyViewSubmittedTd}>{row.submittedDate}</div>
@@ -813,14 +856,20 @@ export function PaymentRequestEasyView({
                             {/* Left spacer balances the right-side info icon so the slip slot centers in the column. */}
                             <span className="size-4 shrink-0" aria-hidden />
                             <div className={EASY_VIEW_BANKSLIP_SLOT}>
-                              <EasyViewBankSlipControl row={row} onOpen={onOpenBankSlipUpload} onRetry={onRetryBankSlips} />
+                              <EasyViewBankSlipControl
+                                row={row}
+                                onOpen={onOpenBankSlipUpload}
+                                onRetry={onRetryBankSlips}
+                              />
                             </div>
                             <div className="relative group inline-block transform translate-y-[2px]">
                               <span className="material-symbols-outlined text-[16px] cursor-pointer text-black hover:text-stone-800 block">
                                 info
                               </span>
                               <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block bg-gray-950 text-white text-xs rounded-md py-2 px-3 whitespace-nowrap shadow-lg z-10 pointer-events-none">
-                                {row.contactCaption?.trim() ? row.contactCaption : "No description added"}
+                                {row.contactCaption?.trim()
+                                  ? row.contactCaption
+                                  : "No description added"}
                                 <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-950"></div>
                               </div>
                             </div>
@@ -933,7 +982,10 @@ export function PaymentRequestEasyView({
             style={invoiceAsideOffsetY > 0 ? { marginTop: invoiceAsideOffsetY } : undefined}
           >
             <div className="mb-3 flex w-full min-w-0 shrink-0">
-              <span className="min-w-0 truncate text-[18px] font-semibold text-black" title="Invoice">
+              <span
+                className="min-w-0 truncate text-[18px] font-semibold text-black"
+                title="Invoice"
+              >
                 Invoice
               </span>
             </div>

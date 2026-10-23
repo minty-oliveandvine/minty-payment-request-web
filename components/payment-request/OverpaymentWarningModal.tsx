@@ -128,8 +128,7 @@ export function OverpaymentWarningModal({
         </div>
 
         <p id={descId} className="mt-3 text-sm leading-relaxed text-primary/80">
-          The bill already has{" "}
-          {payments.length === 1 ? "a payment" : "payments"} recorded totalling{" "}
+          The bill already has {payments.length === 1 ? "a payment" : "payments"} recorded totalling{" "}
           <span className="font-semibold text-primary">
             {formatMoney(totalPaid, currencyLabel)}
           </span>
@@ -173,8 +172,8 @@ export function OverpaymentWarningModal({
         </ul>
 
         <p className="mt-4 text-sm leading-relaxed text-primary/70">
-          To edit this payment, you&apos;ll need to clear its payment history first. If it&apos;s been
-          overpaid, your accountant can help sort it out.
+          To edit this payment, you&apos;ll need to clear its payment history first. If it&apos;s
+          been overpaid, your accountant can help sort it out.
         </p>
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">

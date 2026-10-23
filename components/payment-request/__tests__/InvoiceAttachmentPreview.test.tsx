@@ -164,7 +164,9 @@ describe("what it draws", () => {
   it("enlarges into the full-screen viewer, in-app, rather than a new tab", async () => {
     show({ showViewFullButton: true });
 
-    await userEvent.click(screen.getByRole("button", { name: `View full — ${ATTACHMENTS[1].name}` }));
+    await userEvent.click(
+      screen.getByRole("button", { name: `View full — ${ATTACHMENTS[1].name}` }),
+    );
 
     const viewer = (await screen.findByRole("button", { name: "Close preview" })).closest(
       '[role="dialog"]',
@@ -176,11 +178,16 @@ describe("what it draws", () => {
 
   it("hands a PDF to the pdf.js renderer rather than an image tag", () => {
     show({
-      attachments: [{ url: "https://files.test/a.pdf", name: "invoice.pdf", mime: "application/pdf" }],
+      attachments: [
+        { url: "https://files.test/a.pdf", name: "invoice.pdf", mime: "application/pdf" },
+      ],
     });
 
     expect(screen.getByText("pdf: invoice.pdf")).toBeInTheDocument();
-    expect(screen.getByText("pdf: invoice.pdf")).toHaveAttribute("data-pdf", "https://files.test/a.pdf");
+    expect(screen.getByText("pdf: invoice.pdf")).toHaveAttribute(
+      "data-pdf",
+      "https://files.test/a.pdf",
+    );
   });
 
   it("says it is loading rather than showing an empty frame", () => {

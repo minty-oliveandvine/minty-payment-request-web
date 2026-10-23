@@ -25,7 +25,12 @@ const fetchMock = vi.fn<typeof fetch>();
 const answer = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-const gate = () => render(<ModuleGate><p>The payment requests</p></ModuleGate>);
+const gate = () =>
+  render(
+    <ModuleGate>
+      <p>The payment requests</p>
+    </ModuleGate>,
+  );
 
 const page = () => screen.queryByText("The payment requests");
 const refusal = (name: "Module not active" | "Access Denied") =>
@@ -75,7 +80,11 @@ describe("a company that has the module", () => {
 
 describe("a member of a company without the module", () => {
   beforeEach(() => {
-    setAuth(unsignedToken({ billing_enabled: false, role: "shop_manager" }), ENTITY_ID, ENTITY_NAME);
+    setAuth(
+      unsignedToken({ billing_enabled: false, role: "shop_manager" }),
+      ENTITY_ID,
+      ENTITY_NAME,
+    );
     fetchMock.mockResolvedValue(answer(200, { billing_enabled: false }));
   });
 
@@ -91,9 +100,7 @@ describe("a member of a company without the module", () => {
     gate();
 
     await waitFor(() => expect(refusal("Module not active")).toBeInTheDocument());
-    expect(
-      screen.getByText(/switched off, or its subscription has lapsed/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/switched off, or its subscription has lapsed/)).toBeInTheDocument();
   });
 
   it("is offered the subscription settings first, and the entity list second", async () => {
@@ -143,7 +150,9 @@ describe("somebody with no role on the company at all", () => {
     gate();
 
     await waitFor(() => expect(refusal("Access Denied")).toBeInTheDocument());
-    expect(screen.queryByRole("link", { name: /Check subscription settings/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Check subscription settings/ }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Back to Entity List/ })).toBeInTheDocument();
   });
 
@@ -162,15 +171,21 @@ describe("ModuleNotActive on its own", () => {
 
     render(<ModuleNotActive />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Module not active" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Module not active" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Module not active" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Module not active" }),
+    ).toBeInTheDocument();
   });
 
   it("asks a member with no company in the cookie to ask an admin instead", async () => {
     render(<ModuleNotActive />);
 
     expect(await screen.findByText(/Ask an admin for this entity/)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Check subscription settings/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Check subscription settings/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("offers no subscription link to someone whose role is not a bill role", async () => {
@@ -179,8 +194,12 @@ describe("ModuleNotActive on its own", () => {
 
     render(<ModuleNotActive />);
 
-    await waitFor(() => expect(screen.getByText(/Ask an admin for this entity/)).toBeInTheDocument());
-    expect(screen.queryByRole("link", { name: /Check subscription settings/ })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText(/Ask an admin for this entity/)).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole("link", { name: /Check subscription settings/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("offers it to a cashier - MODULE_VIEW starts there, so any member qualifies", async () => {
@@ -189,7 +208,9 @@ describe("ModuleNotActive on its own", () => {
 
     render(<ModuleNotActive />);
 
-    expect(await screen.findByRole("link", { name: /Check subscription settings/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: /Check subscription settings/ }),
+    ).toBeInTheDocument();
   });
 
   it("says Access Denied in the permission variant, and offers only the way out", () => {
@@ -199,7 +220,9 @@ describe("ModuleNotActive on its own", () => {
     render(<ModuleNotActive variant="permission" />);
 
     expect(screen.getByRole("heading", { level: 2, name: "Access Denied" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Check subscription settings/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Check subscription settings/ }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Back to Entity List/ })).toBeInTheDocument();
   });
 });

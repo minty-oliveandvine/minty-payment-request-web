@@ -1,7 +1,8 @@
 import type { PaymentRequestRow } from "@/components/payment-request/PaymentRequestTable";
 import { compareNullableNumber, dateSortValue } from "@/lib/paymentRequestDateSort";
 
-export type SortKey = "contact" | "invoiceDate" | "status" | "submittedDate" | "unpaidAmount" | "paidDate";
+export type SortKey =
+  "contact" | "invoiceDate" | "status" | "submittedDate" | "unpaidAmount" | "paidDate";
 
 /**
  * Parses a display amount to a number. Handles both row shapes: `invoiceTotal`
@@ -15,7 +16,14 @@ export function parseRowAmount(s: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-const STATUS_TABLE_ORDER = ["Payment Requested", "Returned", "Paid", "Partially Paid", "Draft", "Voided"] as const;
+const STATUS_TABLE_ORDER = [
+  "Payment Requested",
+  "Returned",
+  "Paid",
+  "Partially Paid",
+  "Draft",
+  "Voided",
+] as const;
 
 function statusSortRank(label: string): number {
   const i = (STATUS_TABLE_ORDER as readonly string[]).indexOf(label);
@@ -23,21 +31,36 @@ function statusSortRank(label: string): number {
 }
 
 /** Same ordering rules as the main payment request table. */
-export function compareRows(a: PaymentRequestRow, b: PaymentRequestRow, key: SortKey, dir: "asc" | "desc"): number {
+export function compareRows(
+  a: PaymentRequestRow,
+  b: PaymentRequestRow,
+  key: SortKey,
+  dir: "asc" | "desc",
+): number {
   const d = dir === "asc" ? 1 : -1;
   switch (key) {
     case "contact": {
       const t = a.contactTitle.localeCompare(b.contactTitle, undefined, { sensitivity: "base" });
       if (t !== 0) return t * d;
-      return a.contactCaption.localeCompare(b.contactCaption, undefined, { sensitivity: "base" }) * d;
+      return (
+        a.contactCaption.localeCompare(b.contactCaption, undefined, { sensitivity: "base" }) * d
+      );
     }
     case "invoiceDate": {
-      const byDate = compareNullableNumber(dateSortValue(a.invoiceDate), dateSortValue(b.invoiceDate), d);
+      const byDate = compareNullableNumber(
+        dateSortValue(a.invoiceDate),
+        dateSortValue(b.invoiceDate),
+        d,
+      );
       if (byDate !== 0) return byDate;
       return a.id.localeCompare(b.id);
     }
     case "submittedDate": {
-      const byDate = compareNullableNumber(dateSortValue(a.submittedDate), dateSortValue(b.submittedDate), d);
+      const byDate = compareNullableNumber(
+        dateSortValue(a.submittedDate),
+        dateSortValue(b.submittedDate),
+        d,
+      );
       if (byDate !== 0) return byDate;
       return a.id.localeCompare(b.id);
     }
@@ -53,7 +76,11 @@ export function compareRows(a: PaymentRequestRow, b: PaymentRequestRow, key: Sor
       return a.status.localeCompare(b.status, undefined, { sensitivity: "base" }) * d;
     }
     case "unpaidAmount":
-      return compareNullableNumber(parseRowAmount(a.unpaidAmount), parseRowAmount(b.unpaidAmount), d);
+      return compareNullableNumber(
+        parseRowAmount(a.unpaidAmount),
+        parseRowAmount(b.unpaidAmount),
+        d,
+      );
     default:
       return 0;
   }

@@ -54,7 +54,9 @@ describe("normalizeApiErrorDetail", () => {
       { type: "missing", loc: ["body", "email"], msg: "Field required" },
       { type: "value_error", loc: ["body", "amount"], msg: "Amount must be positive" },
     ];
-    expect(normalizeApiErrorDetail(detail, "fallback")).toBe("Field required; Amount must be positive");
+    expect(normalizeApiErrorDetail(detail, "fallback")).toBe(
+      "Field required; Amount must be positive",
+    );
   });
 
   it("takes strings straight out of an array", () => {
@@ -78,7 +80,10 @@ describe("normalizeApiErrorDetail", () => {
 
   it("keeps a field-error map's sentences and discards the field keys", () => {
     expect(
-      normalizeApiErrorDetail({ email: ["This field is required."], amount: ["Must be positive."] }, "fallback"),
+      normalizeApiErrorDetail(
+        { email: ["This field is required."], amount: ["Must be positive."] },
+        "fallback",
+      ),
     ).toBe("This field is required.; Must be positive.");
   });
 
@@ -181,7 +186,9 @@ describe("resolveApiErrorMessage", () => {
     [503, "The server is busy right now. Mind trying again in a moment?"],
     [504, "The server took too long to answer. Mind trying again?"],
   ])("stands in friendly copy for a bare reason phrase on %i", (status, copy) => {
-    expect(resolveApiErrorMessage(status, "Internal Server Error", "Internal Server Error")).toBe(copy);
+    expect(resolveApiErrorMessage(status, "Internal Server Error", "Internal Server Error")).toBe(
+      copy,
+    );
     expect(resolveApiErrorMessage(status, null, "")).toBe(copy);
   });
 
@@ -204,7 +211,11 @@ describe("resolveApiErrorMessage", () => {
 
   it("lets a real 422 sentence through untouched - its body carries the field detail", () => {
     expect(
-      resolveApiErrorMessage(422, "That invoice number already exists in this company.", "Unprocessable Entity"),
+      resolveApiErrorMessage(
+        422,
+        "That invoice number already exists in this company.",
+        "Unprocessable Entity",
+      ),
     ).toBe("That invoice number already exists in this company.");
   });
 
@@ -212,15 +223,21 @@ describe("resolveApiErrorMessage", () => {
   // fall back to but the house line. The docstring's "must pass through untouched" is only true
   // of prose, and this is the case that says so.
   it("falls back to the house line for a 422 whose detail is machinery", () => {
-    expect(resolveApiErrorMessage(422, "invalid_state", "Unprocessable Entity")).toBe(HOUSE_FALLBACK);
-    expect(resolveApiErrorMessage(422, [{ type: "missing", loc: ["body"] }], "Unprocessable Entity")).toBe(
+    expect(resolveApiErrorMessage(422, "invalid_state", "Unprocessable Entity")).toBe(
       HOUSE_FALLBACK,
     );
+    expect(
+      resolveApiErrorMessage(422, [{ type: "missing", loc: ["body"] }], "Unprocessable Entity"),
+    ).toBe(HOUSE_FALLBACK);
   });
 
   it("shows a flattened schema failure, because its msg fields read as prose", () => {
     expect(
-      resolveApiErrorMessage(422, [{ type: "missing", loc: ["body", "email"], msg: "Field required" }], "x"),
+      resolveApiErrorMessage(
+        422,
+        [{ type: "missing", loc: ["body", "email"], msg: "Field required" }],
+        "x",
+      ),
     ).toBe("Field required");
   });
 });
@@ -237,7 +254,9 @@ describe("isDuplicateBillReferenceError", () => {
   });
 
   it("wants the status to be 422", () => {
-    expect(isDuplicateBillReferenceError(new ApiError(409, "x", "Invoice number already exists"))).toBe(false);
+    expect(
+      isDuplicateBillReferenceError(new ApiError(409, "x", "Invoice number already exists")),
+    ).toBe(false);
   });
 
   it("is false for anything that is not an ApiError", () => {

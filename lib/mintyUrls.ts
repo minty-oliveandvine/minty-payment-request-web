@@ -12,9 +12,7 @@ export function buildMintyEnterUrl(nextPath?: string): string {
   const auth = getAuth();
   if (auth?.entityId && auth?.token) {
     const base = `${MINTY_MODULE_URL}/entity/${encodeURIComponent(auth.entityId)}/enter?token=${encodeURIComponent(auth.token)}`;
-    return nextPath
-      ? `${base}&next=${encodeURIComponent(nextPath)}`
-      : base;
+    return nextPath ? `${base}&next=${encodeURIComponent(nextPath)}` : base;
   }
   return `${MINTY_MODULE_URL}/entity`;
 }

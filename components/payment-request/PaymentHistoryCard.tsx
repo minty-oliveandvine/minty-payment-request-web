@@ -23,12 +23,54 @@ type PaymentHistoryListPanelProps = {
 };
 
 const defaultRows: PaymentHistoryRow[] = [
-  { id: "1", billId: "demo-1", date: "03 Mar 2026", amountLabel: "(500.00)", statusLabel: "Paid", invoiceNo: "MBIDAN-115803031626" },
-  { id: "2", billId: "demo-2", date: "03 Mar 2026", amountLabel: "(500.00)", statusLabel: "Partially Paid", invoiceNo: "MBIDAN-115803031627" },
-  { id: "3", billId: "demo-3", date: "03 Mar 2026", amountLabel: "(500.00)", statusLabel: "Paid", invoiceNo: "MBIDAN-115803031628" },
-  { id: "4", billId: "demo-4", date: "03 Mar 2026", amountLabel: "(500.00)", statusLabel: "Paid", invoiceNo: "MBIDAN-115803031629" },
-  { id: "5", billId: "demo-5", date: "03 Mar 2026", amountLabel: "(500.00)", statusLabel: "Partially Paid", invoiceNo: "MBIDAN-115803031630" },
-  { id: "6", billId: "demo-6", date: "03 Mar 2026", amountLabel: "(500.00)", statusLabel: "Paid", invoiceNo: "MBIDAN-115803031631" },
+  {
+    id: "1",
+    billId: "demo-1",
+    date: "03 Mar 2026",
+    amountLabel: "(500.00)",
+    statusLabel: "Paid",
+    invoiceNo: "MBIDAN-115803031626",
+  },
+  {
+    id: "2",
+    billId: "demo-2",
+    date: "03 Mar 2026",
+    amountLabel: "(500.00)",
+    statusLabel: "Partially Paid",
+    invoiceNo: "MBIDAN-115803031627",
+  },
+  {
+    id: "3",
+    billId: "demo-3",
+    date: "03 Mar 2026",
+    amountLabel: "(500.00)",
+    statusLabel: "Paid",
+    invoiceNo: "MBIDAN-115803031628",
+  },
+  {
+    id: "4",
+    billId: "demo-4",
+    date: "03 Mar 2026",
+    amountLabel: "(500.00)",
+    statusLabel: "Paid",
+    invoiceNo: "MBIDAN-115803031629",
+  },
+  {
+    id: "5",
+    billId: "demo-5",
+    date: "03 Mar 2026",
+    amountLabel: "(500.00)",
+    statusLabel: "Partially Paid",
+    invoiceNo: "MBIDAN-115803031630",
+  },
+  {
+    id: "6",
+    billId: "demo-6",
+    date: "03 Mar 2026",
+    amountLabel: "(500.00)",
+    statusLabel: "Paid",
+    invoiceNo: "MBIDAN-115803031631",
+  },
 ];
 
 export function PaymentHistoryListPanel({ rows = defaultRows }: PaymentHistoryListPanelProps) {
@@ -62,7 +104,9 @@ export function PaymentHistoryListPanel({ rows = defaultRows }: PaymentHistoryLi
               <span className="block w-full text-left text-sm font-medium text-primary sm:min-w-[5.5rem]">
                 {row.statusLabel}
               </span>
-              <span className="block w-full text-left text-sm font-semibold text-primary">{row.amountLabel}</span>
+              <span className="block w-full text-left text-sm font-semibold text-primary">
+                {row.amountLabel}
+              </span>
               <Link
                 href={row.invoiceHref ?? "#"}
                 className="block w-full min-w-0 truncate text-left text-sm font-medium text-[#54d3da] underline underline-offset-2 hover:text-[#54d3da]"

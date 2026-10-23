@@ -13,8 +13,7 @@ const ELLIPSIS = "…";
 const pageButtonBase =
   "box-border inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-sm font-medium tabular-nums transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
 
-const chevronButtonClass =
-  `${pageButtonBase} border border-gray-300 text-primary hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-primary/30 disabled:hover:bg-transparent`;
+const chevronButtonClass = `${pageButtonBase} border border-gray-300 text-primary hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-primary/30 disabled:hover:bg-transparent`;
 
 export type PaymentRequestPaginationProps = {
   /** 1-based. */

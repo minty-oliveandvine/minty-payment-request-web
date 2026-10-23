@@ -4,7 +4,12 @@ import { useSearchParams } from "next/navigation";
 import { getEntityIdSnapshot } from "@/lib/auth";
 import { useClientValue } from "@/lib/useClientValue";
 import { AccountCodeSettings } from "./AccountCodeSettings";
-import { getSettingsTabFromSearchParams, integrationTabUrl, SETTINGS_TAB_LABELS, SettingsPills } from "./SettingsPills";
+import {
+  getSettingsTabFromSearchParams,
+  integrationTabUrl,
+  SETTINGS_TAB_LABELS,
+  SettingsPills,
+} from "./SettingsPills";
 import { SettingsPlaceholder } from "./SettingsPlaceholder";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
 

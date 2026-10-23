@@ -190,19 +190,21 @@ describe("the rows", () => {
     show();
 
     for (const scope of [table(), cards()]) {
-      expect(scope.getAllByRole("link", { name: "Open Cancelled Order Inc" })[0].getAttribute("href")).toBe(
-        "/entity/360812e1/olive-and-vine/payment-request/r-void",
-      );
-      expect(scope.getAllByRole("link", { name: "Open Young Bros Transport" })[0].getAttribute("href")).toBe(
-        "/entity/360812e1/olive-and-vine/payment-request/PR-0001",
-      );
+      expect(
+        scope.getAllByRole("link", { name: "Open Cancelled Order Inc" })[0].getAttribute("href"),
+      ).toBe("/entity/360812e1/olive-and-vine/payment-request/r-void");
+      expect(
+        scope.getAllByRole("link", { name: "Open Young Bros Transport" })[0].getAttribute("href"),
+      ).toBe("/entity/360812e1/olive-and-vine/payment-request/PR-0001");
     }
   });
 
   it("offer each row as a link too, so it can be opened in a new tab", () => {
     show();
 
-    expect(table().getAllByRole("link", { name: "Open Young Bros Transport" }).length).toBeGreaterThan(0);
+    expect(
+      table().getAllByRole("link", { name: "Open Young Bros Transport" }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("say they are loading rather than showing an empty table", () => {
@@ -216,7 +218,9 @@ describe("selection", () => {
   it("offers a tick per row, named by its supplier", () => {
     show();
 
-    expect(table().getByRole("checkbox", { name: "Select row Young Bros Transport" })).toBeInTheDocument();
+    expect(
+      table().getByRole("checkbox", { name: "Select row Young Bros Transport" }),
+    ).toBeInTheDocument();
   });
 
   it("reports the row that was ticked", async () => {
@@ -231,7 +235,9 @@ describe("selection", () => {
     show({ selectedIds: new Set(["r-draft"]) });
 
     expect(table().getByRole("checkbox", { name: "Select row Draft Supplier" })).toBeChecked();
-    expect(table().getByRole("checkbox", { name: "Select row Young Bros Transport" })).not.toBeChecked();
+    expect(
+      table().getByRole("checkbox", { name: "Select row Young Bros Transport" }),
+    ).not.toBeChecked();
   });
 
   it("will not let a voided row be selected, and says why", () => {
@@ -286,7 +292,9 @@ describe("the per-row payment action", () => {
       rows: [billRow({ id: "r-paid", contactTitle: "Paid In Full Co", status: "Paid" })],
     });
 
-    await userEvent.click(table().getByRole("button", { name: "View payments for Paid In Full Co" }));
+    await userEvent.click(
+      table().getByRole("button", { name: "View payments for Paid In Full Co" }),
+    );
 
     expect(onRecordPayment).toHaveBeenCalledWith("r-paid", true);
   });
@@ -338,13 +346,20 @@ describe("the card list beside it", () => {
 describe("the bank slip cell before its count is known", () => {
   // Unknown is not zero: an Upload button here could hide slips that already exist.
   const unknown = (bankslipState: "loading" | "error") => [
-    billRow({ id: "r-unknown", contactTitle: "Young Bros Transport", status: "Payment Requested", bankslipState }),
+    billRow({
+      id: "r-unknown",
+      contactTitle: "Young Bros Transport",
+      status: "Payment Requested",
+      bankslipState,
+    }),
   ];
 
   it("says it is loading, and offers no upload", () => {
     show({ rows: unknown("loading") });
 
-    expect(table().getByRole("status", { name: "Loading bank slips for Young Bros Transport" })).toBeInTheDocument();
+    expect(
+      table().getByRole("status", { name: "Loading bank slips for Young Bros Transport" }),
+    ).toBeInTheDocument();
     expect(table().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
   });
 
@@ -354,7 +369,9 @@ describe("the bank slip cell before its count is known", () => {
 
     expect(table().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
     await userEvent.click(
-      table().getByRole("button", { name: "Bank slips didn't load for Young Bros Transport — try again" }),
+      table().getByRole("button", {
+        name: "Bank slips didn't load for Young Bros Transport — try again",
+      }),
     );
 
     expect(onRetryBankSlips).toHaveBeenCalledTimes(1);
@@ -365,7 +382,9 @@ describe("the bank slip cell before its count is known", () => {
     show({ rows: unknown("error") });
 
     expect(
-      cards().getByRole("button", { name: "Bank slips didn't load for Young Bros Transport — try again" }),
+      cards().getByRole("button", {
+        name: "Bank slips didn't load for Young Bros Transport — try again",
+      }),
     ).toBeInTheDocument();
     expect(cards().queryByRole("button", { name: "Upload" })).not.toBeInTheDocument();
   });

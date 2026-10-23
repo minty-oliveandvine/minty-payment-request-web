@@ -1,11 +1,10 @@
-import {
-  fetchPayments,
-  listPaymentAttachments,
-  type PaymentItem,
-} from "./api";
+import { fetchPayments, listPaymentAttachments, type PaymentItem } from "./api";
 import { currencyLabelForCode } from "./currencyDisplay";
 import { formatMoney } from "./amountFormat";
-import type { BankSlipDetails, BankSlipFileEntry } from "@/components/payment-request/BankSlipDetailsModal";
+import type {
+  BankSlipDetails,
+  BankSlipFileEntry,
+} from "@/components/payment-request/BankSlipDetailsModal";
 import { formatDateInTimeZoneForDisplay, formatIsoDateForDisplay } from "./dateDisplayFormat";
 
 function formatApiDateTime(iso: string): string {
@@ -76,7 +75,9 @@ function paymentToDetailsBase(
     toName: row.contactTitle,
     amount: formatPaymentDisplayAmount(payment.currency_code || row.currencyCode, payment.amount),
     fromName: "—",
-    when: payment.payment_date ? formatBillDate(payment.payment_date) : row.paidDate.trim() || row.invoiceDate,
+    when: payment.payment_date
+      ? formatBillDate(payment.payment_date)
+      : row.paidDate.trim() || row.invoiceDate,
   };
 }
 
@@ -119,7 +120,9 @@ export async function buildBankSlipDetailsFromPaymentList(
       const nestedId = a.attachment.id?.trim();
       const size = a.attachment.file_size;
       const fileSizeBytes =
-        typeof size === "number" && Number.isFinite(size) && size >= 0 ? Math.round(size) : undefined;
+        typeof size === "number" && Number.isFinite(size) && size >= 0
+          ? Math.round(size)
+          : undefined;
       const imagePreviewUrl = directImagePreviewUrl(a.attachment);
       files.push({
         id: a.id,

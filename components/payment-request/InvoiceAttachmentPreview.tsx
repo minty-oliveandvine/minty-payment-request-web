@@ -9,7 +9,8 @@ import {
   type AttachmentPreviewItem,
 } from "./AttachmentFullScreenViewer";
 
-const ATTACHMENT_CHECKBOX_CLASS = "checkbox-secondary-white-tick h-4 w-4 rounded border border-primary/40";
+const ATTACHMENT_CHECKBOX_CLASS =
+  "checkbox-secondary-white-tick h-4 w-4 rounded border border-primary/40";
 
 export type InvoiceAttachmentPreviewItem = AttachmentPreviewItem & {
   billAttachmentId?: string;
@@ -54,7 +55,10 @@ function FillColumnInvoiceLoadingSkeleton() {
         <div className="flex min-h-[min(14rem,48dvh)] w-full flex-col gap-3 p-3 sm:min-h-[min(18rem,52dvh)] sm:gap-4 sm:p-4">
           <div className="flex items-center gap-2 border-b border-gray-100 pb-3 sm:pb-4">
             <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-gray-200" aria-hidden />
-            <div className="h-2.5 min-w-0 flex-1 animate-pulse rounded-full bg-gray-200/80" aria-hidden />
+            <div
+              className="h-2.5 min-w-0 flex-1 animate-pulse rounded-full bg-gray-200/80"
+              aria-hidden
+            />
             <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-gray-100" aria-hidden />
           </div>
           <div className="flex min-h-0 flex-1 flex-col items-center gap-3 rounded-lg border border-dashed border-gray-200 bg-gray-50/90 p-3 sm:p-4">
@@ -131,7 +135,9 @@ export function InvoiceAttachmentPreview({
         ? imageSrcs.map((url) => ({ url, name: "", mime: "image/png" }))
         : [null];
 
-  const attachmentCount = items.filter((item): item is InvoiceAttachmentPreviewItem => item != null).length;
+  const attachmentCount = items.filter(
+    (item): item is InvoiceAttachmentPreviewItem => item != null,
+  ).length;
   /** Bound height so multiple files (or tall PDFs) scroll inside the gray panel instead of stretching the page. */
   const constrainScrollHeight = isLoadingAttachments || attachmentCount >= 1;
 
@@ -147,7 +153,9 @@ export function InvoiceAttachmentPreview({
 
   const inner = (
     <div
-      className="flex w-full shrink-0 flex-col gap-2 p-1.5 sm:p-2" style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}>
+      className="flex w-full shrink-0 flex-col gap-2 p-1.5 sm:p-2"
+      style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
+    >
       {isLoadingAttachments ? (
         fillColumn ? (
           <FillColumnInvoiceLoadingSkeleton />
@@ -159,7 +167,10 @@ export function InvoiceAttachmentPreview({
             aria-label="Loading invoice attachment"
           >
             <div className="flex aspect-[8.5/11] w-full max-h-[min(75vh,56rem)] min-h-[min(12rem,40dvh)] items-center justify-center bg-gray-50 sm:min-h-[min(16rem,45dvh)]">
-              <div className="mx-auto h-full w-[92%] max-w-full animate-pulse rounded-sm bg-gray-100" aria-hidden />
+              <div
+                className="mx-auto h-full w-[92%] max-w-full animate-pulse rounded-sm bg-gray-100"
+                aria-hidden
+              />
             </div>
           </figure>
         )
@@ -209,7 +220,10 @@ export function InvoiceAttachmentPreview({
                 </>
               ) : (
                 <div className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-2 bg-gray-50 px-4 text-center text-sm text-primary/60">
-                  <span className="material-symbols-outlined text-[40px] text-primary/35" aria-hidden>
+                  <span
+                    className="material-symbols-outlined text-[40px] text-primary/35"
+                    aria-hidden
+                  >
                     description
                   </span>
                   <span>Invoice attachment preview</span>
@@ -225,7 +239,9 @@ export function InvoiceAttachmentPreview({
 
   return (
     <>
-      <div className={`flex min-h-0 w-full flex-1 flex-col ${fillColumn ? "h-full min-h-0" : ""} ${className}`}>
+      <div
+        className={`flex min-h-0 w-full flex-1 flex-col ${fillColumn ? "h-full min-h-0" : ""} ${className}`}
+      >
         <div
           ref={scrollRef}
           className={`visible-scrollbar relative flex min-h-0 min-w-0 flex-1 flex-col overflow-auto rounded-lg border border-gray-200 bg-gray-100 touch-pan-x touch-pan-y ${scrollAreaMinMaxClass}`}

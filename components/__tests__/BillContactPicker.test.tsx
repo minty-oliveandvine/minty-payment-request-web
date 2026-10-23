@@ -13,10 +13,7 @@ import { BillContactPicker } from "@/components/BillContactPicker";
 import { ToastProvider } from "@/components/Toast";
 import { SUPPLIERS, WITH_DUPLICATES, entityBillContact } from "@/lib/__fixtures__/contacts";
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
-import {
-  dedupeEntityBillContactsByXeroId,
-  dedupeEntityBillContactsForPicker,
-} from "@/lib/api";
+import { dedupeEntityBillContactsByXeroId, dedupeEntityBillContactsForPicker } from "@/lib/api";
 import { setAuth } from "@/lib/auth";
 
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
@@ -152,7 +149,11 @@ describe("the picker", () => {
   });
 
   it("creates the supplier in Xero and reports it as chosen", async () => {
-    const created = entityBillContact({ id: "c-new", xero_contact_id: "XERO-NEW", name: "Brand New Supplier" });
+    const created = entityBillContact({
+      id: "c-new",
+      xero_contact_id: "XERO-NEW",
+      name: "Brand New Supplier",
+    });
     fetchMock.mockResolvedValueOnce(answer(201, created));
     show({ contactName: "Brand New Supplier" });
     await userEvent.click(field());

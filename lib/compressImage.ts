@@ -13,10 +13,7 @@ export async function compressImage(file: File): Promise<File> {
       let { width, height } = img;
 
       if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-        const scale = Math.min(
-          MAX_DIMENSION / width,
-          MAX_DIMENSION / height
-        );
+        const scale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
         width = Math.round(width * scale);
         height = Math.round(height * scale);
       }
@@ -52,11 +49,11 @@ export async function compressImage(file: File): Promise<File> {
             new File([blob], filename, {
               type: "image/jpeg",
               lastModified: Date.now(),
-            })
+            }),
           );
         },
         "image/jpeg",
-        0.8 // Quality: 0.0 - 1.0
+        0.8, // Quality: 0.0 - 1.0
       );
     };
 

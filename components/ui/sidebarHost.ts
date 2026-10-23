@@ -18,29 +18,15 @@
 
 import { usePathname } from "next/navigation";
 
-import {
-  setSidebarHost,
-  type SidebarHost,
-  type Viewer,
-} from "@minty/shared/sidebar";
+import { setSidebarHost, type SidebarHost, type Viewer } from "@minty/shared/sidebar";
 import { guardLeave } from "@minty/shared/leaveGuard";
 
 import { ApiError, logoutSession } from "@/lib/api";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import { env } from "@/lib/env";
-import {
-  clearAuth,
-  getAuth,
-  isTokenExpiringSoon,
-  redirectToLogin,
-  refreshToken,
-} from "@/lib/auth";
+import { clearAuth, getAuth, isTokenExpiringSoon, redirectToLogin, refreshToken } from "@/lib/auth";
 import { getModuleClaims } from "@/lib/moduleClaims";
-import {
-  buildMintyEnterUrl,
-  buildMintyProfileUrl,
-  MINTY_MODULE_URL,
-} from "@/lib/mintyUrls";
+import { buildMintyEnterUrl, buildMintyProfileUrl, MINTY_MODULE_URL } from "@/lib/mintyUrls";
 import { cookieCompanyPages } from "@/lib/useCompanyPages";
 
 /** minty-subscription-api - the Subscriptions Overview's read (`SUBSCRIPTION_API_URL`, lib/env.ts). */
@@ -66,9 +52,7 @@ type ModuleAccess = { pettyCash: boolean; billing: boolean };
  */
 function handoff(next: string): string {
   const path = `/handoff/minty-web?${new URLSearchParams({ next }).toString()}`;
-  return getAuth()?.entityId
-    ? buildMintyEnterUrl(path)
-    : `${MINTY_MODULE_URL}${path}`;
+  return getAuth()?.entityId ? buildMintyEnterUrl(path) : `${MINTY_MODULE_URL}${path}`;
 }
 
 /** The company in this app's cookie ("" when none). */
@@ -93,8 +77,7 @@ export const links = {
   entities: () => buildMintyEnterUrl("/entity"),
   subscriptions: () => handoff(MINTY_WEB_SUBSCRIPTIONS),
   pettyCashDashboard: () => buildMintyEnterUrl(),
-  pettyCashReports: (id: string) =>
-    buildMintyEnterUrl(`/entity/${id}/petty-cash/reports`),
+  pettyCashReports: (id: string) => buildMintyEnterUrl(`/entity/${id}/petty-cash/reports`),
   /** The company's list - `/` (the middleware sends it there) when the cookie names none. */
   bills: () => cookieCompanyPages()?.list ?? "/",
   /**
@@ -160,8 +143,7 @@ async function endSession(): Promise<void> {
 // --- the two backends the copies read ----------------------------------------------------------
 
 /** Shown when a backend gave no sentence of its own - minty-web's `HOUSE_FALLBACK`. */
-export const HOUSE_FALLBACK =
-  "Something went wrong on my end. Mind trying again?";
+export const HOUSE_FALLBACK = "Something went wrong on my end. Mind trying again?";
 const SESSION_ENDED = "Your session has ended. Signing you back in…";
 
 export type HubRequest = {
@@ -199,11 +181,7 @@ async function readBody(res: Response): Promise<unknown> {
 }
 
 function sentence(body: unknown): string | null {
-  if (
-    body &&
-    typeof body === "object" &&
-    typeof (body as { error?: unknown }).error === "string"
-  ) {
+  if (body && typeof body === "object" && typeof (body as { error?: unknown }).error === "string") {
     return (body as { error: string }).error;
   }
   return null;
@@ -215,13 +193,7 @@ async function bearerJson<T>(
   init: HubRequest,
   retried = false,
 ): Promise<T> {
-  const {
-    method = "GET",
-    json,
-    query,
-    signal,
-    onUnauthorized = "reauth",
-  } = init;
+  const { method = "GET", json, query, signal, onUnauthorized = "reauth" } = init;
   if (!retried && isTokenExpiringSoon(120)) await refreshToken();
   const token = getAuth()?.token;
   if (!token) {
@@ -242,8 +214,7 @@ async function bearerJson<T>(
   });
 
   if (res.status === 401) {
-    if (!retried && (await refreshToken()))
-      return bearerJson<T>(base, path, init, true);
+    if (!retried && (await refreshToken())) return bearerJson<T>(base, path, init, true);
     if (onUnauthorized === "reauth") redirectToLogin();
     throw new ApiError(401, SESSION_ENDED);
   }
@@ -256,18 +227,12 @@ async function bearerJson<T>(
  * Flask's hub surface - `/api/me/profile` (minty-web's `mintyFetch`). Never sends `X-Entity-Id`:
  * Flask allows only `Authorization` and `Content-Type`; a company travels as `?entity=`.
  */
-export function mintyFetch<T = unknown>(
-  path: string,
-  init: HubRequest = {},
-): Promise<T> {
+export function mintyFetch<T = unknown>(path: string, init: HubRequest = {}): Promise<T> {
   return bearerJson<T>(MINTY_MODULE_URL.replace(/\/+$/, ""), path, init);
 }
 
 /** minty-subscription-api's person-scoped `/api/me/*` (minty-web's `apiFetch`, without a company). */
-export function billingApiFetch<T = unknown>(
-  path: string,
-  init: HubRequest = {},
-): Promise<T> {
+export function billingApiFetch<T = unknown>(path: string, init: HubRequest = {}): Promise<T> {
   return bearerJson<T>(SUBSCRIPTION_API_URL, path, init);
 }
 
@@ -287,8 +252,7 @@ async function loadViewer(): Promise<Viewer | null> {
     user?: { name?: unknown; initials?: unknown };
   }>("/api/me/profile", { onUnauthorized: "reject" });
   const user = body?.user;
-  if (typeof user?.name !== "string" || typeof user.initials !== "string")
-    return null;
+  if (typeof user?.name !== "string" || typeof user.initials !== "string") return null;
   return { name: user.name, initials: user.initials };
 }
 

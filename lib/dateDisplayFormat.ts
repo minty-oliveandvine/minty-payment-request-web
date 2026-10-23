@@ -43,7 +43,9 @@ export function formatLocalDateForDisplay(d: Date): string {
   const y = d.getFullYear();
   const m = d.getMonth() + 1;
   const day = d.getDate();
-  return formatIsoDateForDisplay(`${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+  return formatIsoDateForDisplay(
+    `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+  );
 }
 
 /** The timezone bills are reckoned in — display and date filtering must agree on it. */

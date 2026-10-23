@@ -154,7 +154,9 @@ describe("the cards", () => {
     show();
 
     const link = screen.getAllByText("Young Bros Transport")[0].closest("a");
-    expect(link?.getAttribute("href")).toBe("/entity/360812e1/olive-and-vine/payment-request/PR-0001");
+    expect(link?.getAttribute("href")).toBe(
+      "/entity/360812e1/olive-and-vine/payment-request/PR-0001",
+    );
   });
 
   // A voided request's Payment No. may belong to a live one now, and the lookup prefers it.
@@ -162,7 +164,9 @@ describe("the cards", () => {
     show();
 
     const link = screen.getAllByText("Cancelled Order Inc")[0].closest("a");
-    expect(link?.getAttribute("href")).toBe("/entity/360812e1/olive-and-vine/payment-request/r-void");
+    expect(link?.getAttribute("href")).toBe(
+      "/entity/360812e1/olive-and-vine/payment-request/r-void",
+    );
   });
 
   it("draw nothing but their frame when there is nothing to show", () => {
@@ -189,13 +193,17 @@ describe("sorting", () => {
   it("says which way the open column is sorted", () => {
     show({ sort: { key: "contact", dir: "asc" } });
 
-    expect(screen.getAllByRole("button", { name: /Sort by supplier, ascending/ }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", { name: /Sort by supplier, ascending/ }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("says so the other way round", () => {
     show({ sort: { key: "contact", dir: "desc" } });
 
-    expect(screen.getAllByRole("button", { name: /Sort by supplier, descending/ }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", { name: /Sort by supplier, descending/ }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("offers only the four keys easy view sorts by", () => {
@@ -211,7 +219,9 @@ describe("selection", () => {
   it("reports the row that was ticked", async () => {
     show();
 
-    await userEvent.click(screen.getAllByRole("checkbox", { name: /Select row Draft Supplier/ })[0]);
+    await userEvent.click(
+      screen.getAllByRole("checkbox", { name: /Select row Draft Supplier/ })[0],
+    );
 
     expect(onToggleRow).toHaveBeenCalledWith("r-draft");
   });
@@ -306,15 +316,31 @@ describe("a bank slip count that did not load", () => {
     const onRetryBankSlips = vi.fn();
     show({
       rows: [
-        billRow({ id: "e-fail", contactTitle: "Failed Lookup Co", status: "Payment Requested", bankslipState: "error" }),
-        billRow({ id: "e-wait", contactTitle: "Still Loading Co", status: "Payment Requested", bankslipState: "loading" }),
+        billRow({
+          id: "e-fail",
+          contactTitle: "Failed Lookup Co",
+          status: "Payment Requested",
+          bankslipState: "error",
+        }),
+        billRow({
+          id: "e-wait",
+          contactTitle: "Still Loading Co",
+          status: "Payment Requested",
+          bankslipState: "loading",
+        }),
       ],
       onRetryBankSlips,
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "Bank slips didn't load for Failed Lookup Co — try again" }));
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Bank slips didn't load for Failed Lookup Co — try again",
+      }),
+    );
 
     expect(onRetryBankSlips).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("button", { name: /Still Loading Co — try again/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Still Loading Co — try again/ }),
+    ).not.toBeInTheDocument();
   });
 });

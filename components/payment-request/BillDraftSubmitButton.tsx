@@ -11,7 +11,13 @@ const submitButtonClass =
 
 export function BillDraftSubmitButton({ onClick, disabled, pending }: BillDraftSubmitButtonProps) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled || pending} className={submitButtonClass} aria-busy={pending ? true : undefined}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || pending}
+      className={submitButtonClass}
+      aria-busy={pending ? true : undefined}
+    >
       <span className="whitespace-nowrap">{pending ? "Submitting…" : "Submit"}</span>
     </button>
   );

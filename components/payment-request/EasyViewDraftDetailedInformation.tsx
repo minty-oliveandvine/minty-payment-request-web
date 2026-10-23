@@ -178,7 +178,8 @@ export function EasyViewDraftDetailedInformation({
   /** Paid / returned: void + publish bar inside the same shell as the detail page. */
   readOnlyFooter?: ReactNode;
 }) {
-  const { billNo, amount, currencyCode, description, contact, accountCode, invoiceDate, dueDate } = data;
+  const { billNo, amount, currencyCode, description, contact, accountCode, invoiceDate, dueDate } =
+    data;
   const entityCurrency = useEntityCurrency();
   const currencyDisplayLabel = entityCurrency;
 
@@ -192,7 +193,9 @@ export function EasyViewDraftDetailedInformation({
               : "mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
           }
         >
-          <h2 className="min-w-0 text-base font-medium leading-snug text-primary sm:text-lg">Detailed Information</h2>
+          <h2 className="min-w-0 text-base font-medium leading-snug text-primary sm:text-lg">
+            Detailed Information
+          </h2>
           {!readOnly && onEdit ? (
             <div className={paymentRequestDetailHeaderActionsClass}>
               <button
@@ -226,13 +229,18 @@ export function EasyViewDraftDetailedInformation({
             <div className={paymentRequestDetailFieldLabelClass}>
               Invoice Date<span className="text-red-500"> *</span>
             </div>
-            <PaymentRequestReadOnlyDateRow display={formatPaymentRequestDetailLongDate(invoiceDate)} />
+            <PaymentRequestReadOnlyDateRow
+              display={formatPaymentRequestDetailLongDate(invoiceDate)}
+            />
           </div>
           <div className="min-w-0">
             <div className={paymentRequestDetailFieldLabelClass}>
               Amount<span className="text-red-500"> *</span>
             </div>
-            <PaymentRequestReadOnlyAmountRow currencyDisplayLabel={currencyDisplayLabel} amount={amount} />
+            <PaymentRequestReadOnlyAmountRow
+              currencyDisplayLabel={currencyDisplayLabel}
+              amount={amount}
+            />
           </div>
         </div>
 
@@ -331,210 +339,214 @@ export function EasyViewDraftDetailedInformationEdit({
   return (
     <div className={easyViewDetailedInformationShellClass}>
       <section className="w-full min-w-0 max-w-full border-0 bg-transparent p-4 sm:p-5 md:p-6 lg:p-7">
-      <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <h2 className="min-w-0 text-base font-medium leading-snug text-primary sm:text-lg">Detailed Information</h2>
-        <div className={easyDraftHeaderActionsClass}>
-          <button
-            type="button"
-            onClick={onCancel}
-            className={paymentRequestDetailCancelButtonClass}
-            disabled={disabled || isSaving}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            className={paymentRequestDetailSaveButtonClass}
-            disabled={disabled || isSaving}
-          >
-            {isSaving ? "Saving…" : "Save Changes"}
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-y-4">
-        <div className="min-w-0">
-          <label htmlFor={idBillNo} className={paymentRequestDetailFieldLabelClass}>
-            Payment No.
-          </label>
-          <input
-            id={idBillNo}
-            type="text"
-            value={billNo ?? ""}
-            onChange={(e) => onPatchChange({ billNo: e.target.value })}
-            disabled={disabled}
-            aria-invalid={!!billNoError}
-            className={
-              billNoError
-                ? "box-border h-11 min-h-[44px] w-full rounded-2xl border border-red-500 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200/50 sm:min-h-11 sm:text-sm"
-                : paymentRequestDetailModalTextInputClass
-            }
-          />
-          {billNoError ? (
-            <p className="mt-1 text-xs text-red-600" role="alert">
-              {billNoError}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="min-w-0">
-          <label htmlFor={idDue} className={paymentRequestDetailFieldLabelClass}>
-            Due Date<span className="text-red-500"> *</span>
-          </label>
-          <DateTextField
-            id={idDue}
-            value={dueDate ?? ""}
-            onChange={(iso) => onPatchChange({ dueDate: iso })}
-            disabled={disabled}
-            invalid={!!dueDateError}
-            calendarAriaLabel="Open calendar for due date"
-            textInputClassName={
-              dueDateError ? paymentRequestDetailDateTextInputClassError : paymentRequestDetailDateTextInputClass
-            }
-            calendarButtonClassName="hidden"
-          />
-          {dueDateError ? (
-            <p className="mt-1 text-xs text-red-600" role="alert">
-              {dueDateError}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="min-w-0">
-          <label htmlFor={idInv} className={paymentRequestDetailFieldLabelClass}>
-            Invoice Date<span className="text-red-500"> *</span>
-          </label>
-          <DateTextField
-            id={idInv}
-            value={invoiceDate ?? ""}
-            onChange={(iso) => onPatchChange({ invoiceDate: iso })}
-            disabled={disabled}
-            invalid={!!invoiceDateError}
-            calendarAriaLabel="Open calendar for invoice date"
-            textInputClassName={
-              invoiceDateError
-                ? paymentRequestDetailDateTextInputClassError
-                : paymentRequestDetailDateTextInputClass
-            }
-            calendarButtonClassName="hidden"
-          />
-          {invoiceDateError ? (
-            <p className="mt-1 text-xs text-red-600" role="alert">
-              {invoiceDateError}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="min-w-0">
-          <label htmlFor={idAmt} className={paymentRequestDetailFieldLabelClass}>
-            Amount<span className="text-red-500"> *</span>
-          </label>
-          <div className="mt-0.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:gap-0">
-            <div
-              id={idCur}
-              aria-label="Currency"
-              className={
-                `${paymentRequestDetailCurrencyCellClass} ` +
-                (amountError ? "border-red-500" : "border-gray-300")
-              }
+        <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <h2 className="min-w-0 text-base font-medium leading-snug text-primary sm:text-lg">
+            Detailed Information
+          </h2>
+          <div className={easyDraftHeaderActionsClass}>
+            <button
+              type="button"
+              onClick={onCancel}
+              className={paymentRequestDetailCancelButtonClass}
+              disabled={disabled || isSaving}
             >
-              {entityCurrency}
-            </div>
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onSave}
+              className={paymentRequestDetailSaveButtonClass}
+              disabled={disabled || isSaving}
+            >
+              {isSaving ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-y-4">
+          <div className="min-w-0">
+            <label htmlFor={idBillNo} className={paymentRequestDetailFieldLabelClass}>
+              Payment No.
+            </label>
             <input
-              id={idAmt}
+              id={idBillNo}
               type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={amount ?? ""}
-              onChange={(e) => {
-                const value = acceptAmountInput(e.target.value);
-                if (value === null) return;
-                onPatchChange({ amount: value });
-              }}
-              onFocus={() => onPatchChange({ amount: toAmountEditString(amount) })}
-              onBlur={(e) => onPatchChange({ amount: formatAmount(e.target.value) })}
+              value={billNo ?? ""}
+              onChange={(e) => onPatchChange({ billNo: e.target.value })}
               disabled={disabled}
-              aria-invalid={!!amountError}
+              aria-invalid={!!billNoError}
               className={
-                amountError
-                  ? `${paymentRequestDetailAmountValueInputClass} border-red-500 focus:border-red-500 focus:ring-red-200/50`
-                  : paymentRequestDetailAmountValueInputClass
+                billNoError
+                  ? "box-border h-11 min-h-[44px] w-full rounded-2xl border border-red-500 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200/50 sm:min-h-11 sm:text-sm"
+                  : paymentRequestDetailModalTextInputClass
               }
             />
+            {billNoError ? (
+              <p className="mt-1 text-xs text-red-600" role="alert">
+                {billNoError}
+              </p>
+            ) : null}
           </div>
-          {amountError ? (
-            <p className="mt-1 text-xs text-red-600" role="alert">
-              {amountError}
-            </p>
-          ) : null}
-        </div>
-      </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-y-4">
-        <div className="min-w-0 lg:col-span-1">
-          <label htmlFor={idContact} className={paymentRequestDetailFieldLabelClass}>
-            Supplier<span className="text-red-500"> *</span>
-          </label>
-          <BillContactPicker
-            id={idContact}
-            contacts={entityBillContacts}
-            xeroContactId={xero_contact_id ?? ""}
-            contactName={contact}
-            onChange={(next) =>
-              onPatchChange({ contact: next.contact, xero_contact_id: next.xero_contact_id })
-            }
-            refetchContacts={onRefetchEntityBillContacts}
-            disabled={disabled}
-            error={!!contactError}
-          />
-          {contactError ? (
-            <p className="mt-1 text-xs text-red-600" role="alert">
-              {contactError}
-            </p>
-          ) : null}
+          <div className="min-w-0">
+            <label htmlFor={idDue} className={paymentRequestDetailFieldLabelClass}>
+              Due Date<span className="text-red-500"> *</span>
+            </label>
+            <DateTextField
+              id={idDue}
+              value={dueDate ?? ""}
+              onChange={(iso) => onPatchChange({ dueDate: iso })}
+              disabled={disabled}
+              invalid={!!dueDateError}
+              calendarAriaLabel="Open calendar for due date"
+              textInputClassName={
+                dueDateError
+                  ? paymentRequestDetailDateTextInputClassError
+                  : paymentRequestDetailDateTextInputClass
+              }
+              calendarButtonClassName="hidden"
+            />
+            {dueDateError ? (
+              <p className="mt-1 text-xs text-red-600" role="alert">
+                {dueDateError}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="min-w-0">
+            <label htmlFor={idInv} className={paymentRequestDetailFieldLabelClass}>
+              Invoice Date<span className="text-red-500"> *</span>
+            </label>
+            <DateTextField
+              id={idInv}
+              value={invoiceDate ?? ""}
+              onChange={(iso) => onPatchChange({ invoiceDate: iso })}
+              disabled={disabled}
+              invalid={!!invoiceDateError}
+              calendarAriaLabel="Open calendar for invoice date"
+              textInputClassName={
+                invoiceDateError
+                  ? paymentRequestDetailDateTextInputClassError
+                  : paymentRequestDetailDateTextInputClass
+              }
+              calendarButtonClassName="hidden"
+            />
+            {invoiceDateError ? (
+              <p className="mt-1 text-xs text-red-600" role="alert">
+                {invoiceDateError}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="min-w-0">
+            <label htmlFor={idAmt} className={paymentRequestDetailFieldLabelClass}>
+              Amount<span className="text-red-500"> *</span>
+            </label>
+            <div className="mt-0.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:gap-0">
+              <div
+                id={idCur}
+                aria-label="Currency"
+                className={
+                  `${paymentRequestDetailCurrencyCellClass} ` +
+                  (amountError ? "border-red-500" : "border-gray-300")
+                }
+              >
+                {entityCurrency}
+              </div>
+              <input
+                id={idAmt}
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={amount ?? ""}
+                onChange={(e) => {
+                  const value = acceptAmountInput(e.target.value);
+                  if (value === null) return;
+                  onPatchChange({ amount: value });
+                }}
+                onFocus={() => onPatchChange({ amount: toAmountEditString(amount) })}
+                onBlur={(e) => onPatchChange({ amount: formatAmount(e.target.value) })}
+                disabled={disabled}
+                aria-invalid={!!amountError}
+                className={
+                  amountError
+                    ? `${paymentRequestDetailAmountValueInputClass} border-red-500 focus:border-red-500 focus:ring-red-200/50`
+                    : paymentRequestDetailAmountValueInputClass
+                }
+              />
+            </div>
+            {amountError ? (
+              <p className="mt-1 text-xs text-red-600" role="alert">
+                {amountError}
+              </p>
+            ) : null}
+          </div>
         </div>
 
-        <div className="min-w-0 lg:col-span-1">
-          <label htmlFor={idDesc} className={paymentRequestDetailFieldLabelClass}>
-            Description
-          </label>
-          <input
-            id={idDesc}
-            type="text"
-            value={description ?? ""}
-            onChange={(e) => onPatchChange({ description: e.target.value })}
-            disabled={disabled}
-            placeholder="Description (Optional)"
-            className={paymentRequestDetailModalTextInputClass}
-          />
+        <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-y-4">
+          <div className="min-w-0 lg:col-span-1">
+            <label htmlFor={idContact} className={paymentRequestDetailFieldLabelClass}>
+              Supplier<span className="text-red-500"> *</span>
+            </label>
+            <BillContactPicker
+              id={idContact}
+              contacts={entityBillContacts}
+              xeroContactId={xero_contact_id ?? ""}
+              contactName={contact}
+              onChange={(next) =>
+                onPatchChange({ contact: next.contact, xero_contact_id: next.xero_contact_id })
+              }
+              refetchContacts={onRefetchEntityBillContacts}
+              disabled={disabled}
+              error={!!contactError}
+            />
+            {contactError ? (
+              <p className="mt-1 text-xs text-red-600" role="alert">
+                {contactError}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="min-w-0 lg:col-span-1">
+            <label htmlFor={idDesc} className={paymentRequestDetailFieldLabelClass}>
+              Description
+            </label>
+            <input
+              id={idDesc}
+              type="text"
+              value={description ?? ""}
+              onChange={(e) => onPatchChange({ description: e.target.value })}
+              disabled={disabled}
+              placeholder="Description (Optional)"
+              className={paymentRequestDetailModalTextInputClass}
+            />
+          </div>
+
+          <div className="min-w-0 sm:col-span-2 lg:col-span-1">
+            <label htmlFor={idAccount} className={paymentRequestDetailFieldLabelClass}>
+              Account Code<span className="text-red-500"> *</span>
+            </label>
+            <ThemedSelect
+              id={idAccount}
+              value={accountCode ?? ""}
+              onChange={(v) => onPatchChange({ accountCode: v })}
+              options={mergedAccountOptions}
+              placeholder="Select an account code"
+              disabled={disabled}
+              error={!!accountCodeError}
+              triggerClassName="!rounded-2xl"
+              plainChevron
+              searchable
+            />
+            {accountCodeError ? (
+              <p className="mt-1 text-xs text-red-600" role="alert">
+                {accountCodeError}
+              </p>
+            ) : null}
+          </div>
         </div>
 
-        <div className="min-w-0 sm:col-span-2 lg:col-span-1">
-          <label htmlFor={idAccount} className={paymentRequestDetailFieldLabelClass}>
-            Account Code<span className="text-red-500"> *</span>
-          </label>
-          <ThemedSelect
-            id={idAccount}
-            value={accountCode ?? ""}
-            onChange={(v) => onPatchChange({ accountCode: v })}
-            options={mergedAccountOptions}
-            placeholder="Select an account code"
-            disabled={disabled}
-            error={!!accountCodeError}
-            triggerClassName="!rounded-2xl"
-            plainChevron
-            searchable
-          />
-          {accountCodeError ? (
-            <p className="mt-1 text-xs text-red-600" role="alert">
-              {accountCodeError}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      <EasyViewDraftBillActionsRow actions={actions} />
+        <EasyViewDraftBillActionsRow actions={actions} />
       </section>
     </div>
   );

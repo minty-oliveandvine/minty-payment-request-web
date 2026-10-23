@@ -103,8 +103,7 @@ const show = () =>
   );
 
 /** The fields are in by the time this heading is up and the request has arrived. */
-const loaded = () =>
-  waitFor(() => expect(screen.getByText("PR-0001")).toBeInTheDocument());
+const loaded = () => waitFor(() => expect(screen.getByText("PR-0001")).toBeInTheDocument());
 
 beforeEach(() => {
   params.ref = "360812e1";
@@ -163,7 +162,10 @@ describe("the request on screen", () => {
 
     await loaded();
     // "View Payment History" also matches /History/, so the accordion is named exactly.
-    expect(screen.getByRole("button", { name: "History" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "History" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 });
 
@@ -186,7 +188,9 @@ describe("the address", () => {
     show();
 
     await loaded();
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(BY_REFERENCE, { scroll: false }));
+    await waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith(BY_REFERENCE, { scroll: false }),
+    );
   });
 
   it("keeps a voided request on its id - its Payment No. may name a live request now", async () => {
@@ -240,7 +244,9 @@ describe("editing it", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Edit" }));
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument(),
+    );
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
   });
@@ -254,7 +260,9 @@ describe("editing it", () => {
     show();
     await loaded();
     await userEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const description = await screen.findByDisplayValue("Corporate stationery and printer supplies");
+    const description = await screen.findByDisplayValue(
+      "Corporate stationery and printer supplies",
+    );
 
     await userEvent.clear(description);
     await userEvent.type(description, "A new description");
@@ -319,7 +327,9 @@ describe("editing it", () => {
     show();
     await loaded();
     await userEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const description = await screen.findByDisplayValue("Corporate stationery and printer supplies");
+    const description = await screen.findByDisplayValue(
+      "Corporate stationery and printer supplies",
+    );
     await userEvent.clear(description);
     await userEvent.type(description, "Abandoned");
 
@@ -367,7 +377,9 @@ describe("editing it", () => {
     show();
     await loaded();
     await userEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const description = await screen.findByDisplayValue("Corporate stationery and printer supplies");
+    const description = await screen.findByDisplayValue(
+      "Corporate stationery and printer supplies",
+    );
     await userEvent.clear(description);
     await userEvent.type(description, "A new description");
 

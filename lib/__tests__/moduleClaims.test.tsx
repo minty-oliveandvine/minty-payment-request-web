@@ -55,12 +55,20 @@ describe("getModuleClaims", () => {
   });
 
   it("honours an explicit false, which the backend writes only from an entitlement row", () => {
-    setAuth(unsignedToken({ petty_cash_enabled: false, billing_enabled: false }), ENTITY_ID, ENTITY_NAME);
+    setAuth(
+      unsignedToken({ petty_cash_enabled: false, billing_enabled: false }),
+      ENTITY_ID,
+      ENTITY_NAME,
+    );
     expect(getModuleClaims()).toEqual({ pettyCashEnabled: false, billingEnabled: false });
   });
 
   it("falls back to ON for a claim that is not a boolean", () => {
-    setAuth(unsignedToken({ billing_enabled: "false", petty_cash_enabled: 0 }), ENTITY_ID, ENTITY_NAME);
+    setAuth(
+      unsignedToken({ billing_enabled: "false", petty_cash_enabled: 0 }),
+      ENTITY_ID,
+      ENTITY_NAME,
+    );
     expect(getModuleClaims()).toEqual({ pettyCashEnabled: true, billingEnabled: true });
   });
 });
@@ -75,7 +83,9 @@ describe("useEntitlements", () => {
 
   it("asks the database for the company in the cookie", async () => {
     setAuth(unsignedToken(), ENTITY_ID, ENTITY_NAME);
-    fetchMock.mockResolvedValueOnce(answer(200, { petty_cash_enabled: true, billing_enabled: true }));
+    fetchMock.mockResolvedValueOnce(
+      answer(200, { petty_cash_enabled: true, billing_enabled: true }),
+    );
 
     render(<Probe />);
 
@@ -87,7 +97,9 @@ describe("useEntitlements", () => {
 
   it("lets the database turn a module OFF that the token said was on", async () => {
     setAuth(unsignedToken({ billing_enabled: true }), ENTITY_ID, ENTITY_NAME);
-    fetchMock.mockResolvedValueOnce(answer(200, { petty_cash_enabled: true, billing_enabled: false }));
+    fetchMock.mockResolvedValueOnce(
+      answer(200, { petty_cash_enabled: true, billing_enabled: false }),
+    );
 
     render(<Probe />);
 
@@ -124,7 +136,11 @@ describe("useEntitlements", () => {
   });
 
   it("ignores a flag the answer left out", async () => {
-    setAuth(unsignedToken({ petty_cash_enabled: false, billing_enabled: false }), ENTITY_ID, ENTITY_NAME);
+    setAuth(
+      unsignedToken({ petty_cash_enabled: false, billing_enabled: false }),
+      ENTITY_ID,
+      ENTITY_NAME,
+    );
     fetchMock.mockResolvedValueOnce(answer(200, { billing_enabled: true }));
 
     render(<Probe />);

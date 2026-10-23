@@ -162,86 +162,89 @@ describe("the token's is_view_only claim", () => {
 });
 
 // Flask mints "superadmin"; "superuser" is the legacy spelling. Both are a system super admin.
-describe.each(["superadmin", "superuser"])("a system super admin (%s) on a token without the claim", (systemRole) => {
-  const legacySuperuser = () =>
-    setAuth(unsignedToken({ role: "admin", system_role: systemRole }), ENTITY_ID, ENTITY_NAME);
+describe.each(["superadmin", "superuser"])(
+  "a system super admin (%s) on a token without the claim",
+  (systemRole) => {
+    const legacySuperuser = () =>
+      setAuth(unsignedToken({ role: "admin", system_role: systemRole }), ENTITY_ID, ENTITY_NAME);
 
-  it("asks the profile endpoint which companies they are a member of", async () => {
-    legacySuperuser();
-    fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [ENTITY_ID] }));
+    it("asks the profile endpoint which companies they are a member of", async () => {
+      legacySuperuser();
+      fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [ENTITY_ID] }));
 
-    await show();
+      await show();
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`${env.PAYMENT_REQUEST_API_URL}/api/v1/profile/me`);
-    expect(new Headers(init?.headers).get("X-Entity-Id")).toBe(ENTITY_ID);
-  });
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe(`${env.PAYMENT_REQUEST_API_URL}/api/v1/profile/me`);
+      expect(new Headers(init?.headers).get("X-Entity-Id")).toBe(ENTITY_ID);
+    });
 
-  it("keeps their write controls on a company they are a member of", async () => {
-    legacySuperuser();
-    fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [ENTITY_ID] }));
+    it("keeps their write controls on a company they are a member of", async () => {
+      legacySuperuser();
+      fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [ENTITY_ID] }));
 
-    await show();
+      await show();
 
-    await waitFor(() => expect(value("viewOnly")).toBe("false"));
-    expect(value("readOnlyHere")).toBe("false");
-    // ...and takes them away on one they are not.
-    expect(value("readOnlyThere")).toBe("true");
-  });
+      await waitFor(() => expect(value("viewOnly")).toBe("false"));
+      expect(value("readOnlyHere")).toBe("false");
+      // ...and takes them away on one they are not.
+      expect(value("readOnlyThere")).toBe("true");
+    });
 
-  it("is view-only on a company they are not a member of", async () => {
-    legacySuperuser();
-    fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [OTHER_ENTITY] }));
+    it("is view-only on a company they are not a member of", async () => {
+      legacySuperuser();
+      fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [OTHER_ENTITY] }));
 
-    await show();
+      await show();
 
-    await waitFor(() => expect(value("viewOnly")).toBe("true"));
-    expect(value("readOnlyHere")).toBe("true");
-    expect(value("readOnlyThere")).toBe("false");
-  });
+      await waitFor(() => expect(value("viewOnly")).toBe("true"));
+      expect(value("readOnlyHere")).toBe("true");
+      expect(value("readOnlyThere")).toBe("false");
+    });
 
-  it("falls back to the most restrictive answer when the list does not load", async () => {
-    // Non-fatal by design: an empty list means read-only everywhere rather than open.
-    legacySuperuser();
-    fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
+    it("falls back to the most restrictive answer when the list does not load", async () => {
+      // Non-fatal by design: an empty list means read-only everywhere rather than open.
+      legacySuperuser();
+      fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
 
-    await show();
+      await show();
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(value("viewOnly")).toBe("true");
-    expect(value("readOnlyHere")).toBe("true");
-    expect(value("readOnlyThere")).toBe("true");
-  });
+      await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      expect(value("viewOnly")).toBe("true");
+      expect(value("readOnlyHere")).toBe("true");
+      expect(value("readOnlyThere")).toBe("true");
+    });
 
-  it("falls back the same way for a refused or unusable answer", async () => {
-    legacySuperuser();
-    fetchMock.mockResolvedValue(answer(403, { detail: "nope" }));
+    it("falls back the same way for a refused or unusable answer", async () => {
+      legacySuperuser();
+      fetchMock.mockResolvedValue(answer(403, { detail: "nope" }));
 
-    await show();
+      await show();
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(value("viewOnly")).toBe("true");
-  });
+      await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      expect(value("viewOnly")).toBe("true");
+    });
 
-  it("is view-only when no company is in the cookie at all", async () => {
-    setAuth(unsignedToken({ role: "admin", system_role: systemRole }), "", "");
-    fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [] }));
+    it("is view-only when no company is in the cookie at all", async () => {
+      setAuth(unsignedToken({ role: "admin", system_role: systemRole }), "", "");
+      fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [] }));
 
-    await show();
+      await show();
 
-    await waitFor(() => expect(value("viewOnly")).toBe("true"));
-  });
+      await waitFor(() => expect(value("viewOnly")).toBe("true"));
+    });
 
-  it("reports the membership list it was given", async () => {
-    legacySuperuser();
-    fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [ENTITY_ID, OTHER_ENTITY] }));
+    it("reports the membership list it was given", async () => {
+      legacySuperuser();
+      fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [ENTITY_ID, OTHER_ENTITY] }));
 
-    await show();
+      await show();
 
-    await waitFor(() => expect(value("members")).toBe(`${ENTITY_ID},${OTHER_ENTITY}`));
-  });
-});
+      await waitFor(() => expect(value("members")).toBe(`${ENTITY_ID},${OTHER_ENTITY}`));
+    });
+  },
+);
 
 describe("the superuser check", () => {
   it("does not ask the profile endpoint for an ordinary member", async () => {
@@ -253,14 +256,17 @@ describe("the superuser check", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it.each(["  SUPERUSER ", "  SUPERADMIN "])("reads %j whatever its case or padding", async (systemRole) => {
-    setAuth(unsignedToken({ role: "admin", system_role: systemRole }), ENTITY_ID, ENTITY_NAME);
-    fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [ENTITY_ID] }));
+  it.each(["  SUPERUSER ", "  SUPERADMIN "])(
+    "reads %j whatever its case or padding",
+    async (systemRole) => {
+      setAuth(unsignedToken({ role: "admin", system_role: systemRole }), ENTITY_ID, ENTITY_NAME);
+      fetchMock.mockResolvedValue(answer(200, { member_entity_ids: [ENTITY_ID] }));
 
-    await show();
+      await show();
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-  });
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    },
+  );
 });
 
 describe("a malformed token", () => {

@@ -30,7 +30,12 @@ const fetchMock = vi.fn<typeof fetch>();
 const answer = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-const show = () => render(<ToastProvider><SettingsContent /></ToastProvider>);
+const show = () =>
+  render(
+    <ToastProvider>
+      <SettingsContent />
+    </ToastProvider>,
+  );
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
@@ -39,7 +44,8 @@ beforeEach(() => {
   fetchMock.mockImplementation(async (input) => {
     const url = String(input);
     if (url.includes("/auth/xero-status")) return answer(200, { connected: true });
-    if (url.includes("/auth/entitlements")) return answer(200, { petty_cash_enabled: true, billing_enabled: true });
+    if (url.includes("/auth/entitlements"))
+      return answer(200, { petty_cash_enabled: true, billing_enabled: true });
     if (url.includes("/entity-bill-accounts/")) return answer(200, entityBillAccounts());
     return answer(200, {});
   });
@@ -113,7 +119,8 @@ describe("the company id the panel is built from", () => {
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
       if (url.includes("/auth/xero-status")) return answer(200, { connected: false });
-      if (url.includes("/auth/entitlements")) return answer(200, { petty_cash_enabled: true, billing_enabled: true });
+      if (url.includes("/auth/entitlements"))
+        return answer(200, { petty_cash_enabled: true, billing_enabled: true });
       return answer(200, {});
     });
 

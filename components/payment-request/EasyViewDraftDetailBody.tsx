@@ -72,7 +72,9 @@ export function EasyViewDraftDetailBody({
   const [isSaving, setIsSaving] = useState(false);
   const [billNoError, setBillNoError] = useState<string | null>(null);
   const [accountCodeError, setAccountCodeError] = useState<string | null>(null);
-  const [submitAttemptFieldErrors, setSubmitAttemptFieldErrors] = useState<FieldErrors | null>(null);
+  const [submitAttemptFieldErrors, setSubmitAttemptFieldErrors] = useState<FieldErrors | null>(
+    null,
+  );
   const { showToast } = useToast();
 
   const applyEntityBillContacts = useCallback((contacts: EntityBillContact[]) => {
@@ -132,7 +134,12 @@ export function EasyViewDraftDetailBody({
         });
       })
       .catch((e) => {
-        if (!cancelled) setLoadErr(e instanceof ApiError ? e.message : "This payment didn't come through. Mind trying again?");
+        if (!cancelled)
+          setLoadErr(
+            e instanceof ApiError
+              ? e.message
+              : "This payment didn't come through. Mind trying again?",
+          );
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -248,7 +255,9 @@ export function EasyViewDraftDetailBody({
   if (!bill || !detail) return null;
 
   const detailDisabled =
-    isViewOnly || !isElevated || (bill.status ?? "").trim().toLowerCase().replace(/-/g, "_") === "void";
+    isViewOnly ||
+    !isElevated ||
+    (bill.status ?? "").trim().toLowerCase().replace(/-/g, "_") === "void";
 
   if (isEditing && draft) {
     return (
@@ -330,7 +339,11 @@ export function EasyViewReadonlyBillDetailBody({
       })
       .catch((e) => {
         if (cancelled) return;
-        setLoadErr(e instanceof ApiError ? e.message : "This payment didn't come through. Mind trying again?");
+        setLoadErr(
+          e instanceof ApiError
+            ? e.message
+            : "This payment didn't come through. Mind trying again?",
+        );
         setLoading(false);
       });
     return () => {

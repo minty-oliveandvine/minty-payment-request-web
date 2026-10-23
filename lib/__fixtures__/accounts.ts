@@ -21,7 +21,11 @@ export const ACCOUNTS: AccountSeed[] = [
   { code: "310", name: "Cost of Goods Sold", active: false },
 ];
 
-export function entityBillAccount(seed: AccountSeed, index = 0, entityId = ENTITY_ID): EntityBillAccount {
+export function entityBillAccount(
+  seed: AccountSeed,
+  index = 0,
+  entityId = ENTITY_ID,
+): EntityBillAccount {
   return {
     id: `account-${seed.code}`,
     entity_id: entityId,

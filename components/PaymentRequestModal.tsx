@@ -9,7 +9,11 @@ import { useEntityCurrencyState } from "@/lib/entityCurrency";
 import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
 import { useClientValue } from "@/lib/useClientValue";
 import { integrationTabUrl } from "@/components/settings/SettingsPills";
-import { formatFileSize, isAllowedAttachment, ATTACHMENT_ACCEPT } from "@/lib/fileAttachmentPreview";
+import {
+  formatFileSize,
+  isAllowedAttachment,
+  ATTACHMENT_ACCEPT,
+} from "@/lib/fileAttachmentPreview";
 import {
   AttachmentFullScreenViewer,
   fileToPreviewItem,
@@ -62,7 +66,15 @@ function getUploadedFileIconInfo(filename: string): { icon: string; iconClass: s
   if (ext === "pdf") {
     return { icon: "picture_as_pdf", iconClass: "text-red-600" };
   }
-  if (ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "heic" || ext === "heif" || ext === "webp" || ext === "gif") {
+  if (
+    ext === "jpg" ||
+    ext === "jpeg" ||
+    ext === "png" ||
+    ext === "heic" ||
+    ext === "heif" ||
+    ext === "webp" ||
+    ext === "gif"
+  ) {
     return { icon: "image", iconClass: "text-sky-600" };
   }
   if (ext === "html" || ext === "htm") {
@@ -72,13 +84,7 @@ function getUploadedFileIconInfo(filename: string): { icon: string; iconClass: s
 }
 
 type ValidatedField =
-  | "billNo"
-  | "amount"
-  | "contact"
-  | "accountCode"
-  | "invoiceDate"
-  | "dueDate"
-  | "attachments";
+  "billNo" | "amount" | "contact" | "accountCode" | "invoiceDate" | "dueDate" | "attachments";
 
 /**
  * Live validation error for the amount field, or null when it's acceptable.
@@ -103,7 +109,6 @@ function isPositiveAmount(raw: string): boolean {
   if (!cleaned || cleaned === ".") return false;
   return /[1-9]/.test(cleaned);
 }
-
 
 function validatePaymentRequestForm(values: {
   amount: string;
@@ -191,7 +196,9 @@ export function PaymentRequestModal({
   const [previewFileId, setPreviewFileId] = useState<string | null>(null);
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
-  const previewFile = previewFileId ? uploadedFiles.find((x) => x.id === previewFileId)?.file ?? null : null;
+  const previewFile = previewFileId
+    ? (uploadedFiles.find((x) => x.id === previewFileId)?.file ?? null)
+    : null;
   const [billNo, setBillNo] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -247,7 +254,9 @@ export function PaymentRequestModal({
       })
       .catch(() => {});
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   const clearFieldError = (key: ValidatedField) => {
@@ -362,7 +371,10 @@ export function PaymentRequestModal({
     }
     // Images are converted/compressed to JPEG at upload time (compressImage); stage the raw file here.
     const added: UploadedEntry[] = Array.from(list).map((file) => ({
-      id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
+      id:
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
       file,
     }));
 
@@ -382,15 +394,11 @@ export function PaymentRequestModal({
     let merged =
       ensureMerged &&
       mergedId &&
-      !list.some(
-        (c) => (c.xero_contact_id || "").trim().toUpperCase() === mergedId,
-      )
+      !list.some((c) => (c.xero_contact_id || "").trim().toUpperCase() === mergedId)
         ? [...list, ensureMerged]
         : list;
     merged = dedupeEntityBillContactsForPicker(
-      [...merged].sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-      ),
+      [...merged].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
     );
     const map = new Map<string, EntityBillContact>();
     for (const c of merged) {
@@ -421,17 +429,18 @@ export function PaymentRequestModal({
         due_date: dueDate || undefined,
         reference: billNo || undefined,
         xero_account_code: acctCode || undefined,
-        line_items: acctCode || description || isPositiveAmount(amount)
-          ? [
-              {
-                description: description || undefined,
-                quantity: 1,
-                unit_amount: amountStr,
-                line_amount: amountStr,
-                account_code: acctCode || undefined,
-              },
-            ]
-          : undefined,
+        line_items:
+          acctCode || description || isPositiveAmount(amount)
+            ? [
+                {
+                  description: description || undefined,
+                  quantity: 1,
+                  unit_amount: amountStr,
+                  line_amount: amountStr,
+                  account_code: acctCode || undefined,
+                },
+              ]
+            : undefined,
       });
 
       const notUploaded = await uploadEachAttachment(
@@ -466,7 +475,9 @@ export function PaymentRequestModal({
         setFormError(err.message);
       } else {
         setFormError(
-          err instanceof ApiError ? err.message : "That draft didn't quite save. Mind trying again?",
+          err instanceof ApiError
+            ? err.message
+            : "That draft didn't quite save. Mind trying again?",
         );
       }
     } finally {
@@ -555,7 +566,9 @@ export function PaymentRequestModal({
         setFormError(err.message);
       } else {
         setFormError(
-          err instanceof ApiError ? err.message : "That payment didn't quite go through. Mind trying again?",
+          err instanceof ApiError
+            ? err.message
+            : "That payment didn't quite go through. Mind trying again?",
         );
       }
     } finally {
@@ -566,15 +579,40 @@ export function PaymentRequestModal({
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[300] flex items-center justify-center overflow-x-hidden overscroll-x-none p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4 md:p-6" role="presentation">
-      <button type="button" aria-label="Close dialog" className="absolute inset-0 bg-black/35 backdrop-blur-[1px]" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={previewFile ? previewSubtitleId : undefined} className="relative z-[1] flex max-h-[min(100dvh-1rem,880px)] w-full min-w-0 max-w-[520px] flex-col rounded-xl bg-white shadow-xl ring-1 ring-black/5 sm:max-h-[min(92dvh,880px)] sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center overflow-x-hidden overscroll-x-none p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4 md:p-6"
+      role="presentation"
+    >
+      <button
+        type="button"
+        aria-label="Close dialog"
+        className="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={previewFile ? previewSubtitleId : undefined}
+        className="relative z-[1] flex max-h-[min(100dvh-1rem,880px)] w-full min-w-0 max-w-[520px] flex-col rounded-xl bg-white shadow-xl ring-1 ring-black/5 sm:max-h-[min(92dvh,880px)] sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-4 pb-3 pt-4 sm:gap-4 sm:px-6 sm:pb-4 sm:pt-6">
-          <h2 id={titleId} className="min-w-0 pr-2 text-lg font-bold leading-snug text-black sm:text-xl md:text-2xl">
+          <h2
+            id={titleId}
+            className="min-w-0 pr-2 text-lg font-bold leading-snug text-black sm:text-xl md:text-2xl"
+          >
             Add Payment Request
           </h2>
-          <button type="button" onClick={onClose} className="-mr-1 -mt-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary" aria-label="Close">
-            <span className="material-symbols-outlined text-[22px] leading-none" aria-hidden>close</span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="-mr-1 -mt-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            aria-label="Close"
+          >
+            <span className="material-symbols-outlined text-[22px] leading-none" aria-hidden>
+              close
+            </span>
           </button>
         </div>
 
@@ -582,325 +620,415 @@ export function PaymentRequestModal({
           <div className="flex flex-col gap-6">
             <div className="min-w-0">
               {previewFile && previewObjectUrl ? (
-                <PaymentRequestInlinePreview file={previewFile} objectUrl={previewObjectUrl} previewSubtitleId={previewSubtitleId} getUploadedFileIconInfo={getUploadedFileIconInfo} onViewFull={() => setViewerOpen(true)} />
+                <PaymentRequestInlinePreview
+                  file={previewFile}
+                  objectUrl={previewObjectUrl}
+                  previewSubtitleId={previewSubtitleId}
+                  getUploadedFileIconInfo={getUploadedFileIconInfo}
+                  onViewFull={() => setViewerOpen(true)}
+                />
               ) : previewFile && !previewObjectUrl ? (
-                <div className="flex min-h-[156px] items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-primary/60 sm:min-h-[176px]">Loading preview…</div>
+                <div className="flex min-h-[156px] items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-primary/60 sm:min-h-[176px]">
+                  Loading preview…
+                </div>
               ) : (
-                <div className="flex min-h-[156px] items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-primary/60 sm:min-h-[176px]">Pick a file and I&apos;ll show it here.</div>
+                <div className="flex min-h-[156px] items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-primary/60 sm:min-h-[176px]">
+                  Pick a file and I&apos;ll show it here.
+                </div>
               )}
             </div>
 
-          <div className="mb-2 flex items-baseline justify-between gap-3">
-            <p className="min-w-0 text-[11px] font-semibold uppercase tracking-wide text-primary/80">
-              Uploaded files ({uploadedFiles.length})
-              <RequiredMark />
-            </p>
-            {uploadedFiles.length > 0 ? (
-              <span className="shrink-0 text-[10px] font-medium text-primary/55 sm:text-[11px]">Click the file to preview</span>
-            ) : null}
-          </div>
-          <ul className="flex flex-col gap-2">
-            {uploadedFiles.map(({ id, file }) => {
-              const { icon, iconClass } = getUploadedFileIconInfo(file.name);
-              const selected = previewFileId === id;
-              return (
-              <li key={id} className={"relative flex items-center justify-start rounded-lg border bg-white px-3 py-2.5 pr-11 sm:gap-2 sm:pr-3 " + (selected ? "border-secondary/50 ring-2 ring-secondary/20" : "border-gray-300")}>
-                <button type="button" onClick={() => setPreviewFileId(id)} className="flex min-w-0 flex-1 cursor-pointer items-center justify-start gap-2 rounded-md text-left" aria-pressed={selected} aria-label={`Preview ${file.name}`}>
-                  <span className={`material-symbols-outlined shrink-0 text-[22px] leading-none sm:text-[26px] ${iconClass}`} aria-hidden>{icon}</span>
-                  <span className="min-w-0 break-words text-left text-sm leading-snug text-black sm:flex-1 sm:truncate sm:leading-normal">{file.name}</span>
-                </button>
-                <button type="button" onClick={() => removeFile(id)} className="absolute right-2 top-1/2 flex h-8 w-8 shrink-0 -translate-y-1/2 items-center justify-center rounded-md text-primary/60 transition-colors hover:bg-gray-100 hover:text-primary sm:static sm:translate-y-0" aria-label={`Remove ${file.name}`}>
-                  <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>close</span>
-                </button>
-              </li>
-            );
-            })}
-          </ul>
-
-          <div className="relative">
-            <input ref={fileInputRef} type="file" className="absolute inset-0 z-20 h-full min-h-[156px] w-full cursor-pointer opacity-0 sm:min-h-[176px]" multiple accept={ATTACHMENT_ACCEPT} onChange={handleFilesSelected} aria-label="Choose files to attach" aria-required="true" aria-invalid={fieldErrors.attachments ? true : undefined} aria-describedby={fieldErrors.attachments ? attachmentsErrorId : undefined} />
-            <div className="pointer-events-none">
-              <div className={`flex min-h-[156px] flex-col items-center justify-center gap-3 overflow-visible rounded-lg border-2 border-dashed px-4 py-5 sm:min-h-[176px] sm:gap-4 sm:py-6 ${fieldErrors.attachments ? "border-red-500 bg-red-50/40" : "border-gray-300 bg-gray-50"}`}>
-                <span className="material-symbols-outlined inline-block origin-center text-[48px] leading-none text-gray-400 [font-variation-settings:'FILL'_0,'wght'_400,'GRAD'_0,'opsz'_48] scale-[1.78] sm:text-[48px] sm:scale-[2.02]" aria-hidden>cloud_upload</span>
-                <div className="flex flex-col items-center">
-                  <p className="px-2 text-center text-[14px] font-medium leading-tight text-gray-700">Click or drag files here to upload</p>
-                  <p className="mt-1 px-2 text-center text-[12px] leading-tight text-gray-400">PDF, JPEG, PNG, HTML (Max 10MB)</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {fieldErrors.attachments ? (
-            <p id={attachmentsErrorId} className="mt-2 text-xs text-red-600" role="alert">
-              {fieldErrors.attachments}
-            </p>
-          ) : null}
-
-          {formError ? (
-            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">{formError}</div>
-          ) : null}
-
-          <div className="flex flex-col gap-5">
-            <div>
-              <FieldLabel htmlFor="pr-bill-no">Payment No.</FieldLabel>
-              <input
-                id="pr-bill-no"
-                type="text"
-                value={billNo ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  clearFieldError("billNo");
-                  setFormError(null);
-                  if (v.trim() === "") {
-                    setBillNo("");
-                    void fetchSuggestedBillReference()
-                      .then((r) => setBillNo(r.reference))
-                      .catch(() => {});
-                    return;
-                  }
-                  setBillNo(v);
-                }}
-                aria-invalid={!!fieldErrors.billNo}
-                aria-describedby={fieldErrors.billNo ? "pr-bill-no-error" : undefined}
-                className={
-                  "box-border h-11 min-h-[44px] w-full rounded-2xl border bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:text-sm " +
-                  (fieldErrors.billNo
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
-                    : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
-                }
-                placeholder="MBIOVI-115803031626"
-              />
-              {fieldErrors.billNo ? (
-                <p id="pr-bill-no-error" className="mt-1 text-xs text-red-600" role="alert">
-                  {fieldErrors.billNo}
-                </p>
+            <div className="mb-2 flex items-baseline justify-between gap-3">
+              <p className="min-w-0 text-[11px] font-semibold uppercase tracking-wide text-primary/80">
+                Uploaded files ({uploadedFiles.length})
+                <RequiredMark />
+              </p>
+              {uploadedFiles.length > 0 ? (
+                <span className="shrink-0 text-[10px] font-medium text-primary/55 sm:text-[11px]">
+                  Click the file to preview
+                </span>
               ) : null}
             </div>
+            <ul className="flex flex-col gap-2">
+              {uploadedFiles.map(({ id, file }) => {
+                const { icon, iconClass } = getUploadedFileIconInfo(file.name);
+                const selected = previewFileId === id;
+                return (
+                  <li
+                    key={id}
+                    className={
+                      "relative flex items-center justify-start rounded-lg border bg-white px-3 py-2.5 pr-11 sm:gap-2 sm:pr-3 " +
+                      (selected
+                        ? "border-secondary/50 ring-2 ring-secondary/20"
+                        : "border-gray-300")
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setPreviewFileId(id)}
+                      className="flex min-w-0 flex-1 cursor-pointer items-center justify-start gap-2 rounded-md text-left"
+                      aria-pressed={selected}
+                      aria-label={`Preview ${file.name}`}
+                    >
+                      <span
+                        className={`material-symbols-outlined shrink-0 text-[22px] leading-none sm:text-[26px] ${iconClass}`}
+                        aria-hidden
+                      >
+                        {icon}
+                      </span>
+                      <span className="min-w-0 break-words text-left text-sm leading-snug text-black sm:flex-1 sm:truncate sm:leading-normal">
+                        {file.name}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(id)}
+                      className="absolute right-2 top-1/2 flex h-8 w-8 shrink-0 -translate-y-1/2 items-center justify-center rounded-md text-primary/60 transition-colors hover:bg-gray-100 hover:text-primary sm:static sm:translate-y-0"
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      <span
+                        className="material-symbols-outlined text-[20px] leading-none"
+                        aria-hidden
+                      >
+                        close
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
-              <div>
-                <FieldLabel htmlFor="pr-invoice-date" required>
-                  Invoice Date
-                </FieldLabel>
-                <DateTextField
-                  id="pr-invoice-date"
-                  required
-                  value={invoiceDate ?? ""}
-                  onChange={(iso) => {
-                    setInvoiceDate(iso);
-                    clearFieldError("invoiceDate");
-                  }}
-                  invalid={!!fieldErrors.invoiceDate}
-                  calendarAriaLabel="Open calendar for invoice date"
-                  textInputClassName={
-                    "relative z-[1] box-border h-11 min-h-[44px] w-full rounded-2xl border bg-white py-0 pl-3 pr-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 [color-scheme:light] sm:min-h-11 sm:text-sm " +
-                    (fieldErrors.invoiceDate
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
-                      : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
-                  }
-                  calendarButtonClassName="hidden"
-                />
-                {fieldErrors.invoiceDate ? (
-                  <p className="mt-1 text-xs text-red-600" role="alert">
-                    {fieldErrors.invoiceDate}
-                  </p>
-                ) : null}
-              </div>
-              <div>
-                <FieldLabel htmlFor="pr-due-date" required>
-                  Due Date
-                </FieldLabel>
-                <DateTextField
-                  id="pr-due-date"
-                  required
-                  value={dueDate ?? ""}
-                  onChange={(iso) => {
-                    setDueDate(iso);
-                    clearFieldError("dueDate");
-                  }}
-                  invalid={!!fieldErrors.dueDate}
-                  calendarAriaLabel="Open calendar for due date"
-                  textInputClassName={
-                    "relative z-[1] box-border h-11 min-h-[44px] w-full rounded-2xl border bg-white py-0 pl-3 pr-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 [color-scheme:light] sm:min-h-11 sm:text-sm " +
-                    (fieldErrors.dueDate
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
-                      : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
-                  }
-                  calendarButtonClassName="hidden"
-                />
-                {fieldErrors.dueDate ? (
-                  <p className="mt-1 text-xs text-red-600" role="alert">
-                    {fieldErrors.dueDate}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <div>
-              <FieldLabel htmlFor="pr-amount" required>
-                Amount
-              </FieldLabel>
-              <div className="flex min-w-0 flex-row gap-0">
+            <div className="relative">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="absolute inset-0 z-20 h-full min-h-[156px] w-full cursor-pointer opacity-0 sm:min-h-[176px]"
+                multiple
+                accept={ATTACHMENT_ACCEPT}
+                onChange={handleFilesSelected}
+                aria-label="Choose files to attach"
+                aria-required="true"
+                aria-invalid={fieldErrors.attachments ? true : undefined}
+                aria-describedby={fieldErrors.attachments ? attachmentsErrorId : undefined}
+              />
+              <div className="pointer-events-none">
                 <div
-                  aria-label="Currency"
-                  className={
-                    "box-border flex h-11 min-h-[44px] w-24 shrink-0 items-center justify-center rounded-l-2xl rounded-r-none border border-r-0 bg-white px-2 text-base text-black sm:min-h-11 sm:px-3 sm:text-sm " +
-                    (fieldErrors.amount || currency.status === "unset" || currency.status === "error"
-                      ? "border-red-500"
-                      : "border-gray-300")
-                  }
+                  className={`flex min-h-[156px] flex-col items-center justify-center gap-3 overflow-visible rounded-lg border-2 border-dashed px-4 py-5 sm:min-h-[176px] sm:gap-4 sm:py-6 ${fieldErrors.attachments ? "border-red-500 bg-red-50/40" : "border-gray-300 bg-gray-50"}`}
                 >
-                  {currency.status === "ready" ? entityCurrency : currency.status === "loading" ? "…" : "—"}
+                  <span
+                    className="material-symbols-outlined inline-block origin-center text-[48px] leading-none text-gray-400 [font-variation-settings:'FILL'_0,'wght'_400,'GRAD'_0,'opsz'_48] scale-[1.78] sm:text-[48px] sm:scale-[2.02]"
+                    aria-hidden
+                  >
+                    cloud_upload
+                  </span>
+                  <div className="flex flex-col items-center">
+                    <p className="px-2 text-center text-[14px] font-medium leading-tight text-gray-700">
+                      Click or drag files here to upload
+                    </p>
+                    <p className="mt-1 px-2 text-center text-[12px] leading-tight text-gray-400">
+                      PDF, JPEG, PNG, HTML (Max 10MB)
+                    </p>
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            {fieldErrors.attachments ? (
+              <p id={attachmentsErrorId} className="mt-2 text-xs text-red-600" role="alert">
+                {fieldErrors.attachments}
+              </p>
+            ) : null}
+
+            {formError ? (
+              <div
+                className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+                role="alert"
+              >
+                {formError}
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-5">
+              <div>
+                <FieldLabel htmlFor="pr-bill-no">Payment No.</FieldLabel>
                 <input
-                  id="pr-amount"
-                  required
+                  id="pr-bill-no"
                   type="text"
-                  inputMode="decimal"
-                  value={amount ?? ""}
+                  value={billNo ?? ""}
                   onChange={(e) => {
-                    const value = acceptAmountInput(e.target.value);
-                    if (value === null) return;
-                    setAmount(value);
-
-                    // Show the 12-digit limit error only while it applies; clear
-                    // it the moment the amount is valid again so it doesn't stick.
-                    const err = amountLimitError(value);
-                    if (err) {
-                      setFieldErrors((prev) => ({ ...prev, amount: err }));
-                    } else {
-                      clearFieldError("amount");
+                    const v = e.target.value;
+                    clearFieldError("billNo");
+                    setFormError(null);
+                    if (v.trim() === "") {
+                      setBillNo("");
+                      void fetchSuggestedBillReference()
+                        .then((r) => setBillNo(r.reference))
+                        .catch(() => {});
+                      return;
                     }
+                    setBillNo(v);
                   }}
-                  onFocus={() => setAmount((prev) => toAmountEditString(prev))}
-                  onBlur={(e) => {
-                    const formatted = formatAmount(e.target.value);
-                    setAmount(formatted);
-
-                    // Keep the error in sync with the formatted value.
-                    const err = amountLimitError(formatted);
-                    if (err) {
-                      setFieldErrors((prev) => ({ ...prev, amount: err }));
-                    } else {
-                      clearFieldError("amount");
-                    }
-                  }}
-                  placeholder="0.00"
-                  aria-invalid={!!fieldErrors.amount}
+                  aria-invalid={!!fieldErrors.billNo}
+                  aria-describedby={fieldErrors.billNo ? "pr-bill-no-error" : undefined}
                   className={
-                    "box-border h-11 min-h-[44px] min-w-0 flex-1 rounded-l-none rounded-r-2xl border border-l-0 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:text-sm " +
-                    (fieldErrors.amount
+                    "box-border h-11 min-h-[44px] w-full rounded-2xl border bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:text-sm " +
+                    (fieldErrors.billNo
                       ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
                       : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
                   }
+                  placeholder="MBIOVI-115803031626"
+                />
+                {fieldErrors.billNo ? (
+                  <p id="pr-bill-no-error" className="mt-1 text-xs text-red-600" role="alert">
+                    {fieldErrors.billNo}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
+                <div>
+                  <FieldLabel htmlFor="pr-invoice-date" required>
+                    Invoice Date
+                  </FieldLabel>
+                  <DateTextField
+                    id="pr-invoice-date"
+                    required
+                    value={invoiceDate ?? ""}
+                    onChange={(iso) => {
+                      setInvoiceDate(iso);
+                      clearFieldError("invoiceDate");
+                    }}
+                    invalid={!!fieldErrors.invoiceDate}
+                    calendarAriaLabel="Open calendar for invoice date"
+                    textInputClassName={
+                      "relative z-[1] box-border h-11 min-h-[44px] w-full rounded-2xl border bg-white py-0 pl-3 pr-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 [color-scheme:light] sm:min-h-11 sm:text-sm " +
+                      (fieldErrors.invoiceDate
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
+                        : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
+                    }
+                    calendarButtonClassName="hidden"
+                  />
+                  {fieldErrors.invoiceDate ? (
+                    <p className="mt-1 text-xs text-red-600" role="alert">
+                      {fieldErrors.invoiceDate}
+                    </p>
+                  ) : null}
+                </div>
+                <div>
+                  <FieldLabel htmlFor="pr-due-date" required>
+                    Due Date
+                  </FieldLabel>
+                  <DateTextField
+                    id="pr-due-date"
+                    required
+                    value={dueDate ?? ""}
+                    onChange={(iso) => {
+                      setDueDate(iso);
+                      clearFieldError("dueDate");
+                    }}
+                    invalid={!!fieldErrors.dueDate}
+                    calendarAriaLabel="Open calendar for due date"
+                    textInputClassName={
+                      "relative z-[1] box-border h-11 min-h-[44px] w-full rounded-2xl border bg-white py-0 pl-3 pr-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 [color-scheme:light] sm:min-h-11 sm:text-sm " +
+                      (fieldErrors.dueDate
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
+                        : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
+                    }
+                    calendarButtonClassName="hidden"
+                  />
+                  {fieldErrors.dueDate ? (
+                    <p className="mt-1 text-xs text-red-600" role="alert">
+                      {fieldErrors.dueDate}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="pr-amount" required>
+                  Amount
+                </FieldLabel>
+                <div className="flex min-w-0 flex-row gap-0">
+                  <div
+                    aria-label="Currency"
+                    className={
+                      "box-border flex h-11 min-h-[44px] w-24 shrink-0 items-center justify-center rounded-l-2xl rounded-r-none border border-r-0 bg-white px-2 text-base text-black sm:min-h-11 sm:px-3 sm:text-sm " +
+                      (fieldErrors.amount ||
+                      currency.status === "unset" ||
+                      currency.status === "error"
+                        ? "border-red-500"
+                        : "border-gray-300")
+                    }
+                  >
+                    {currency.status === "ready"
+                      ? entityCurrency
+                      : currency.status === "loading"
+                        ? "…"
+                        : "—"}
+                  </div>
+                  <input
+                    id="pr-amount"
+                    required
+                    type="text"
+                    inputMode="decimal"
+                    value={amount ?? ""}
+                    onChange={(e) => {
+                      const value = acceptAmountInput(e.target.value);
+                      if (value === null) return;
+                      setAmount(value);
+
+                      // Show the 12-digit limit error only while it applies; clear
+                      // it the moment the amount is valid again so it doesn't stick.
+                      const err = amountLimitError(value);
+                      if (err) {
+                        setFieldErrors((prev) => ({ ...prev, amount: err }));
+                      } else {
+                        clearFieldError("amount");
+                      }
+                    }}
+                    onFocus={() => setAmount((prev) => toAmountEditString(prev))}
+                    onBlur={(e) => {
+                      const formatted = formatAmount(e.target.value);
+                      setAmount(formatted);
+
+                      // Keep the error in sync with the formatted value.
+                      const err = amountLimitError(formatted);
+                      if (err) {
+                        setFieldErrors((prev) => ({ ...prev, amount: err }));
+                      } else {
+                        clearFieldError("amount");
+                      }
+                    }}
+                    placeholder="0.00"
+                    aria-invalid={!!fieldErrors.amount}
+                    className={
+                      "box-border h-11 min-h-[44px] min-w-0 flex-1 rounded-l-none rounded-r-2xl border border-l-0 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:text-sm " +
+                      (fieldErrors.amount
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
+                        : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
+                    }
+                  />
+                </div>
+                {fieldErrors.amount ? (
+                  <p className="mt-1 text-xs text-red-600" role="alert">
+                    {fieldErrors.amount}
+                  </p>
+                ) : null}
+                {currency.status === "unset" ? (
+                  <p className="mt-1 text-xs text-red-600" role="alert">
+                    Your company has no currency set. Choose one in{" "}
+                    <a
+                      href={integrationTabUrl(MINTY_MODULE_URL, entityId)}
+                      className="font-medium underline underline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                    >
+                      Entity &amp; Integration settings
+                    </a>
+                    .
+                  </p>
+                ) : currency.status === "error" ? (
+                  <p className="mt-1 text-xs text-red-600" role="alert">
+                    We couldn&apos;t load your company&apos;s currency.{" "}
+                    <button
+                      type="button"
+                      onClick={currency.retry}
+                      className="inline-flex min-h-[44px] cursor-pointer items-center font-medium underline underline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                    >
+                      Try again
+                    </button>
+                  </p>
+                ) : null}
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="pr-description">Description</FieldLabel>
+                <input
+                  id="pr-description"
+                  type="text"
+                  value={description ?? ""}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Description (optional)"
+                  className="box-border h-11 min-h-[44px] w-full rounded-2xl border border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm"
                 />
               </div>
-              {fieldErrors.amount ? (
-                <p className="mt-1 text-xs text-red-600" role="alert">
-                  {fieldErrors.amount}
-                </p>
-              ) : null}
-              {currency.status === "unset" ? (
-                <p className="mt-1 text-xs text-red-600" role="alert">
-                  Your company has no currency set. Choose one in{" "}
-                  <a
-                    href={integrationTabUrl(MINTY_MODULE_URL, entityId)}
-                    className="font-medium underline underline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                  >
-                    Entity &amp; Integration settings
-                  </a>
-                  .
-                </p>
-              ) : currency.status === "error" ? (
-                <p className="mt-1 text-xs text-red-600" role="alert">
-                  We couldn&apos;t load your company&apos;s currency.{" "}
-                  <button
-                    type="button"
-                    onClick={currency.retry}
-                    className="inline-flex min-h-[44px] cursor-pointer items-center font-medium underline underline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                  >
-                    Try again
-                  </button>
-                </p>
-              ) : null}
-            </div>
 
-            <div>
-              <FieldLabel htmlFor="pr-description">Description</FieldLabel>
-              <input
-                id="pr-description"
-                type="text"
-                value={description ?? ""}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Description (optional)"
-                className="box-border h-11 min-h-[44px] w-full rounded-2xl border border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm"
-              />
-            </div>
+              <div>
+                <FieldLabel htmlFor="pr-contact" required>
+                  Supplier
+                </FieldLabel>
+                <BillContactPicker
+                  id="pr-contact"
+                  required
+                  contacts={contactsList}
+                  xeroContactId={contact}
+                  contactName={contactInput}
+                  onChange={({ xero_contact_id, contact: nm }) => {
+                    setContact(xero_contact_id);
+                    setContactInput(nm);
+                    clearFieldError("contact");
+                  }}
+                  refetchContacts={refetchEntityBillContacts}
+                  error={!!fieldErrors.contact}
+                />
+                {fieldErrors.contact ? (
+                  <p className="mt-1 text-xs text-red-600" role="alert">
+                    {fieldErrors.contact}
+                  </p>
+                ) : null}
+              </div>
 
-            <div>
-              <FieldLabel htmlFor="pr-contact" required>
-                Supplier
-              </FieldLabel>
-              <BillContactPicker
-                id="pr-contact"
-                required
-                contacts={contactsList}
-                xeroContactId={contact}
-                contactName={contactInput}
-                onChange={({ xero_contact_id, contact: nm }) => {
-                  setContact(xero_contact_id);
-                  setContactInput(nm);
-                  clearFieldError("contact");
-                }}
-                refetchContacts={refetchEntityBillContacts}
-                error={!!fieldErrors.contact}
-              />
-              {fieldErrors.contact ? (
-                <p className="mt-1 text-xs text-red-600" role="alert">
-                  {fieldErrors.contact}
-                </p>
-              ) : null}
+              <div>
+                <FieldLabel htmlFor="pr-account" required>
+                  Account Code
+                </FieldLabel>
+                <ThemedSelect
+                  id="pr-account"
+                  required
+                  value={accountCode ?? ""}
+                  onChange={(v) => {
+                    setAccountCode(v);
+                    clearFieldError("accountCode");
+                  }}
+                  options={accountOptions}
+                  placeholder="Select an account code"
+                  error={!!fieldErrors.accountCode}
+                  triggerClassName="!rounded-2xl"
+                  plainChevron
+                  searchable
+                />
+                {fieldErrors.accountCode ? (
+                  <p className="mt-1 text-xs text-red-600" role="alert">
+                    {fieldErrors.accountCode}
+                  </p>
+                ) : null}
+              </div>
             </div>
-
-            <div>
-              <FieldLabel htmlFor="pr-account" required>
-                Account Code
-              </FieldLabel>
-              <ThemedSelect
-                id="pr-account"
-                required
-                value={accountCode ?? ""}
-                onChange={(v) => {
-                  setAccountCode(v);
-                  clearFieldError("accountCode");
-                }}
-                options={accountOptions}
-                placeholder="Select an account code"
-                error={!!fieldErrors.accountCode}
-                triggerClassName="!rounded-2xl"
-                plainChevron
-                searchable
-              />
-              {fieldErrors.accountCode ? (
-                <p className="mt-1 text-xs text-red-600" role="alert">
-                  {fieldErrors.accountCode}
-                </p>
-              ) : null}
-            </div>
-          </div>
           </div>
         </div>
 
         <div className="flex shrink-0 flex-col gap-2 border-t border-gray-100 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-5 sm:pb-5">
           <div className="order-1 flex w-full min-w-0 gap-2">
-            <button type="button" onClick={handleCancel} className="box-border h-12 min-h-[48px] min-w-0 flex-1 cursor-pointer rounded-lg border-2 border-secondary bg-white px-3 text-sm font-semibold text-secondary transition-colors hover:bg-secondary/10">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="box-border h-12 min-h-[48px] min-w-0 flex-1 cursor-pointer rounded-lg border-2 border-secondary bg-white px-3 text-sm font-semibold text-secondary transition-colors hover:bg-secondary/10"
+            >
               Cancel
             </button>
-            <button type="button" onClick={() => void handleConfirm()} disabled={confirmSubmitting || currencyBlocked} className="box-border h-12 min-h-[48px] min-w-0 flex-1 rounded-lg border border-transparent bg-secondary px-4 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60">
+            <button
+              type="button"
+              onClick={() => void handleConfirm()}
+              disabled={confirmSubmitting || currencyBlocked}
+              className="box-border h-12 min-h-[48px] min-w-0 flex-1 rounded-lg border border-transparent bg-secondary px-4 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+            >
               {confirmSubmitting ? "Confirming…" : "Confirm"}
             </button>
           </div>
-          <button type="button" onClick={() => void handleSaveDraft()} disabled={draftSubmitting || currencyBlocked} className="order-2 box-border h-12 min-h-[48px] w-full rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-primary transition-colors hover:bg-gray-50 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60">
+          <button
+            type="button"
+            onClick={() => void handleSaveDraft()}
+            disabled={draftSubmitting || currencyBlocked}
+            className="order-2 box-border h-12 min-h-[48px] w-full rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-primary transition-colors hover:bg-gray-50 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+          >
             {draftSubmitting ? "Saving…" : "Save as Draft"}
           </button>
         </div>
@@ -935,10 +1063,18 @@ function PaymentRequestInlinePreview({
   return (
     <div className="flex h-full flex-col">
       <div className="flex gap-3 pb-2">
-        <span className={`material-symbols-outlined mt-0.5 shrink-0 text-[28px] leading-none sm:text-[32px] ${iconClass}`} aria-hidden>{icon}</span>
+        <span
+          className={`material-symbols-outlined mt-0.5 shrink-0 text-[28px] leading-none sm:text-[32px] ${iconClass}`}
+          aria-hidden
+        >
+          {icon}
+        </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-black sm:text-base">{file.name}</p>
-          <p id={previewSubtitleId} className="mt-1 text-[11px] font-medium tracking-wide text-primary/55 sm:text-xs">
+          <p
+            id={previewSubtitleId}
+            className="mt-1 text-[11px] font-medium tracking-wide text-primary/55 sm:text-xs"
+          >
             Document preview<span className="text-primary/35"> • </span>
             {formatFileSize(file.size)}
           </p>

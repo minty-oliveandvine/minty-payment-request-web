@@ -85,7 +85,10 @@ const saveButtonClass =
   "box-border h-11 min-h-[44px] shrink-0 cursor-pointer rounded-lg border border-transparent bg-secondary px-5 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[44px] sm:px-6";
 
 /** Matches card header actions; use in BillActionBar when `editInCardHeader` is false. */
-export { cancelButtonClass as paymentRequestDetailCancelButtonClass, saveButtonClass as paymentRequestDetailSaveButtonClass };
+export {
+  cancelButtonClass as paymentRequestDetailCancelButtonClass,
+  saveButtonClass as paymentRequestDetailSaveButtonClass,
+};
 
 /** Header actions row: same min-height in view (Edit) and edit (Cancel + Save) to avoid vertical jump. */
 export const paymentRequestDetailHeaderActionsClass =
@@ -203,7 +206,11 @@ function FitAmountText({ children }: { children: ReactNode }) {
 
   return (
     <span ref={containerRef} className="block min-w-0 flex-1 overflow-hidden">
-      <span ref={textRef} className="inline-block whitespace-nowrap leading-snug" style={{ fontSize }}>
+      <span
+        ref={textRef}
+        className="inline-block whitespace-nowrap leading-snug"
+        style={{ fontSize }}
+      >
         {children}
       </span>
     </span>
@@ -225,7 +232,10 @@ export function PaymentRequestReadOnlyAmountRow({
   const amountColorClass = tone === "secondary" ? "text-secondary" : "text-black";
   return (
     <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-0">
-      <div className="box-border flex h-11 min-h-[44px] w-full shrink-0 items-center justify-between gap-2 rounded-lg bg-transparent px-2 pl-3 pr-2 text-base font-semibold text-black sm:w-24 sm:rounded-l-lg sm:rounded-r-none sm:px-3 sm:text-sm" aria-label="Currency">
+      <div
+        className="box-border flex h-11 min-h-[44px] w-full shrink-0 items-center justify-between gap-2 rounded-lg bg-transparent px-2 pl-3 pr-2 text-base font-semibold text-black sm:w-24 sm:rounded-l-lg sm:rounded-r-none sm:px-3 sm:text-sm"
+        aria-label="Currency"
+      >
         <span className="min-w-0 flex-1 truncate">{currencyDisplayLabel}</span>
       </div>
       <div
@@ -313,7 +323,9 @@ export function PaymentRequestDetailedInfo({
   const currencyDisplayLabel = entityCurrency;
 
   return (
-    <section className={`rounded-xl border border-gray-200/90 bg-white p-4 sm:p-5 md:p-6 ${className}`}>
+    <section
+      className={`rounded-xl border border-gray-200/90 bg-white p-4 sm:p-5 md:p-6 ${className}`}
+    >
       <div
         className={`mb-4 flex flex-col gap-3 sm:mb-5 ${editInCardHeader ? "sm:flex-row sm:items-start sm:justify-between sm:gap-4" : ""}`}
       >
@@ -324,15 +336,30 @@ export function PaymentRequestDetailedInfo({
           <div className={paymentRequestDetailHeaderActionsClass}>
             {isEditing ? (
               <>
-                <button type="button" onClick={onCancel} className={cancelButtonClass} disabled={disabled || isSaving}>
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className={cancelButtonClass}
+                  disabled={disabled || isSaving}
+                >
                   Cancel
                 </button>
-                <button type="button" onClick={onSave} className={saveButtonClass} disabled={disabled || isSaving}>
+                <button
+                  type="button"
+                  onClick={onSave}
+                  className={saveButtonClass}
+                  disabled={disabled || isSaving}
+                >
                   {isSaving ? "Saving…" : "Save Changes"}
                 </button>
               </>
             ) : (
-              <button type="button" onClick={onEdit} className={paymentRequestDetailEditToggleButtonClass} disabled={disabled}>
+              <button
+                type="button"
+                onClick={onEdit}
+                className={paymentRequestDetailEditToggleButtonClass}
+                disabled={disabled}
+              >
                 Edit
                 <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden>
                   edit_document
@@ -404,7 +431,10 @@ export function PaymentRequestDetailedInfo({
                 ) : null}
               </>
             ) : (
-              <PaymentRequestReadOnlyDateRow display={formatPaymentRequestDetailLongDate(invoiceDate)} highlightError={!!invoiceDateError} />
+              <PaymentRequestReadOnlyDateRow
+                display={formatPaymentRequestDetailLongDate(invoiceDate)}
+                highlightError={!!invoiceDateError}
+              />
             )}
           </div>
           <div>
@@ -421,7 +451,9 @@ export function PaymentRequestDetailedInfo({
                   invalid={!!dueDateError}
                   calendarAriaLabel="Open calendar for due date"
                   textInputClassName={
-                    dueDateError ? paymentRequestDetailDateTextInputClassError : paymentRequestDetailDateTextInputClass
+                    dueDateError
+                      ? paymentRequestDetailDateTextInputClassError
+                      : paymentRequestDetailDateTextInputClass
                   }
                   calendarButtonClassName="hidden"
                 />
@@ -432,12 +464,21 @@ export function PaymentRequestDetailedInfo({
                 ) : null}
               </>
             ) : (
-              <PaymentRequestReadOnlyDateRow display={formatPaymentRequestDetailLongDate(dueDate)} highlightError={!!dueDateError} />
+              <PaymentRequestReadOnlyDateRow
+                display={formatPaymentRequestDetailLongDate(dueDate)}
+                highlightError={!!dueDateError}
+              />
             )}
           </div>
         </div>
 
-        <div className={!isEditing && unpaidAmount != null ? "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4" : undefined}>
+        <div
+          className={
+            !isEditing && unpaidAmount != null
+              ? "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4"
+              : undefined
+          }
+        >
           <div>
             <FieldLabel htmlFor={idAmount} editing={isEditing}>
               Amount<span className="text-red-500"> *</span>
@@ -488,14 +529,22 @@ export function PaymentRequestDetailedInfo({
                 ) : null}
               </>
             ) : (
-              <PaymentRequestReadOnlyAmountRow currencyDisplayLabel={currencyDisplayLabel} amount={amount} highlightError={!!amountError} />
+              <PaymentRequestReadOnlyAmountRow
+                currencyDisplayLabel={currencyDisplayLabel}
+                amount={amount}
+                highlightError={!!amountError}
+              />
             )}
           </div>
 
           {!isEditing && unpaidAmount != null ? (
             <div>
               <FieldLabel editing={false}>Unpaid Amount</FieldLabel>
-              <PaymentRequestReadOnlyAmountRow currencyDisplayLabel={currencyDisplayLabel} amount={unpaidAmount} tone="secondary" />
+              <PaymentRequestReadOnlyAmountRow
+                currencyDisplayLabel={currencyDisplayLabel}
+                amount={unpaidAmount}
+                tone="secondary"
+              />
             </div>
           ) : null}
         </div>
@@ -546,7 +595,10 @@ export function PaymentRequestDetailedInfo({
                   ) : null}
                 </>
               ) : (
-                <PaymentRequestReadOnlySelectShell value={contact} highlightError={!!contactError} />
+                <PaymentRequestReadOnlySelectShell
+                  value={contact}
+                  highlightError={!!contactError}
+                />
               )}
             </div>
             {contactHeaderEnd ? <div className="shrink-0">{contactHeaderEnd}</div> : null}
@@ -571,7 +623,11 @@ export function PaymentRequestDetailedInfo({
                 plainChevron
                 searchable
               />
-              {accountCodeError ? <p id={idAccountError} className="mt-1 text-xs text-red-600" role="alert">{accountCodeError}</p> : null}
+              {accountCodeError ? (
+                <p id={idAccountError} className="mt-1 text-xs text-red-600" role="alert">
+                  {accountCodeError}
+                </p>
+              ) : null}
             </>
           ) : (
             <PaymentRequestReadOnlySelectShell value={accountCode} />

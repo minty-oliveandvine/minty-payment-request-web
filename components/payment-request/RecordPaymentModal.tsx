@@ -183,10 +183,7 @@ export function RecordPaymentModal({
   );
 
   /** Full Pay is locked when the bill is in Partially Paid status (API `partially_paid`). */
-  const billIsPartiallyPaid = useMemo(
-    () => isPartiallyPaidBillStatus(billStatus),
-    [billStatus],
-  );
+  const billIsPartiallyPaid = useMemo(() => isPartiallyPaidBillStatus(billStatus), [billStatus]);
 
   const fullPayLocked = hasPartialPaymentTowardsInvoice || billIsPartiallyPaid;
 
@@ -210,7 +207,8 @@ export function RecordPaymentModal({
   );
 
   const paymentHistoryReadyForBill = !!(billId && paymentsFetchedBillId === billId);
-  const showPaymentHistoryPlaceholder = loadingPayments || (open && !!billId && !paymentHistoryReadyForBill);
+  const showPaymentHistoryPlaceholder =
+    loadingPayments || (open && !!billId && !paymentHistoryReadyForBill);
 
   const syncSubmittedIfNoPaymentsLeft = useCallback(
     async (paymentsList: PaymentItem[]): Promise<boolean> => {
@@ -231,10 +229,15 @@ export function RecordPaymentModal({
     setLoadingPayments(true);
     try {
       const data = await fetchPayments(requestBillId);
-      if (requestBillId !== billIdRef.current || loadGen !== paymentsLoadGenerationRef.current) return;
+      if (requestBillId !== billIdRef.current || loadGen !== paymentsLoadGenerationRef.current)
+        return;
       setPayments(data.payments);
       try {
-        const built = await buildBankSlipDetailsFromPaymentList(requestBillId, data.payments, bankSlipRowForEnrichment);
+        const built = await buildBankSlipDetailsFromPaymentList(
+          requestBillId,
+          data.payments,
+          bankSlipRowForEnrichment,
+        );
         setBankSlipFileCount(built.count);
         setBankSlipDetails(built.bankSlipDetails ?? EMPTY_BANK_SLIP_DETAILS);
       } catch {
@@ -244,7 +247,8 @@ export function RecordPaymentModal({
       const rolled = await syncSubmittedIfNoPaymentsLeft(data.payments);
       if (rolled) onPaymentSaved?.();
     } catch {
-      if (requestBillId !== billIdRef.current || loadGen !== paymentsLoadGenerationRef.current) return;
+      if (requestBillId !== billIdRef.current || loadGen !== paymentsLoadGenerationRef.current)
+        return;
       setPayments([]);
       setBankSlipFileCount(0);
       setBankSlipDetails(EMPTY_BANK_SLIP_DETAILS);
@@ -318,10 +322,7 @@ export function RecordPaymentModal({
         const data = await fetchPayments(billId);
         if (cancelled) return;
         const toComplete = data.payments.filter(
-          (p) =>
-            p.bill_id === billId &&
-            p.payment_status === "pending" &&
-            ids.has(p.id),
+          (p) => p.bill_id === billId && p.payment_status === "pending" && ids.has(p.id),
         );
         if (toComplete.length === 0) return;
         await Promise.all(
@@ -333,7 +334,9 @@ export function RecordPaymentModal({
       } catch (err) {
         if (!cancelled) {
           showToast(
-            err instanceof ApiError ? err.message : "Those payments didn't quite update. Mind trying again?",
+            err instanceof ApiError
+              ? err.message
+              : "Those payments didn't quite update. Mind trying again?",
             "error",
           );
         }
@@ -344,7 +347,16 @@ export function RecordPaymentModal({
     return () => {
       cancelled = true;
     };
-  }, [open, readOnly, billId, pendingIdsKey, bankSlipRequiredForPending, loadPayments, onPaymentSaved, showToast]);
+  }, [
+    open,
+    readOnly,
+    billId,
+    pendingIdsKey,
+    bankSlipRequiredForPending,
+    loadPayments,
+    onPaymentSaved,
+    showToast,
+  ]);
 
   const handleAddPayment = async () => {
     setFormError(null);
@@ -362,7 +374,9 @@ export function RecordPaymentModal({
       return;
     }
     if (amount > remaining + 1e-9) {
-      setFormError(`That's a bit more than what's left - ${formatMoney(remaining, currencyLabel)} is the max.`);
+      setFormError(
+        `That's a bit more than what's left - ${formatMoney(remaining, currencyLabel)} is the max.`,
+      );
       return;
     }
     if (!draftDate.trim()) {
@@ -383,7 +397,9 @@ export function RecordPaymentModal({
       if (payMode === "partial") setDraftAmount("");
     } catch (err) {
       showToast(
-        err instanceof ApiError ? err.message : "That payment didn't quite go through. Mind trying again?",
+        err instanceof ApiError
+          ? err.message
+          : "That payment didn't quite go through. Mind trying again?",
         "error",
       );
     } finally {
@@ -414,7 +430,11 @@ export function RecordPaymentModal({
       const pruned = data.payments.filter((x) => x.id !== p.id);
       setPayments(pruned);
       try {
-        const built = await buildBankSlipDetailsFromPaymentList(billId, pruned, bankSlipRowForEnrichment);
+        const built = await buildBankSlipDetailsFromPaymentList(
+          billId,
+          pruned,
+          bankSlipRowForEnrichment,
+        );
         setBankSlipFileCount(built.count);
         setBankSlipDetails(built.bankSlipDetails ?? EMPTY_BANK_SLIP_DETAILS);
       } catch {
@@ -426,7 +446,9 @@ export function RecordPaymentModal({
       onPaymentSaved?.();
     } catch (err) {
       showToast(
-        err instanceof ApiError ? err.message : "That payment's being a bit stubborn. Mind trying again?",
+        err instanceof ApiError
+          ? err.message
+          : "That payment's being a bit stubborn. Mind trying again?",
         "error",
       );
     } finally {
@@ -460,289 +482,291 @@ export function RecordPaymentModal({
       : "Payment attachments — open to view or add bank slips";
 
   const paymentDialog = (
+    <div
+      role="dialog"
+      aria-modal={presentation === "modal"}
+      aria-labelledby={titleId}
+      className={dialogShellClassName}
+      onClick={(e) => {
+        if (presentation === "modal") e.stopPropagation();
+      }}
+    >
+      <div className="shrink-0">
+        {isEasyInline ? (
+          <h2 id={titleId} className="sr-only">
+            {effectiveReadOnly ? "View payments" : "Payment history"}
+          </h2>
+        ) : (
+          <>
+            <div className="px-4 pt-4 sm:px-6 sm:pt-6">
+              <div className="flex items-start justify-between gap-3">
+                <h2
+                  id={titleId}
+                  className="text-sm font-semibold uppercase tracking-[0.12em] text-secondary sm:text-base"
+                >
+                  {effectiveReadOnly ? "View payments" : "Payment history"}
+                </h2>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="-mr-1 -mt-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                  aria-label="Close"
+                >
+                  <span className="material-symbols-outlined text-[22px] leading-none" aria-hidden>
+                    close
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div className="mt-3 w-full border-b border-dotted border-gray-300" aria-hidden />
+          </>
+        )}
+      </div>
+
       <div
-        role="dialog"
-        aria-modal={presentation === "modal"}
-        aria-labelledby={titleId}
-        className={dialogShellClassName}
-        onClick={(e) => {
-          if (presentation === "modal") e.stopPropagation();
-        }}
+        className={
+          isEasyInline
+            ? "min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-5"
+            : "min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 pt-5 sm:px-6 sm:pb-6 sm:pt-6"
+        }
       >
-        <div className="shrink-0">
-          {isEasyInline ? (
-            <h2 id={titleId} className="sr-only">
-              {effectiveReadOnly ? "View payments" : "Payment history"}
-            </h2>
-          ) : (
-            <>
-              <div className="px-4 pt-4 sm:px-6 sm:pt-6">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 id={titleId} className="text-sm font-semibold uppercase tracking-[0.12em] text-secondary sm:text-base">
-                    {effectiveReadOnly ? "View payments" : "Payment history"}
-                  </h2>
-                  <button type="button" onClick={onClose} className="-mr-1 -mt-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary" aria-label="Close">
-                    <span className="material-symbols-outlined text-[22px] leading-none" aria-hidden>close</span>
-                  </button>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-medium text-primary">INVOICE AMOUNT</p>
+              <div className="relative group inline-block">
+                <span className="material-symbols-outlined text-[16px] cursor-pointer text-black hover:text-stone-800 block">
+                  info
+                </span>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block bg-gray-950 text-white text-xs rounded-md py-1 px-3 whitespace-nowrap shadow-lg z-20 pointer-events-none">
+                  {description?.trim() ? description : "No description added"}
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-950"></div>
                 </div>
               </div>
-              <div className="mt-3 w-full border-b border-dotted border-gray-300" aria-hidden />
-            </>
-          )}
+            </div>
+            <p
+              className={`mt-1 font-bold text-primary ${isEasyInline ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"}`}
+            >
+              {formatMoney(invoiceAmount, currencyLabel)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBankSlipPreviewOpen(true)}
+            className="relative flex h-11 min-h-[44px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-200 bg-white px-3 text-sm text-primary/55 transition-colors hover:border-secondary/35 hover:bg-gray-50/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:min-h-11"
+            aria-label={bankSlipOpenLabel}
+          >
+            <span className="whitespace-nowrap">Upload Bank Slip</span>
+            <span
+              className="material-symbols-outlined shrink-0 text-[22px] text-gray-400"
+              aria-hidden
+            >
+              upload_file
+            </span>
+            {bankSlipFileCount > 0 ? (
+              <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-secondary px-1 text-[10px] font-bold leading-none text-white">
+                {bankSlipFileCount > 99 ? "99+" : bankSlipFileCount}
+              </span>
+            ) : null}
+          </button>
         </div>
 
-        <div
-          className={
-            isEasyInline
-              ? "min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-5"
-              : "min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 pt-5 sm:px-6 sm:pb-6 sm:pt-6"
-          }
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1">
-                <p className="text-sm font-medium text-primary">
-                  INVOICE AMOUNT
-                </p>
-                <div className="relative group inline-block">
-                  <span className="material-symbols-outlined text-[16px] cursor-pointer text-black hover:text-stone-800 block">
-                    info
-                  </span>
-                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block bg-gray-950 text-white text-xs rounded-md py-1 px-3 whitespace-nowrap shadow-lg z-20 pointer-events-none">
-                    {description?.trim() ? description : "No description added"}
-                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-950"></div>
-                  </div>
-                </div>
-              </div>
-              <p className={`mt-1 font-bold text-primary ${isEasyInline ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"}`}>
-                {formatMoney(invoiceAmount, currencyLabel)}
-              </p>
-            </div>
+        {!effectiveReadOnly ? (
+          <div className="mt-4 flex gap-2 sm:mt-5">
             <button
               type="button"
-              onClick={() => setBankSlipPreviewOpen(true)}
-              className="relative flex h-11 min-h-[44px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-200 bg-white px-3 text-sm text-primary/55 transition-colors hover:border-secondary/35 hover:bg-gray-50/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:min-h-11"
-              aria-label={bankSlipOpenLabel}
-              >
-              <span className="whitespace-nowrap">Upload Bank Slip</span>
-              <span className="material-symbols-outlined shrink-0 text-[22px] text-gray-400" aria-hidden>
-                upload_file
-              </span>
-                {bankSlipFileCount > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-secondary px-1 text-[10px] font-bold leading-none text-white">
-                  {bankSlipFileCount > 99 ? "99+" : bankSlipFileCount}
-                </span>
-              ) : null}
+              disabled={fullPayLocked}
+              title={
+                fullPayLocked
+                  ? billIsPartiallyPaid
+                    ? "Full Pay isn't available once a payment's Partially Paid - Partial Pay will cover the rest."
+                    : "Full Pay only works before any partial payment is recorded - Partial Pay will cover the rest."
+                  : undefined
+              }
+              onClick={() => {
+                if (fullPayLocked) return;
+                setFormError(null);
+                setPayMode("full");
+              }}
+              className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors sm:py-2 ${
+                fullPayLocked
+                  ? "cursor-not-allowed border-2 border-gray-200 bg-gray-100 text-primary/45"
+                  : payMode === "full"
+                    ? "cursor-pointer bg-secondary text-white shadow-sm"
+                    : "cursor-pointer border-2 border-secondary/40 bg-white text-secondary hover:bg-secondary/5"
+              }`}
+              aria-disabled={fullPayLocked}
+            >
+              Full Pay
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFormError(null);
+                setPayMode("partial");
+                setDraftAmount("");
+              }}
+              className={`flex-1 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors sm:py-2 ${payMode === "partial" ? "bg-secondary text-white shadow-sm" : "border-2 border-secondary/40 bg-white text-secondary hover:bg-secondary/5"}`}
+            >
+              Partial Pay
             </button>
           </div>
+        ) : null}
 
-          {!effectiveReadOnly ? (
-            <div className="mt-4 flex gap-2 sm:mt-5">
-              <button
-                type="button"
-                disabled={fullPayLocked}
-                title={
-                  fullPayLocked
-                    ? billIsPartiallyPaid
-                      ? "Full Pay isn't available once a payment's Partially Paid - Partial Pay will cover the rest."
-                      : "Full Pay only works before any partial payment is recorded - Partial Pay will cover the rest."
-                    : undefined
-                }
-                onClick={() => {
-                  if (fullPayLocked) return;
-                  setFormError(null);
-                  setPayMode("full");
-                }}
-                className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors sm:py-2 ${
-                  fullPayLocked
-                    ? "cursor-not-allowed border-2 border-gray-200 bg-gray-100 text-primary/45"
-                    : payMode === "full"
-                      ? "cursor-pointer bg-secondary text-white shadow-sm"
-                      : "cursor-pointer border-2 border-secondary/40 bg-white text-secondary hover:bg-secondary/5"
-                }`}
-                aria-disabled={fullPayLocked}
+        <div
+          className={`relative flex items-center gap-3 ${effectiveReadOnly ? "mt-2" : isEasyInline ? "my-5" : "my-6"}`}
+        >
+          <div className="h-px flex-1 bg-gray-200" aria-hidden />
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-primary/50">
+            {isEasyInline ? "LESS : PAYMENTS" : "Less : payments"}
+          </span>
+          <div className="h-px flex-1 bg-gray-200" aria-hidden />
+        </div>
+
+        {showPaymentHistoryPlaceholder ? (
+          <ul
+            className="flex flex-col gap-2.5"
+            role="status"
+            aria-busy="true"
+            aria-label="Loading payments"
+          >
+            {Array.from({ length: 1 }, (_, i) => (
+              <li
+                key={`pay-sk-${i}`}
+                className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-3 sm:gap-3 sm:px-4"
+                aria-hidden
               >
-                Full Pay
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormError(null);
-                  setPayMode("partial");
-                  setDraftAmount("");
-                }}
-                className={`flex-1 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors sm:py-2 ${payMode === "partial" ? "bg-secondary text-white shadow-sm" : "border-2 border-secondary/40 bg-white text-secondary hover:bg-secondary/5"}`}
-              >
-                Partial Pay
-              </button>
-            </div>
-          ) : null}
-
-          <div className={`relative flex items-center gap-3 ${effectiveReadOnly ? "mt-2" : isEasyInline ? "my-5" : "my-6"}`}>
-            <div className="h-px flex-1 bg-gray-200" aria-hidden />
-            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-primary/50">
-              {isEasyInline ? "LESS : PAYMENTS" : "Less : payments"}
-            </span>
-            <div className="h-px flex-1 bg-gray-200" aria-hidden />
-          </div>
-
-          {showPaymentHistoryPlaceholder ? (
-            <ul className="flex flex-col gap-2.5" role="status" aria-busy="true" aria-label="Loading payments">
-              {Array.from({ length: 1 }, (_, i) => (
-                <li key={`pay-sk-${i}`} className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-3 sm:gap-3 sm:px-4" aria-hidden>
+                <span
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/15"
+                  aria-hidden
+                >
+                  <span className="block h-[20px] w-[20px] animate-pulse rounded-sm bg-secondary/25" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="h-4 max-w-[min(100%,18rem)] animate-pulse rounded-sm bg-gray-200" />
+                </div>
+                <span
+                  className="inline-block h-5 w-[7.25rem] shrink-0 animate-pulse rounded-sm bg-gray-200 tabular-nums"
+                  aria-hidden
+                />
+                {!effectiveReadOnly || canDeletePayments ? (
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
+                    <span
+                      className="block h-[22px] w-[22px] animate-pulse rounded bg-gray-200"
+                      aria-hidden
+                    />
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : paymentsForHistoryList.length === 0 ? (
+          <p className="py-4 text-center text-sm text-primary/50">No payments recorded yet.</p>
+        ) : (
+          <ul className="flex flex-col gap-2.5">
+            {paymentsForHistoryList.map((p) => {
+              const amt = parseFloat(p.amount || "0");
+              const isPending = p.payment_status === "pending";
+              const isPartialPayment = amt > 0 && amt + 1e-9 < invoiceAmount;
+              const dateLabel = formatPaymentDateLabel(p.payment_date);
+              return (
+                <li
+                  key={p.id}
+                  className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-3 sm:gap-3 sm:px-4"
+                >
                   <span
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/15"
+                    className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isPending ? "bg-amber-100 text-amber-600" : "bg-secondary/15 text-secondary"}`}
                     aria-hidden
                   >
-                    <span className="block h-[20px] w-[20px] animate-pulse rounded-sm bg-secondary/25" />
+                    <span className="material-symbols-outlined text-[20px]">
+                      {isPending ? "schedule" : "history"}
+                    </span>
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="h-4 max-w-[min(100%,18rem)] animate-pulse rounded-sm bg-gray-200" />
-                  </div>
-                  <span className="inline-block h-5 w-[7.25rem] shrink-0 animate-pulse rounded-sm bg-gray-200 tabular-nums" aria-hidden />
-                  {!effectiveReadOnly || canDeletePayments ? (
-                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
-                      <span className="block h-[22px] w-[22px] animate-pulse rounded bg-gray-200" aria-hidden />
-                    </span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : paymentsForHistoryList.length === 0 ? (
-            <p className="py-4 text-center text-sm text-primary/50">No payments recorded yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-2.5">
-              {paymentsForHistoryList.map((p) => {
-                const amt = parseFloat(p.amount || "0");
-                const isPending = p.payment_status === "pending";
-                const isPartialPayment = amt > 0 && amt + 1e-9 < invoiceAmount;
-                const dateLabel = formatPaymentDateLabel(p.payment_date);
-                return (
-                  <li key={p.id} className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-3 sm:gap-3 sm:px-4">
-                    <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isPending ? "bg-amber-100 text-amber-600" : "bg-secondary/15 text-secondary"}`} aria-hidden>
-                      <span className="material-symbols-outlined text-[20px]">{isPending ? "schedule" : "history"}</span>
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-primary">
-                        {effectiveReadOnly
-                          ? dateLabel
-                          : isPending
-                            ? `Pending on ${dateLabel}`
-                            : isPartialPayment
-                              ? `Partial Pay on ${dateLabel}`
-                              : `Paid on ${dateLabel}`}
-                      </p>
-                      {isPending && !effectiveReadOnly ? (
-                        <p className="text-[11px] text-amber-600">Pending</p>
-                      ) : null}
-                    </div>
-                    <span className="shrink-0 text-sm font-bold text-primary tabular-nums">({formatMoney(amt, currencyLabel)})</span>
-                    {!effectiveReadOnly || canDeletePayments ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!canDeletePayments) return;
-                          setPaymentPendingDelete(p);
-                        }}
-                        disabled={!canDeletePayments || deletingId === p.id}
-                        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${canDeletePayments ? "cursor-pointer text-rose-500 hover:bg-rose-100 hover:text-rose-600" : "cursor-not-allowed text-gray-400"}`}
-                        aria-label={
-                          canDeletePayments
-                            ? "Remove this payment"
-                            : "You do not have permission to delete payments."
-                        }
-                        title={!canDeletePayments ? "You do not have permission to delete payments." : undefined}
-                      >
-                        <span className="material-symbols-outlined text-[22px]">
-                          {deletingId === p.id ? "progress_activity" : "delete"}
-                        </span>
-                      </button>
+                    <p className="truncate text-sm font-medium text-primary">
+                      {effectiveReadOnly
+                        ? dateLabel
+                        : isPending
+                          ? `Pending on ${dateLabel}`
+                          : isPartialPayment
+                            ? `Partial Pay on ${dateLabel}`
+                            : `Paid on ${dateLabel}`}
+                    </p>
+                    {isPending && !effectiveReadOnly ? (
+                      <p className="text-[11px] text-amber-600">Pending</p>
                     ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          {!effectiveReadOnly ? (
-            isEasyInline ? (
-              <>
-                <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
-                  <div className="relative w-full min-w-0">
-                    <label htmlFor={dateFieldId} className="sr-only">
-                      Payment date
-                    </label>
-                    <DateTextField
-                      id={dateFieldId}
-                      value={draftDate ?? ""}
-                      onChange={setDraftDate}
-                      calendarAriaLabel="Open calendar for payment date"
-                      textInputClassName={paymentDateTextClass}
-                      calendarButtonClassName={paymentDateCalendarBtnClass}
-                    />
                   </div>
-                  <div className="min-w-0">
-                    <label htmlFor={amountFieldId} className="sr-only">
-                      Payment amount
-                    </label>
-                    <div
-                      className={
-                        payMode === "full"
-                          ? "flex min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)] focus-within:border-gray-300 focus-within:ring-1 focus-within:ring-gray-300/50"
-                          : "flex min-w-0 overflow-hidden rounded-2xl border border-gray-300 bg-white focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/25"
+                  <span className="shrink-0 text-sm font-bold text-primary tabular-nums">
+                    ({formatMoney(amt, currencyLabel)})
+                  </span>
+                  {!effectiveReadOnly || canDeletePayments ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!canDeletePayments) return;
+                        setPaymentPendingDelete(p);
+                      }}
+                      disabled={!canDeletePayments || deletingId === p.id}
+                      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${canDeletePayments ? "cursor-pointer text-rose-500 hover:bg-rose-100 hover:text-rose-600" : "cursor-not-allowed text-gray-400"}`}
+                      aria-label={
+                        canDeletePayments
+                          ? "Remove this payment"
+                          : "You do not have permission to delete payments."
+                      }
+                      title={
+                        !canDeletePayments
+                          ? "You do not have permission to delete payments."
+                          : undefined
                       }
                     >
-                      <span
-                        className={
-                          payMode === "full"
-                            ? "flex shrink-0 items-center border-r border-gray-200 bg-gray-200/70 px-3 text-sm font-medium text-gray-600"
-                            : "flex shrink-0 items-center border-r border-gray-300 bg-gray-100 px-3 text-sm font-medium text-primary"
-                        }
-                      >
-                        {currencyLabel}
+                      <span className="material-symbols-outlined text-[22px]">
+                        {deletingId === p.id ? "progress_activity" : "delete"}
                       </span>
-                      <input
-                        id={amountFieldId}
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="0.00"
-                        value={draftAmount ?? ""}
-                        onChange={(e) => {
-                          const value = acceptAmountInput(e.target.value);
-                          if (value === null) return;
-                          setDraftAmount(value);
-                        }}
-                        onFocus={() => setDraftAmount((prev) => toAmountEditString(prev))}
-                        onBlur={(e) => setDraftAmount(formatAmount(e.target.value))}
-                        readOnly={payMode === "full"}
-                        className="box-border min-h-[44px] min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-base text-black placeholder:text-gray-700 read-only:cursor-default read-only:text-gray-700 read-only:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:min-h-11 sm:text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
-                {formError ? <p className="mt-2 text-sm text-red-600" role="alert">{formError}</p> : null}
-              </>
-            ) : (
-              <>
-                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
-                  <div className="relative w-full min-w-0">
-                    <label htmlFor={dateFieldId} className="sr-only">
-                      Payment date
-                    </label>
-                    <DateTextField
-                      id={dateFieldId}
-                      value={draftDate ?? ""}
-                      onChange={setDraftDate}
-                      calendarAriaLabel="Open calendar for payment date"
-                      textInputClassName={paymentDateTextClass}
-                      calendarButtonClassName={paymentDateCalendarBtnClass}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <label htmlFor={amountFieldId} className="sr-only">
-                      Payment amount
-                    </label>
+        {!effectiveReadOnly ? (
+          isEasyInline ? (
+            <>
+              <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
+                <div className="relative w-full min-w-0">
+                  <label htmlFor={dateFieldId} className="sr-only">
+                    Payment date
+                  </label>
+                  <DateTextField
+                    id={dateFieldId}
+                    value={draftDate ?? ""}
+                    onChange={setDraftDate}
+                    calendarAriaLabel="Open calendar for payment date"
+                    textInputClassName={paymentDateTextClass}
+                    calendarButtonClassName={paymentDateCalendarBtnClass}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor={amountFieldId} className="sr-only">
+                    Payment amount
+                  </label>
+                  <div
+                    className={
+                      payMode === "full"
+                        ? "flex min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)] focus-within:border-gray-300 focus-within:ring-1 focus-within:ring-gray-300/50"
+                        : "flex min-w-0 overflow-hidden rounded-2xl border border-gray-300 bg-white focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/25"
+                    }
+                  >
+                    <span
+                      className={
+                        payMode === "full"
+                          ? "flex shrink-0 items-center border-r border-gray-200 bg-gray-200/70 px-3 text-sm font-medium text-gray-600"
+                          : "flex shrink-0 items-center border-r border-gray-300 bg-gray-100 px-3 text-sm font-medium text-primary"
+                      }
+                    >
+                      {currencyLabel}
+                    </span>
                     <input
                       id={amountFieldId}
                       type="text"
@@ -757,14 +781,130 @@ export function RecordPaymentModal({
                       onFocus={() => setDraftAmount((prev) => toAmountEditString(prev))}
                       onBlur={(e) => setDraftAmount(formatAmount(e.target.value))}
                       readOnly={payMode === "full"}
-                      className="box-border h-11 min-h-[44px] w-full rounded-2xl border border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm read-only:cursor-default read-only:border-gray-200 read-only:bg-gray-100 read-only:text-gray-700 read-only:shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)] read-only:placeholder:text-gray-500 read-only:focus:border-gray-300 read-only:focus:ring-1 read-only:focus:ring-gray-300/50"
+                      className="box-border min-h-[44px] min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-base text-black placeholder:text-gray-700 read-only:cursor-default read-only:text-gray-700 read-only:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:min-h-11 sm:text-sm"
                     />
                   </div>
                 </div>
+              </div>
 
-                {formError ? <p className="mt-2 text-sm text-red-600" role="alert">{formError}</p> : null}
+              {formError ? (
+                <p className="mt-2 text-sm text-red-600" role="alert">
+                  {formError}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
+                <div className="relative w-full min-w-0">
+                  <label htmlFor={dateFieldId} className="sr-only">
+                    Payment date
+                  </label>
+                  <DateTextField
+                    id={dateFieldId}
+                    value={draftDate ?? ""}
+                    onChange={setDraftDate}
+                    calendarAriaLabel="Open calendar for payment date"
+                    textInputClassName={paymentDateTextClass}
+                    calendarButtonClassName={paymentDateCalendarBtnClass}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor={amountFieldId} className="sr-only">
+                    Payment amount
+                  </label>
+                  <input
+                    id={amountFieldId}
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    value={draftAmount ?? ""}
+                    onChange={(e) => {
+                      const value = acceptAmountInput(e.target.value);
+                      if (value === null) return;
+                      setDraftAmount(value);
+                    }}
+                    onFocus={() => setDraftAmount((prev) => toAmountEditString(prev))}
+                    onBlur={(e) => setDraftAmount(formatAmount(e.target.value))}
+                    readOnly={payMode === "full"}
+                    className="box-border h-11 min-h-[44px] w-full rounded-2xl border border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm read-only:cursor-default read-only:border-gray-200 read-only:bg-gray-100 read-only:text-gray-700 read-only:shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)] read-only:placeholder:text-gray-500 read-only:focus:border-gray-300 read-only:focus:ring-1 read-only:focus:ring-gray-300/50"
+                  />
+                </div>
+              </div>
 
-                <div className="mt-4 flex justify-end">
+              {formError ? (
+                <p className="mt-2 text-sm text-red-600" role="alert">
+                  {formError}
+                </p>
+              ) : null}
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleAddPayment}
+                  disabled={remaining <= 0 || adding}
+                  className={addPaymentButtonClass}
+                >
+                  {adding ? "Adding…" : "Add Payment"}
+                  <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden>
+                    {adding ? "progress_activity" : "add"}
+                  </span>
+                </button>
+              </div>
+            </>
+          )
+        ) : null}
+      </div>
+
+      {!effectiveReadOnly ? (
+        <div className="shrink-0 border-t border-gray-200 px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex flex-col gap-4">
+            {isEasyInline ? (
+              <>
+                <div
+                  className="flex items-center justify-between gap-3"
+                  role={showPaymentHistoryPlaceholder ? "status" : undefined}
+                  aria-busy={showPaymentHistoryPlaceholder ? true : undefined}
+                  aria-label={
+                    showPaymentHistoryPlaceholder ? "Loading amount to be paid" : undefined
+                  }
+                >
+                  <span className="text-sm font-medium text-primary/75">Amount to be Paid</span>
+                  {showPaymentHistoryPlaceholder ? (
+                    <span
+                      className="inline-block h-7 w-[min(100%,9.5rem)] max-w-full animate-pulse rounded-md bg-gray-200 tabular-nums"
+                      aria-hidden
+                    />
+                  ) : (
+                    <span className="text-xl font-bold text-secondary sm:text-2xl">
+                      {formatMoney(remaining, currencyLabel)}
+                    </span>
+                  )}
+                </div>
+                {bankSlipRequiredForPending ? (
+                  <p
+                    className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                    role="status"
+                  >
+                    I need at least one bank slip to finalise pending payments - draft bills
+                    don&apos;t need one.
+                  </p>
+                ) : null}
+                {finalizingPending ? (
+                  <div
+                    className="space-y-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-3"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <span className="sr-only">Updating payments…</span>
+                    <div className="h-3 w-40 animate-pulse rounded bg-gray-200" aria-hidden />
+                    <div
+                      className="h-3 w-full max-w-[16rem] animate-pulse rounded bg-gray-100"
+                      aria-hidden
+                    />
+                  </div>
+                ) : null}
+                <div className="flex flex-wrap justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={handleAddPayment}
@@ -772,99 +912,66 @@ export function RecordPaymentModal({
                     className={addPaymentButtonClass}
                   >
                     {adding ? "Adding…" : "Add Payment"}
-                    <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden>
+                    <span
+                      className="material-symbols-outlined text-[18px] leading-none"
+                      aria-hidden
+                    >
                       {adding ? "progress_activity" : "add"}
                     </span>
                   </button>
                 </div>
               </>
-            )
-          ) : null}
-        </div>
-
-        {!effectiveReadOnly ? (
-          <div className="shrink-0 border-t border-gray-200 px-4 py-4 sm:px-6 sm:py-5">
-            <div className="flex flex-col gap-4">
-              {isEasyInline ? (
-                <>
-                  <div
-                    className="flex items-center justify-between gap-3"
-                    role={showPaymentHistoryPlaceholder ? "status" : undefined}
-                    aria-busy={showPaymentHistoryPlaceholder ? true : undefined}
-                    aria-label={showPaymentHistoryPlaceholder ? "Loading amount to be paid" : undefined}
+            ) : (
+              <>
+                <div
+                  className="flex flex-col items-end gap-1"
+                  role={showPaymentHistoryPlaceholder ? "status" : undefined}
+                  aria-busy={showPaymentHistoryPlaceholder ? true : undefined}
+                  aria-label={
+                    showPaymentHistoryPlaceholder ? "Loading amount to be paid" : undefined
+                  }
+                >
+                  <span className="text-sm font-medium text-primary">Amount to be Paid</span>
+                  {showPaymentHistoryPlaceholder ? (
+                    <span
+                      className="inline-block h-6 w-[min(100%,9.5rem)] max-w-full animate-pulse rounded-md bg-gray-200 tabular-nums sm:h-7 sm:w-[10.5rem]"
+                      aria-hidden
+                    />
+                  ) : (
+                    <span className="text-2xl font-bold text-secondary sm:text-3xl">
+                      {formatMoney(remaining, currencyLabel)}
+                    </span>
+                  )}
+                </div>
+                {bankSlipRequiredForPending ? (
+                  <p
+                    className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                    role="status"
                   >
-                    <span className="text-sm font-medium text-primary/75">Amount to be Paid</span>
-                    {showPaymentHistoryPlaceholder ? (
-                      <span
-                        className="inline-block h-7 w-[min(100%,9.5rem)] max-w-full animate-pulse rounded-md bg-gray-200 tabular-nums"
-                        aria-hidden
-                      />
-                    ) : (
-                      <span className="text-xl font-bold text-secondary sm:text-2xl">{formatMoney(remaining, currencyLabel)}</span>
-                    )}
-                  </div>
-                  {bankSlipRequiredForPending ? (
-                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
-                      I need at least one bank slip to finalise pending payments - draft bills don&apos;t need one.
-                    </p>
-                  ) : null}
-                  {finalizingPending ? (
-                    <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-3" role="status" aria-live="polite">
-                      <span className="sr-only">Updating payments…</span>
-                      <div className="h-3 w-40 animate-pulse rounded bg-gray-200" aria-hidden />
-                      <div className="h-3 w-full max-w-[16rem] animate-pulse rounded bg-gray-100" aria-hidden />
-                    </div>
-                  ) : null}
-                  <div className="flex flex-wrap justify-end gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={handleAddPayment}
-                      disabled={remaining <= 0 || adding}
-                      className={addPaymentButtonClass}
-                    >
-                      {adding ? "Adding…" : "Add Payment"}
-                      <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden>
-                        {adding ? "progress_activity" : "add"}
-                      </span>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
+                    I need at least one bank slip to finalise pending payments - draft bills
+                    don&apos;t need one.
+                  </p>
+                ) : null}
+                {finalizingPending ? (
                   <div
-                    className="flex flex-col items-end gap-1"
-                    role={showPaymentHistoryPlaceholder ? "status" : undefined}
-                    aria-busy={showPaymentHistoryPlaceholder ? true : undefined}
-                    aria-label={showPaymentHistoryPlaceholder ? "Loading amount to be paid" : undefined}
+                    className="space-y-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-3"
+                    role="status"
+                    aria-live="polite"
                   >
-                    <span className="text-sm font-medium text-primary">Amount to be Paid</span>
-                    {showPaymentHistoryPlaceholder ? (
-                      <span
-                        className="inline-block h-6 w-[min(100%,9.5rem)] max-w-full animate-pulse rounded-md bg-gray-200 tabular-nums sm:h-7 sm:w-[10.5rem]"
-                        aria-hidden
-                      />
-                    ) : (
-                      <span className="text-2xl font-bold text-secondary sm:text-3xl">{formatMoney(remaining, currencyLabel)}</span>
-                    )}
+                    <span className="sr-only">Updating payments…</span>
+                    <div className="h-3 w-40 animate-pulse rounded bg-gray-200" aria-hidden />
+                    <div
+                      className="h-3 w-full max-w-[16rem] animate-pulse rounded bg-gray-100"
+                      aria-hidden
+                    />
                   </div>
-                  {bankSlipRequiredForPending ? (
-                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
-                      I need at least one bank slip to finalise pending payments - draft bills don&apos;t need one.
-                    </p>
-                  ) : null}
-                  {finalizingPending ? (
-                    <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-3" role="status" aria-live="polite">
-                      <span className="sr-only">Updating payments…</span>
-                      <div className="h-3 w-40 animate-pulse rounded bg-gray-200" aria-hidden />
-                      <div className="h-3 w-full max-w-[16rem] animate-pulse rounded bg-gray-100" aria-hidden />
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </div>
+                ) : null}
+              </>
+            )}
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
+    </div>
   );
 
   return (

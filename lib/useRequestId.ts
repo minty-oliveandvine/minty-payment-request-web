@@ -21,7 +21,8 @@ const NOT_FOUND = "I couldn't find that payment request. It may have been rename
 const known = new Map<string, string>();
 const pending = new Map<string, Promise<string>>();
 
-const keyOf = (company: string, reference: string) => `${company}|${reference.trim().toLowerCase()}`;
+const keyOf = (company: string, reference: string) =>
+  `${company}|${reference.trim().toLowerCase()}`;
 
 /** The page now shows `reference` for request `id`: remember it so the address change costs no lookup. */
 export function rememberRequest(company: string, reference: string, id: string): void {
@@ -66,7 +67,9 @@ export function useRequestId(): RequestIdState {
   const segment = decodeSegment(typeof params?.id === "string" ? params.id : "").trim();
   const isId = UUID.test(segment);
   const key = keyOf(company, segment);
-  const [found, setFound] = useState<{ key: string; id: string; error: string | null } | null>(null);
+  const [found, setFound] = useState<{ key: string; id: string; error: string | null } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!segment || isId || known.has(key)) return;
@@ -75,7 +78,11 @@ export function useRequestId(): RequestIdState {
       (id) => live && setFound({ key, id, error: null }),
       (e: unknown) =>
         live &&
-        setFound({ key, id: "", error: e instanceof ApiError && e.status !== 404 ? e.message : NOT_FOUND }),
+        setFound({
+          key,
+          id: "",
+          error: e instanceof ApiError && e.status !== 404 ? e.message : NOT_FOUND,
+        }),
     );
     return () => {
       live = false;

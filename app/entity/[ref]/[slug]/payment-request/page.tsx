@@ -38,7 +38,9 @@ export default function Home() {
     if (!auth?.token) return;
     fetchXeroStatus()
       .then(setXeroConnected)
-      .catch((err: unknown) => console.error("[payment requests] the Xero status did not load", err));
+      .catch((err: unknown) =>
+        console.error("[payment requests] the Xero status did not load", err),
+      );
   }, [auth?.token]);
 
   // Subscription notice — once per entity per session, so the claim is checked
@@ -66,21 +68,21 @@ export default function Home() {
 
   return (
     <ModuleGate>
-    <div className="flex min-h-dvh min-h-screen min-w-0 max-w-full flex-col overflow-x-clip bg-white pb-[env(safe-area-inset-bottom,0px)]">
-      <Header
-        title="Payment Request"
-        showLogo={false}
-        companyName={auth?.entityName || "Loading…"}
-        titleActions={
-          <div className="hidden shrink-0 items-center lg:flex">
-            <EasyViewToggle enabled={easyView} onChange={setEasyView} />
-          </div>
-        }
-        xeroConnected={xeroConnected}
-      />
-      <PaymentRequestView easyView={easyView} />
-      <SubscriptionNoticeModal notice={notice} onClose={() => setNotice(null)} />
-    </div>
-  </ModuleGate>
+      <div className="flex min-h-dvh min-h-screen min-w-0 max-w-full flex-col overflow-x-clip bg-white pb-[env(safe-area-inset-bottom,0px)]">
+        <Header
+          title="Payment Request"
+          showLogo={false}
+          companyName={auth?.entityName || "Loading…"}
+          titleActions={
+            <div className="hidden shrink-0 items-center lg:flex">
+              <EasyViewToggle enabled={easyView} onChange={setEasyView} />
+            </div>
+          }
+          xeroConnected={xeroConnected}
+        />
+        <PaymentRequestView easyView={easyView} />
+        <SubscriptionNoticeModal notice={notice} onClose={() => setNotice(null)} />
+      </div>
+    </ModuleGate>
   );
 }

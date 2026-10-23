@@ -164,7 +164,11 @@ export function BillActionBar({
     <>
       {endRowPrefix}
       {draftSubmit?.show ? (
-        <BillDraftSubmitButton onClick={draftSubmit.onClick} disabled={draftSubmit.disabled} pending={draftSubmit.pending} />
+        <BillDraftSubmitButton
+          onClick={draftSubmit.onClick}
+          disabled={draftSubmit.disabled}
+          pending={draftSubmit.pending}
+        />
       ) : null}
       {useActionsOverflowMenu ? (
         <>
@@ -177,7 +181,10 @@ export function BillActionBar({
               aria-live="polite"
               className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-primary/60"
             >
-              <span className="material-symbols-outlined animate-spin text-secondary text-[20px] leading-none" aria-hidden>
+              <span
+                className="material-symbols-outlined animate-spin text-secondary text-[20px] leading-none"
+                aria-hidden
+              >
                 progress_activity
               </span>
               {overflowShowRepublish ? "Republishing…" : "Publishing…"}
@@ -210,7 +217,11 @@ export function BillActionBar({
           type="button"
           onClick={isPublished || publishDisabled ? undefined : onPublishToXero}
           disabled={isPublished || publishPending || publishDisabled}
-          title={publishDisabled ? "This payment's been voided, so there's nothing to publish." : undefined}
+          title={
+            publishDisabled
+              ? "This payment's been voided, so there's nothing to publish."
+              : undefined
+          }
           className={
             "inline-flex h-10 min-h-[44px] w-auto max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full px-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-2 sm:px-4 " +
             (isPublished
@@ -224,7 +235,10 @@ export function BillActionBar({
         >
           {isPublished ? (
             <>
-              <span className="material-symbols-outlined text-[20px] leading-none text-emerald-500" aria-hidden>
+              <span
+                className="material-symbols-outlined text-[20px] leading-none text-emerald-500"
+                aria-hidden
+              >
                 check_circle
               </span>
               Published to Xero
@@ -239,7 +253,9 @@ export function BillActionBar({
             alt=""
             width={40}
             height={40}
-            className={"h-10 w-10 shrink-0 object-contain" + (publishDisabled ? " grayscale opacity-40" : "")}
+            className={
+              "h-10 w-10 shrink-0 object-contain" + (publishDisabled ? " grayscale opacity-40" : "")
+            }
             aria-hidden
           />
         </button>
@@ -261,7 +277,9 @@ export function BillActionBar({
       className={`flex w-full min-w-0 flex-row items-center gap-2 sm:gap-3 ${showVoidBill === false ? "justify-end" : "justify-between"}`}
     >
       {voidBillButton}
-      <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center justify-end gap-2 sm:gap-3">{centerActions}</div>
+      <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center justify-end gap-2 sm:gap-3">
+        {centerActions}
+      </div>
     </div>
   );
 }

@@ -44,12 +44,14 @@ describe("formatIsoDateForDisplay", () => {
     expect(formatIsoDateForDisplay("2025-02-29")).toBe("");
   });
 
-  it.each([["", ""], ["blank", "   "], ["not a date", "03/03/2026"], ["short", "2026-3-3"]])(
-    "is empty for %s",
-    (_label, raw) => {
-      expect(formatIsoDateForDisplay(raw)).toBe("");
-    },
-  );
+  it.each([
+    ["", ""],
+    ["blank", "   "],
+    ["not a date", "03/03/2026"],
+    ["short", "2026-3-3"],
+  ])("is empty for %s", (_label, raw) => {
+    expect(formatIsoDateForDisplay(raw)).toBe("");
+  });
 
   it("formatIsoDateAsDdMmmYyyy is the same function under its other name", () => {
     expect(formatIsoDateAsDdMmmYyyy("2026-03-03")).toBe(formatIsoDateForDisplay("2026-03-03"));
@@ -71,11 +73,15 @@ describe("formatLocalDateForDisplay", () => {
 
 describe("isoDateInTimeZone", () => {
   it("rolls a UTC evening into the next Hong Kong day", () => {
-    expect(isoDateInTimeZone(new Date("2026-08-31T18:00:00Z"), BILLING_TIME_ZONE)).toBe("2026-09-01");
+    expect(isoDateInTimeZone(new Date("2026-08-31T18:00:00Z"), BILLING_TIME_ZONE)).toBe(
+      "2026-09-01",
+    );
   });
 
   it("keeps a UTC morning on the same Hong Kong day", () => {
-    expect(isoDateInTimeZone(new Date("2026-08-31T02:00:00Z"), BILLING_TIME_ZONE)).toBe("2026-08-31");
+    expect(isoDateInTimeZone(new Date("2026-08-31T02:00:00Z"), BILLING_TIME_ZONE)).toBe(
+      "2026-08-31",
+    );
   });
 
   it("is the UTC day when asked for UTC", () => {
@@ -95,15 +101,18 @@ describe("isoDateInTimeZone", () => {
 
 describe("formatDateInTimeZoneForDisplay", () => {
   it("shows the Hong Kong calendar day, padded, with no trailing dot on the month", () => {
-    const shown = formatDateInTimeZoneForDisplay(new Date("2026-02-28T18:00:00Z"), BILLING_TIME_ZONE);
+    const shown = formatDateInTimeZoneForDisplay(
+      new Date("2026-02-28T18:00:00Z"),
+      BILLING_TIME_ZONE,
+    );
     expect(shown).toBe("01 Mar 2026");
     expect(shown).not.toContain(".");
   });
 
   it("pads a single-digit day", () => {
-    expect(formatDateInTimeZoneForDisplay(new Date("2026-03-03T02:00:00Z"), BILLING_TIME_ZONE)).toBe(
-      "03 Mar 2026",
-    );
+    expect(
+      formatDateInTimeZoneForDisplay(new Date("2026-03-03T02:00:00Z"), BILLING_TIME_ZONE),
+    ).toBe("03 Mar 2026");
   });
 
   it("is empty for an invalid date", () => {
@@ -117,7 +126,10 @@ describe("formatDateInTimeZoneForDisplay", () => {
   // Intl spelling cannot be read back by parseDdMmmYyyyToIso, which wants exactly three
   // letters. September is the only month where this bites.
   it("spells September differently from the ISO formatter, and that spelling will not parse back", () => {
-    const viaIntl = formatDateInTimeZoneForDisplay(new Date("2026-09-01T02:00:00Z"), BILLING_TIME_ZONE);
+    const viaIntl = formatDateInTimeZoneForDisplay(
+      new Date("2026-09-01T02:00:00Z"),
+      BILLING_TIME_ZONE,
+    );
     const viaTable = formatIsoDateForDisplay("2026-09-01");
     expect(viaIntl).toBe("01 Sept 2026");
     expect(viaTable).toBe("01 Sep 2026");

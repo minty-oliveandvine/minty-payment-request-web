@@ -58,7 +58,10 @@ function serve({
       return answer(200, { paid_total: "0.00", payments });
     }
     if (path.endsWith("/payments") && method === "POST") {
-      return answer(201, payment({ id: "payment-new", bill_id: BILL_ID, payment_status: "pending" }));
+      return answer(
+        201,
+        payment({ id: "payment-new", bill_id: BILL_ID, payment_status: "pending" }),
+      );
     }
     if (path.includes("/attachments") && method === "POST") {
       return (upload ?? (() => answer(201, {})))();
@@ -163,11 +166,21 @@ describe("the dialog", () => {
 describe("the slips already on the payment", () => {
   it("are each offered for preview", () => {
     show({
-      details: { ...DETAILS, files: [{ id: "f1", name: "slip-a.pdf" }, { id: "f2", name: "slip-b.pdf" }] },
+      details: {
+        ...DETAILS,
+        files: [
+          { id: "f1", name: "slip-a.pdf" },
+          { id: "f2", name: "slip-b.pdf" },
+        ],
+      },
     });
 
-    expect(within(dialog()).getByRole("button", { name: "Preview slip-a.pdf" })).toBeInTheDocument();
-    expect(within(dialog()).getByRole("button", { name: "Preview slip-b.pdf" })).toBeInTheDocument();
+    expect(
+      within(dialog()).getByRole("button", { name: "Preview slip-a.pdf" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog()).getByRole("button", { name: "Preview slip-b.pdf" }),
+    ).toBeInTheDocument();
   });
 
   it("can be deleted by default, and not when the caller says not to", () => {
@@ -180,7 +193,9 @@ describe("the slips already on the payment", () => {
     view.unmount();
 
     show({ details: { ...DETAILS, files }, allowRemoveFiles: false });
-    expect(within(dialog()).queryByRole("button", { name: "Delete slip-a.pdf" })).not.toBeInTheDocument();
+    expect(
+      within(dialog()).queryByRole("button", { name: "Delete slip-a.pdf" }),
+    ).not.toBeInTheDocument();
   });
 
   it("ask before deleting, naming the file", async () => {
@@ -311,9 +326,24 @@ describe("which payment the slip lands on", () => {
   it("is the newest PENDING payment when there is one", async () => {
     const { calls } = serve({
       payments: [
-        payment({ id: "p-settled-new", bill_id: BILL_ID, payment_status: "completed", payment_date: "2026-03-20" }),
-        payment({ id: "p-pending-old", bill_id: BILL_ID, payment_status: "pending", payment_date: "2026-03-01" }),
-        payment({ id: "p-pending-new", bill_id: BILL_ID, payment_status: "pending", payment_date: "2026-03-10" }),
+        payment({
+          id: "p-settled-new",
+          bill_id: BILL_ID,
+          payment_status: "completed",
+          payment_date: "2026-03-20",
+        }),
+        payment({
+          id: "p-pending-old",
+          bill_id: BILL_ID,
+          payment_status: "pending",
+          payment_date: "2026-03-01",
+        }),
+        payment({
+          id: "p-pending-new",
+          bill_id: BILL_ID,
+          payment_status: "pending",
+          payment_date: "2026-03-10",
+        }),
       ],
     });
     show({ inlineUploadBillContext: { billId: BILL_ID } });
@@ -328,8 +358,18 @@ describe("which payment the slip lands on", () => {
   it("is the newest SETTLED payment when none is pending", async () => {
     const { calls } = serve({
       payments: [
-        payment({ id: "p-old", bill_id: BILL_ID, payment_status: "completed", payment_date: "2026-03-01" }),
-        payment({ id: "p-new", bill_id: BILL_ID, payment_status: "completed", payment_date: "2026-03-20" }),
+        payment({
+          id: "p-old",
+          bill_id: BILL_ID,
+          payment_status: "completed",
+          payment_date: "2026-03-01",
+        }),
+        payment({
+          id: "p-new",
+          bill_id: BILL_ID,
+          payment_status: "completed",
+          payment_date: "2026-03-20",
+        }),
       ],
     });
     show({ inlineUploadBillContext: { billId: BILL_ID } });
@@ -344,8 +384,18 @@ describe("which payment the slip lands on", () => {
   it("ignores payments belonging to another request", async () => {
     const { calls } = serve({
       payments: [
-        payment({ id: "p-other", bill_id: "another-bill", payment_status: "pending", payment_date: "2026-03-30" }),
-        payment({ id: "p-ours", bill_id: BILL_ID, payment_status: "completed", payment_date: "2026-03-02" }),
+        payment({
+          id: "p-other",
+          bill_id: "another-bill",
+          payment_status: "pending",
+          payment_date: "2026-03-30",
+        }),
+        payment({
+          id: "p-ours",
+          bill_id: BILL_ID,
+          payment_status: "completed",
+          payment_date: "2026-03-02",
+        }),
       ],
     });
     show({ inlineUploadBillContext: { billId: BILL_ID } });
@@ -477,9 +527,9 @@ describe("an upload that failed", () => {
     await userEvent.click(uploadButton());
 
     await waitFor(() =>
-      expect(calls.some((c) => c.method === "DELETE" && c.path.includes("/payments/payment-new"))).toBe(
-        true,
-      ),
+      expect(
+        calls.some((c) => c.method === "DELETE" && c.path.includes("/payments/payment-new")),
+      ).toBe(true),
     );
   });
 });

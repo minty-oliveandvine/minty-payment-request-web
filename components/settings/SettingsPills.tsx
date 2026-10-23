@@ -35,7 +35,9 @@ export function getSettingsTabFromSearchParams(tab: string | null): SettingsTabI
 
 const pillClass = (isActive: boolean) =>
   `cursor-pointer shrink-0 rounded-full px-4 py-2 text-center text-sm font-medium transition-colors flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
-    isActive ? "bg-secondary font-semibold text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+    isActive
+      ? "bg-secondary font-semibold text-white"
+      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
   }`;
 
 /**
@@ -94,7 +96,9 @@ export function SettingsPills({ activeTab, entityId, module1Url }: SettingsPills
           const isActive = activeTab === id;
           const flaskUrl = FLASK_REDIRECT_TABS[id];
           const away =
-            id === "entity" ? pettyCashSettingsUrl(module1Url, entityId, entityName) : flaskUrl?.(module1Url, entityId);
+            id === "entity"
+              ? pettyCashSettingsUrl(module1Url, entityId, entityName)
+              : flaskUrl?.(module1Url, entityId);
 
           // A real link (no token in it), so Payment Settings' "Leave without saving?"
           // (lib/leaveGuard.ts) holds it like any other way out of the page.

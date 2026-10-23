@@ -99,7 +99,9 @@ const partialPay = () => within(dialog()).getByRole("button", { name: "Partial P
 
 /** The modal reads its payments on open; wait for that before acting. */
 const loadedPayments = () =>
-  waitFor(() => expect(screen.queryByRole("status", { name: "Loading payments" })).not.toBeInTheDocument());
+  waitFor(() =>
+    expect(screen.queryByRole("status", { name: "Loading payments" })).not.toBeInTheDocument(),
+  );
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
@@ -130,7 +132,10 @@ describe("the dialog", () => {
   });
 
   it("reads the payments already on the request", async () => {
-    serve({ payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00" })], paidTotal: "1500.00" });
+    serve({
+      payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00" })],
+      paidTotal: "1500.00",
+    });
 
     show();
 
@@ -150,7 +155,11 @@ describe("paying in full", () => {
     await userEvent.click(addPayment());
 
     await waitFor(() => expect(posted).toHaveLength(1));
-    expect(posted[0].body).toMatchObject({ amount: 6000, currency_code: "HKD", payment_status: "completed" });
+    expect(posted[0].body).toMatchObject({
+      amount: 6000,
+      currency_code: "HKD",
+      payment_status: "completed",
+    });
   });
 
   it("tells the page a payment was saved, so the list and the badge catch up", async () => {
@@ -313,7 +322,9 @@ describe("a payment that would not save", () => {
 describe("the payments already recorded", () => {
   it("are listed, with what is left to pay", async () => {
     serve({
-      payments: [payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00", payment_date: "2026-03-10" })],
+      payments: [
+        payment({ id: "p1", bill_id: BILL_ID, amount: "1500.00", payment_date: "2026-03-10" }),
+      ],
       paidTotal: "1500.00",
     });
 
@@ -345,7 +356,9 @@ describe("the payments already recorded", () => {
     show({ billStatus: "partially_paid" });
 
     await loadedPayments();
-    expect(within(dialog()).queryByRole("button", { name: "Remove this payment" })).not.toBeInTheDocument();
+    expect(
+      within(dialog()).queryByRole("button", { name: "Remove this payment" }),
+    ).not.toBeInTheDocument();
   });
 });
 

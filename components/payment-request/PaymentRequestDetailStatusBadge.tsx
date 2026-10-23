@@ -9,7 +9,9 @@ export type PaymentRequestDetailStatusBadgeProps = {
   refreshSignal?: number;
 };
 
-export function PaymentRequestDetailStatusBadge({ refreshSignal = 0 }: PaymentRequestDetailStatusBadgeProps) {
+export function PaymentRequestDetailStatusBadge({
+  refreshSignal = 0,
+}: PaymentRequestDetailStatusBadgeProps) {
   const { requestId: id } = useRequestId();
   const [label, setLabel] = useState<string | null>(null);
 

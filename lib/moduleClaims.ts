@@ -35,8 +35,7 @@ export function getModuleClaims(): ModuleClaims {
     return {
       pettyCashEnabled:
         typeof payload.petty_cash_enabled === "boolean" ? payload.petty_cash_enabled : true,
-      billingEnabled:
-        typeof payload.billing_enabled === "boolean" ? payload.billing_enabled : true,
+      billingEnabled: typeof payload.billing_enabled === "boolean" ? payload.billing_enabled : true,
     };
   } catch {
     return fallback;

@@ -69,9 +69,7 @@ export function SubscriptionNoticeModal({ notice, onClose }: SubscriptionNoticeM
   if (!open || !notice || typeof document === "undefined") return null;
 
   const critical = notice.severity === "critical";
-  const settingsHref = notice.settings_path
-    ? buildMintyEnterUrl(notice.settings_path)
-    : null;
+  const settingsHref = notice.settings_path ? buildMintyEnterUrl(notice.settings_path) : null;
 
   return createPortal(
     <div
@@ -122,10 +120,9 @@ export function SubscriptionNoticeModal({ notice, onClose }: SubscriptionNoticeM
             here would be a click that fails. Name who to ask instead. */}
         {!notice.can_manage && notice.payer ? (
           <p className="mt-4 text-sm leading-relaxed text-primary/60">
-            Billing for this company is managed by{" "}
-            {notice.payer.name || notice.payer.email}
-            {notice.payer.name && notice.payer.email ? ` <${notice.payer.email}>` : ""} — only
-            they can change its subscription.
+            Billing for this company is managed by {notice.payer.name || notice.payer.email}
+            {notice.payer.name && notice.payer.email ? ` <${notice.payer.email}>` : ""} — only they
+            can change its subscription.
           </p>
         ) : null}
 

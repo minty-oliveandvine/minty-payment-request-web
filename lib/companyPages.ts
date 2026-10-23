@@ -36,6 +36,11 @@ export function decodeSegment(segment: string): string {
 }
 
 /** Whether `<ref>/<slug>` from an address is exactly how this company is written (a capital in the short id is not). */
-export function isCanonicalRef(ref: string, slug: string, entityId: string, entityName: string): boolean {
+export function isCanonicalRef(
+  ref: string,
+  slug: string,
+  entityId: string,
+  entityName: string,
+): boolean {
   return ref === shortIdOf(entityId) && decodeSegment(slug) === slugifyName(entityName);
 }

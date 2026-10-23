@@ -60,7 +60,11 @@ export function compareBySubmittedDate(
   dir: "asc" | "desc",
 ): number {
   const d = dir === "asc" ? 1 : -1;
-  const byDate = compareNullableNumber(dateSortValue(a.submittedDate), dateSortValue(b.submittedDate), d);
+  const byDate = compareNullableNumber(
+    dateSortValue(a.submittedDate),
+    dateSortValue(b.submittedDate),
+    d,
+  );
   if (byDate !== 0) return byDate;
   return a.id.localeCompare(b.id);
 }

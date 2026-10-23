@@ -205,12 +205,7 @@ describe("voiding a selection", () => {
 describe("deleting a payment", () => {
   const show = (summary: string) =>
     render(
-      <PaymentDeleteConfirmModal
-        open
-        summary={summary}
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />,
+      <PaymentDeleteConfirmModal open summary={summary} onClose={onClose} onConfirm={onConfirm} />,
     );
 
   it("names the payment it means, and warns it cannot be undone", () => {
@@ -261,9 +256,7 @@ describe("deleting attachments", () => {
   it("refuses to remove the last one, and only says so - there is nothing to confirm", async () => {
     show({ variant: "minimumAttachment" });
 
-    expect(title()).toBe(
-      "I need at least one attachment on a payment, so this one has to stay.",
-    );
+    expect(title()).toBe("I need at least one attachment on a payment, so this one has to stay.");
     expect(within(dialog()).getAllByRole("button")).toHaveLength(1);
 
     await userEvent.click(screen.getByRole("button", { name: "OK" }));

@@ -8,11 +8,7 @@
  * person may not see (403) - the cookie's company is the only one ever sent.
  */
 
-import type {
-  Profile,
-  ProfileApi,
-  ProfileChanges,
-} from "@minty/shared/profile";
+import type { Profile, ProfileApi, ProfileChanges } from "@minty/shared/profile";
 
 import { mintyFetch } from "@/components/ui/sidebarHost";
 

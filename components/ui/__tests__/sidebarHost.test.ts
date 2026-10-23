@@ -46,7 +46,11 @@ describe("moduleAccess", () => {
   });
 
   it("honours an explicit false in the token", () => {
-    setAuth(unsignedToken({ petty_cash_enabled: false, billing_enabled: true }), ENTITY_ID, ENTITY_NAME);
+    setAuth(
+      unsignedToken({ petty_cash_enabled: false, billing_enabled: true }),
+      ENTITY_ID,
+      ENTITY_NAME,
+    );
     expect(moduleAccess()).toEqual({ pettyCash: false, billing: true });
   });
 });
@@ -83,7 +87,9 @@ describe("links", () => {
 
   it("send Subscriptions straight to the handoff when no company is in the cookie", () => {
     setAuth(TOKEN, "", "");
-    expect(links.subscriptions()).toBe(`${env.PETTY_CASH_URL}/handoff/minty-web?next=%2Fsubscription`);
+    expect(links.subscriptions()).toBe(
+      `${env.PETTY_CASH_URL}/handoff/minty-web?next=%2Fsubscription`,
+    );
   });
 
   it("keep Payment Requests and Settings inside this app", () => {
@@ -186,7 +192,9 @@ describe("mintyFetch", () => {
     await mintyFetch("/api/me/profile");
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization")).toBe(`Bearer ${fresh}`);
+    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization")).toBe(
+      `Bearer ${fresh}`,
+    );
   });
 
   it("retries a 401 ONCE after a successful refresh", async () => {
@@ -256,7 +264,9 @@ describe("billingApiFetch", () => {
 
     await billingApiFetch("/api/me/subscriptions");
 
-    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.SUBSCRIPTION_API_URL}/api/me/subscriptions`);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      `${env.SUBSCRIPTION_API_URL}/api/me/subscriptions`,
+    );
     expect(String(fetchMock.mock.calls[0][0])).not.toContain(env.PAYMENT_REQUEST_API_URL);
   });
 });

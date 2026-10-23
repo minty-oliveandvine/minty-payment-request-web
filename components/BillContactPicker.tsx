@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ApiError, createEntityBillContact, type EntityBillContact } from "@/lib/api";
 import { useToast } from "@/components/Toast";
@@ -55,9 +48,7 @@ export function BillContactPicker({
 
   const trimmedName = contactName.trim();
   const q = trimmedName.toLowerCase();
-  const filtered = contacts.filter(
-    (c) => !q || c.name.toLowerCase().includes(q),
-  );
+  const filtered = contacts.filter((c) => !q || c.name.toLowerCase().includes(q));
 
   const nameMatchesExisting =
     trimmedName.length > 0 &&
@@ -130,7 +121,9 @@ export function BillContactPicker({
       showToast("Supplier created successfully!", "success");
     } catch (e) {
       setCreateError(
-        e instanceof ApiError ? e.message : "That supplier didn't quite make it over to Xero. Mind trying again?",
+        e instanceof ApiError
+          ? e.message
+          : "That supplier didn't quite make it over to Xero. Mind trying again?",
       );
       setOpen(false);
     } finally {
@@ -140,12 +133,10 @@ export function BillContactPicker({
 
   const invalid = error || createError !== null;
   const borderTone = invalid
-    ?"border-red-500 focus:border-red-500 focus:ring-red-200/50 "
+    ? "border-red-500 focus:border-red-500 focus:ring-red-200/50 "
     : "border-gray-300 focus:border-secondary focus:ring-secondary/25 ";
 
-  const addRowText = creating
-    ? "Creating supplier…"
-    : `+ Add '${trimmedName}' as a new supplier`;
+  const addRowText = creating ? "Creating supplier…" : `+ Add '${trimmedName}' as a new supplier`;
 
   const menu =
     open && menuHasContent ? (
@@ -183,13 +174,13 @@ export function BillContactPicker({
           <li
             role="option"
             aria-selected={false}
-            aria-label={creating ? "Creating supplier in Xero" : `Add ${trimmedName} as a new supplier`}
+            aria-label={
+              creating ? "Creating supplier in Xero" : `Add ${trimmedName} as a new supplier`
+            }
             className={
               "cursor-pointer px-3 py-2.5 text-left text-sm font-medium text-primary transition-colors " +
               (filtered.length > 0 ? "border-t border-gray-100 " : "") +
-              (creating || disabled
-                ? "cursor-not-allowed opacity-60"
-                : "hover:bg-secondary/10")
+              (creating || disabled ? "cursor-not-allowed opacity-60" : "hover:bg-secondary/10")
             }
             onMouseDown={(e) => {
               e.preventDefault();
@@ -216,7 +207,7 @@ export function BillContactPicker({
           aria-controls={open ? listboxId : undefined}
           aria-autocomplete="list"
           aria-invalid={invalid || undefined}
-        aria-required={required || undefined}
+          aria-required={required || undefined}
           disabled={disabled || creating}
           value={contactName}
           placeholder="Select a supplier"

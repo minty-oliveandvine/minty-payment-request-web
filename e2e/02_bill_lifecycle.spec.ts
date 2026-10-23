@@ -1,103 +1,120 @@
 // A payment request through the browser: created as a draft, submitted, opened, and acted on.
 // The words asserted here ("Draft", "Payment Requested", the status tabs, the action labels)
 // are what phase C8 must keep while bill_status/publish_state change underneath.
-import { expect, test, type Page } from '@playwright/test';
-import { fixtures, handoff, moneyRegex, requireCredentials, requireStack, xeroLive } from './helpers';
+import { expect, test, type Page } from "@playwright/test";
+import {
+  fixtures,
+  handoff,
+  moneyRegex,
+  requireCredentials,
+  requireStack,
+  xeroLive,
+} from "./helpers";
 
 const AMOUNT = 120.5;
 const DESCRIPTION = `E2E printer paper ${Date.now()}`;
 const FX = fixtures();
 
 async function openAddPayment(page: Page) {
-  await page.getByRole('button', { name: 'Add Payment' }).click();
-  const dlg = page.getByRole('dialog', { name: /add payment request/i });
+  await page.getByRole("button", { name: "Add Payment" }).click();
+  const dlg = page.getByRole("dialog", { name: /add payment request/i });
   await expect(dlg).toBeVisible();
   return dlg;
 }
 
-async function fillPayment(page: Page, dlg: ReturnType<Page['getByRole']>) {
-  await dlg.getByRole('textbox', { name: /amount/i }).fill(String(AMOUNT));
-  await dlg.getByRole('textbox', { name: /description/i }).fill(DESCRIPTION);
+async function fillPayment(page: Page, dlg: ReturnType<Page["getByRole"]>) {
+  await dlg.getByRole("textbox", { name: /amount/i }).fill(String(AMOUNT));
+  await dlg.getByRole("textbox", { name: /description/i }).fill(DESCRIPTION);
   // supplier: a searchable input over the entity's synced contacts
-  const supplier = dlg.getByRole('textbox', { name: /supplier/i });
+  const supplier = dlg.getByRole("textbox", { name: /supplier/i });
   await supplier.click();
   await supplier.pressSequentially(FX.supplierQuery);
-  await page.getByRole('option', { name: FX.supplierName, exact: true }).click();
+  await page.getByRole("option", { name: FX.supplierName, exact: true }).click();
   // account code: a combobox over the entity's bill account codes
-  const account = dlg.getByRole('combobox', { name: /account code/i });
+  const account = dlg.getByRole("combobox", { name: /account code/i });
   await account.click();
-  await page.getByRole('option', { name: new RegExp(FX.accountCode) }).first().click();
+  await page
+    .getByRole("option", { name: new RegExp(FX.accountCode) })
+    .first()
+    .click();
 }
 
-test.describe.serial('payment request lifecycle', () => {
+test.describe.serial("payment request lifecycle", () => {
   test.beforeEach(async ({ page }) => {
     await requireStack();
-    await handoff(page, requireCredentials(), '/');
+    await handoff(page, requireCredentials(), "/");
   });
 
-  test('a draft is saved and listed under Draft with its amount and supplier', async ({ page }) => {
+  test("a draft is saved and listed under Draft with its amount and supplier", async ({ page }) => {
     const dlg = await openAddPayment(page);
     await fillPayment(page, dlg);
-    await dlg.getByRole('button', { name: /save as draft/i }).click();
+    await dlg.getByRole("button", { name: /save as draft/i }).click();
     await expect(dlg).toBeHidden();
-    await page.getByRole('tab', { name: 'Draft' }).click();
+    await page.getByRole("tab", { name: "Draft" }).click();
     // each request is a link: "<supplier> <date> ... HKD 120.50 (Inv total HKD 120.50) Draft"
-    const row = page.getByRole('link', { name: new RegExp(FX.supplierName) }).first();
+    const row = page.getByRole("link", { name: new RegExp(FX.supplierName) }).first();
     await expect(row).toBeVisible();
     await expect(row).toContainText(moneyRegex(AMOUNT));
     await expect(row).toContainText(/draft/i);
   });
 
   for (const width of [360, 768, 1440]) {
-    test(`a new supplier refused (no Xero) closes the menu and turns the field red - ${width}px`, async ({ page }) => {
+    test(`a new supplier refused (no Xero) closes the menu and turns the field red - ${width}px`, async ({
+      page,
+    }) => {
       test.skip(xeroLive(), 'the shop is on Xero: "+ Add" would create a real contact');
       await page.setViewportSize({ width, height: 800 });
       const dlg = await openAddPayment(page);
-      const supplier = dlg.getByRole('textbox', { name: /supplier/i });
+      const supplier = dlg.getByRole("textbox", { name: /supplier/i });
       await supplier.click();
       await supplier.pressSequentially(`E2E New Supplier ${Date.now()}`);
-      await page.getByRole('option', { name: /as a new supplier/i }).click();
-      await expect(dlg.getByRole('alert').filter({ hasText: /xero/i })).toBeVisible();
-      await expect(page.getByRole('listbox')).toBeHidden();
-      await expect(supplier).toHaveAttribute('aria-invalid', 'true');
+      await page.getByRole("option", { name: /as a new supplier/i }).click();
+      await expect(dlg.getByRole("alert").filter({ hasText: /xero/i })).toBeVisible();
+      await expect(page.getByRole("listbox")).toBeHidden();
+      await expect(supplier).toHaveAttribute("aria-invalid", "true");
       await expect(supplier).toHaveClass(/border-red-500/);
       // editing the name clears the refusal
-      await supplier.press('End');
-      await supplier.press('Backspace');
-      await expect(supplier).not.toHaveAttribute('aria-invalid', 'true');
-      await expect(dlg.getByRole('alert').filter({ hasText: /xero/i })).toBeHidden();
+      await supplier.press("End");
+      await supplier.press("Backspace");
+      await expect(supplier).not.toHaveAttribute("aria-invalid", "true");
+      await expect(dlg.getByRole("alert").filter({ hasText: /xero/i })).toBeHidden();
     });
   }
 
-  test('the amount is required', async ({ page }) => {
+  test("the amount is required", async ({ page }) => {
     const dlg = await openAddPayment(page);
-    await dlg.getByRole('button', { name: /^confirm$/i }).click();
+    await dlg.getByRole("button", { name: /^confirm$/i }).click();
     await expect(dlg).toBeVisible(); // still open: nothing was submitted
   });
 
-  test('confirming needs an attachment and a due date - the dialog says so and stays open', async ({ page }) => {
+  test("confirming needs an attachment and a due date - the dialog says so and stays open", async ({
+    page,
+  }) => {
     // Submitting for real uploads the attachment to the bucket; that path is covered by
     // minty-payment-request-api's API tests with the storage stubbed, not by a browser against a real
     // bucket. What the browser owns is the validation the person sees.
     const dlg = await openAddPayment(page);
     await fillPayment(page, dlg);
-    await dlg.getByRole('button', { name: /^confirm$/i }).click();
+    await dlg.getByRole("button", { name: /^confirm$/i }).click();
     await expect(dlg).toBeVisible();
-    await expect(dlg.getByRole('alert').filter({ hasText: /attachment/i })).toBeVisible();
-    await expect(dlg.getByRole('alert').filter({ hasText: /due date/i })).toBeVisible();
+    await expect(dlg.getByRole("alert").filter({ hasText: /attachment/i })).toBeVisible();
+    await expect(dlg.getByRole("alert").filter({ hasText: /due date/i })).toBeVisible();
   });
 
-  test('the draft opens on its detail page with the request and its actions', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Draft' }).click();
-    await page.getByRole('link', { name: new RegExp(FX.supplierName) }).first().click();
+  test("the draft opens on its detail page with the request and its actions", async ({ page }) => {
+    await page.getByRole("tab", { name: "Draft" }).click();
+    await page
+      .getByRole("link", { name: new RegExp(FX.supplierName) })
+      .first()
+      .click();
     // by its Payment No. since 2026-10-05 (the id when it has none)
     await expect(page).toHaveURL(/\/payment-request\/[^/?#]+(?:[?#]|$)/);
-    const body = page.locator('body');
+    const body = page.locator("body");
     await expect(body).toContainText(FX.supplierName);
     await expect(body).toContainText(moneyRegex(AMOUNT));
     await expect(body).toContainText(new RegExp(FX.accountCode));
     await expect(body).toContainText(/draft/i);
     // an admin can still edit or delete a draft
-    await expect(page.getByRole('button', { name: /edit|delete|submit/i }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /edit|delete|submit/i }).first()).toBeVisible();
   });
 });

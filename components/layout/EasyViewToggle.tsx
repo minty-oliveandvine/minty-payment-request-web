@@ -26,7 +26,9 @@ export function EasyViewToggle({ enabled, onChange }: EasyViewToggleProps) {
           aria-hidden
         />
       </button>
-      <span className="whitespace-nowrap text-xs font-normal text-primary sm:text-sm">Easy view</span>
+      <span className="whitespace-nowrap text-xs font-normal text-primary sm:text-sm">
+        Easy view
+      </span>
     </div>
   );
 }

@@ -132,9 +132,9 @@ describe("a draft opened in the list", () => {
     showDraft();
 
     await loaded();
-    expect(fetchMock.mock.calls.map(([u]) => String(u)).some((u) => u.endsWith(`/bills/${BILL_ID}`))).toBe(
-      true,
-    );
+    expect(
+      fetchMock.mock.calls.map(([u]) => String(u)).some((u) => u.endsWith(`/bills/${BILL_ID}`)),
+    ).toBe(true);
   });
 
   it("says so in the API's own words when it will not load", async () => {

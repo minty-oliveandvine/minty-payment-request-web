@@ -69,13 +69,17 @@ describe("pagesUnder", () => {
   // A voided bill's Payment No. is free for a new bill, and the by-reference lookup prefers the
   // live one - so a void bill is always addressed by its id.
   it.each(["void", "Voided", "  VOID ", "voided"])("addresses a %j bill by its id", (status) => {
-    expect(pages.request("f47ac10b-58cc", "PR-0001", status)).toBe(`${BASE}/payment-request/f47ac10b-58cc`);
+    expect(pages.request("f47ac10b-58cc", "PR-0001", status)).toBe(
+      `${BASE}/payment-request/f47ac10b-58cc`,
+    );
   });
 
   it.each(["submitted", "Payment Requested", "draft", "paid", null, undefined])(
     "addresses a %j bill by its Payment No.",
     (status) => {
-      expect(pages.request("f47ac10b-58cc", "PR-0001", status)).toBe(`${BASE}/payment-request/PR-0001`);
+      expect(pages.request("f47ac10b-58cc", "PR-0001", status)).toBe(
+        `${BASE}/payment-request/PR-0001`,
+      );
     },
   );
 

@@ -8,15 +8,15 @@
 
 const SHORT_ID_LENGTH = 8;
 const SLUG_MAX = 60;
-const EMPTY_SLUG = 'company';
+const EMPTY_SLUG = "company";
 
 export function slugifyName(name: string | null | undefined): string {
-  const text = (name ?? '').normalize('NFKC').toLowerCase().replace(/&/g, ' and ');
-  const slug = Array.from(text, (ch) => (/[\p{L}\p{N}]/u.test(ch) ? ch : '-'))
-    .join('')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return slug.slice(0, SLUG_MAX).replace(/-+$/, '') || EMPTY_SLUG;
+  const text = (name ?? "").normalize("NFKC").toLowerCase().replace(/&/g, " and ");
+  const slug = Array.from(text, (ch) => (/[\p{L}\p{N}]/u.test(ch) ? ch : "-"))
+    .join("")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug.slice(0, SLUG_MAX).replace(/-+$/, "") || EMPTY_SLUG;
 }
 
 export function companyRef(entityId: string, name: string | null | undefined): string {

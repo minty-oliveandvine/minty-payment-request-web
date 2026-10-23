@@ -68,7 +68,9 @@ describe("enrichAccountCodeWithOptions", () => {
   });
 
   it("leaves a value that already carries a name alone", () => {
-    expect(enrichAccountCodeWithOptions("429 - Something Else", options)).toBe("429 - Something Else");
+    expect(enrichAccountCodeWithOptions("429 - Something Else", options)).toBe(
+      "429 - Something Else",
+    );
   });
 
   it("leaves a code the chart does not know as it is", () => {

@@ -83,7 +83,9 @@ describe("the request", () => {
     fetchMock.mockResolvedValueOnce(answer(201, []));
 
     // A PDF, so compressImage hands it back untouched and no canvas is needed.
-    await uploadBillAttachments("bill-1", [new File(["%PDF-1.4"], "invoice.pdf", { type: "application/pdf" })]);
+    await uploadBillAttachments("bill-1", [
+      new File(["%PDF-1.4"], "invoice.pdf", { type: "application/pdf" }),
+    ]);
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(`${V1}/bills/bill-1/attachments`);
@@ -163,7 +165,9 @@ describe("a failure", () => {
   });
 
   it("falls back to the reason phrase when the body is not JSON at all", async () => {
-    fetchMock.mockResolvedValueOnce(new Response("<html>502</html>", { status: 502, statusText: "Bad Gateway" }));
+    fetchMock.mockResolvedValueOnce(
+      new Response("<html>502</html>", { status: 502, statusText: "Bad Gateway" }),
+    );
 
     const err = (await fetchBills().catch((e: unknown) => e)) as ApiError;
 
@@ -259,7 +263,9 @@ describe("the session before the request", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(String(fetchMock.mock.calls[0][0])).toBe(`${V1}/auth/token/refresh`);
-    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization")).toBe(`Bearer ${fresh}`);
+    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization")).toBe(
+      `Bearer ${fresh}`,
+    );
   });
 
   it("does not refresh a token with plenty of life left", async () => {
@@ -280,7 +286,9 @@ describe("the session before the request", () => {
 
     await expect(fetchBills()).resolves.toEqual([]);
 
-    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization")).toBe(`Bearer ${soon}`);
+    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("Authorization")).toBe(
+      `Bearer ${soon}`,
+    );
     expect(getAuth()?.token).toBe(soon);
   });
 

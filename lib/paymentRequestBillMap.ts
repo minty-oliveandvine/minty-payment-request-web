@@ -11,8 +11,7 @@ export function billToDetailedInfo(bill: BillDetail): PaymentRequestDetailedInfo
   const line0 = bill.line_items?.[0];
   const code = (line0?.account_code ?? bill.xero_account_code ?? "").trim();
   const name = (line0?.account_name ?? "").trim();
-  const accountCode =
-    code && name ? `${code} - ${name}` : code;
+  const accountCode = code && name ? `${code} - ${name}` : code;
   return {
     billNo: bill.reference,
     amount: formatAmount(bill.amount),

@@ -30,8 +30,6 @@ export function DateTextField({
   // compatibility but is intentionally not destructured here — the whole field is
   // now the native date input's tap target, so a separate calendar button (and its
   // showPicker() call) is no longer needed.
-
-  
 }: DateTextFieldProps) {
   /* NOTE ON REVERT / REFACTOR:
      The previous approach of stretching the native input to fill the field caused 
@@ -57,16 +55,19 @@ export function DateTextField({
     }
   };
   return (
-    <div onClick={handleContainerClick} className={`relative overflow-hidden flex items-center cursor-pointer ${textInputClassName}`}>
+    <div
+      onClick={handleContainerClick}
+      className={`relative overflow-hidden flex items-center cursor-pointer ${textInputClassName}`}
+    >
       {/* The real native date input fills the field. A tap anywhere on it opens the
           OS date picker natively on every platform — including iOS WebView, where
           showPicker() against a hidden input was a no-op. The input's own text is
           made transparent so it doesn't clash with the formatted overlay below. */}
-      
+
       {/*  Fix Visual Overshadowing text bug in date input
-        * Wrapped the core elements in an `overflow-hidden` container to guarantee the `rounded-2xl` borders never clip away during any active state.
-* Utilized Tailwind CSS `peer` state handling to automatically switch the custom `<span>` text layout to `peer-focus:opacity-0`, completely hiding our custom placeholder layout the exact millisecond the native element takes focus.
-      */}
+       * Wrapped the core elements in an `overflow-hidden` container to guarantee the `rounded-2xl` borders never clip away during any active state.
+       * Utilized Tailwind CSS `peer` state handling to automatically switch the custom `<span>` text layout to `peer-focus:opacity-0`, completely hiding our custom placeholder layout the exact millisecond the native element takes focus.
+       */}
       <input
         ref={dateInputRef}
         id={id}

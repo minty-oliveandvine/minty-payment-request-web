@@ -93,9 +93,11 @@ describe("the status tabs", () => {
   it("are all on screen, in that order", () => {
     show();
 
-    expect(tabs().getAllByRole("tab").map((t) => t.textContent)).toEqual([
-      ...PAYMENT_REQUEST_STATUS_FILTERS,
-    ]);
+    expect(
+      tabs()
+        .getAllByRole("tab")
+        .map((t) => t.textContent),
+    ).toEqual([...PAYMENT_REQUEST_STATUS_FILTERS]);
   });
 
   it("start on All when nothing is filtered", () => {
@@ -168,7 +170,11 @@ describe("the filter panel", () => {
   });
 
   it("opens showing the filters that are applied", async () => {
-    show({ appliedMinAmount: "100.00", appliedMaxAmount: "900.00", appliedDateType: "Submitted Date" });
+    show({
+      appliedMinAmount: "100.00",
+      appliedMaxAmount: "900.00",
+      appliedDateType: "Submitted Date",
+    });
 
     const panel = await openFilters();
 
@@ -196,7 +202,9 @@ describe("the filter panel", () => {
     await userEvent.type(min, "555");
     // Closed without applying.
     await userEvent.click(screen.getByRole("button", { name: "Filter" }));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument(),
+    );
 
     const reopened = await openFilters();
 
@@ -218,7 +226,11 @@ describe("the filter panel", () => {
   });
 
   it("clears every field on Reset, and says so to the list", async () => {
-    show({ appliedMinAmount: "100.00", appliedMaxAmount: "900.00", appliedXeroStatus: "published" });
+    show({
+      appliedMinAmount: "100.00",
+      appliedMaxAmount: "900.00",
+      appliedXeroStatus: "published",
+    });
     const panel = await openFilters();
 
     await userEvent.click(within(panel).getByRole("button", { name: "Reset" }));

@@ -34,7 +34,10 @@ import {
   parseAmount,
 } from "@/lib/amountFormat";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
-import { billHasRemainingCountablePayments, billStatusShouldRollbackWhenNoPayments } from "@/lib/billStatusRollback";
+import {
+  billHasRemainingCountablePayments,
+  billStatusShouldRollbackWhenNoPayments,
+} from "@/lib/billStatusRollback";
 import { enrichAccountCodeWithOptions } from "@/lib/billFormSelectOptions";
 import { billToDetailedInfo, buildBillUpdatePayload } from "@/lib/paymentRequestBillMap";
 import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
@@ -47,7 +50,10 @@ import {
 import { ActivityHistoryAccordion } from "./ActivityHistoryAccordion";
 import { BillActionBar } from "./BillActionBar";
 import { BillDraftSubmitButton } from "./BillDraftSubmitButton";
-import { InvoiceAttachmentPreview, type InvoiceAttachmentPreviewItem } from "./InvoiceAttachmentPreview";
+import {
+  InvoiceAttachmentPreview,
+  type InvoiceAttachmentPreviewItem,
+} from "./InvoiceAttachmentPreview";
 import { InvoiceAttachmentToolbar } from "./InvoiceAttachmentToolbar";
 import { OverpaymentWarningModal } from "./OverpaymentWarningModal";
 import { PaymentHistoryListPanel, type PaymentHistoryRow } from "./PaymentHistoryCard";
@@ -61,7 +67,10 @@ import {
   paymentRequestDetailSaveButtonClass,
   type PaymentRequestDetailedInfoData,
 } from "./PaymentRequestDetailedInfo";
-import { recordPaymentDetailButtonClass, returnPaymentRequestButtonClass } from "./paymentRequestButtonClasses";
+import {
+  recordPaymentDetailButtonClass,
+  returnPaymentRequestButtonClass,
+} from "./paymentRequestButtonClasses";
 import { useToast } from "@/components/Toast";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 import { isVoidStatus } from "@/lib/companyPages";
@@ -76,7 +85,9 @@ type DetailSubmitFieldErrors = Partial<
   Record<"invoiceDate" | "dueDate" | "amount" | "contact" | "accountCode", string>
 >;
 
-function validateDetailRequiredForSubmit(d: PaymentRequestDetailedInfoData): DetailSubmitFieldErrors | null {
+function validateDetailRequiredForSubmit(
+  d: PaymentRequestDetailedInfoData,
+): DetailSubmitFieldErrors | null {
   const errors: DetailSubmitFieldErrors = {};
   if (!d.accountCode.trim()) errors.accountCode = "We'll need an account code here.";
   if (!d.contact.trim()) errors.contact = "We'll need a supplier here.";
@@ -107,17 +118,26 @@ function PaymentRequestDetailCardSkeleton() {
       <div className="flex flex-col gap-5">
         <div>
           <div className="mb-1.5 h-3 w-14 animate-pulse rounded bg-gray-200" aria-hidden />
-          <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+          <div
+            className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100"
+            aria-hidden
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
           <div>
             <div className="mb-1.5 h-3 w-24 animate-pulse rounded bg-gray-200" aria-hidden />
-            <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+            <div
+              className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100"
+              aria-hidden
+            />
           </div>
           <div>
             <div className="mb-1.5 h-3 w-20 animate-pulse rounded bg-gray-200" aria-hidden />
-            <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+            <div
+              className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100"
+              aria-hidden
+            />
           </div>
         </div>
 
@@ -137,20 +157,32 @@ function PaymentRequestDetailCardSkeleton() {
 
         <div>
           <div className="mb-1.5 h-3 w-24 animate-pulse rounded bg-gray-200" aria-hidden />
-          <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+          <div
+            className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100"
+            aria-hidden
+          />
         </div>
 
         <div>
           <div className="mb-1.5 h-3 w-16 animate-pulse rounded bg-gray-200" aria-hidden />
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="h-11 min-h-[44px] min-w-0 flex-1 animate-pulse rounded-lg bg-gray-100" aria-hidden />
-            <div className="h-9 w-[8.5rem] shrink-0 animate-pulse rounded-lg bg-gray-200 sm:h-10 sm:w-[9.75rem]" aria-hidden />
+            <div
+              className="h-11 min-h-[44px] min-w-0 flex-1 animate-pulse rounded-lg bg-gray-100"
+              aria-hidden
+            />
+            <div
+              className="h-9 w-[8.5rem] shrink-0 animate-pulse rounded-lg bg-gray-200 sm:h-10 sm:w-[9.75rem]"
+              aria-hidden
+            />
           </div>
         </div>
 
         <div>
           <div className="mb-1.5 h-3 w-28 animate-pulse rounded bg-gray-200" aria-hidden />
-          <div className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+          <div
+            className="h-11 min-h-[44px] w-full animate-pulse rounded-2xl bg-gray-100"
+            aria-hidden
+          />
         </div>
       </div>
     </section>
@@ -220,7 +252,8 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const { showToast } = useToast();
   const [billNoError, setBillNoError] = useState<string | null>(null);
   const [accountCodeError, setAccountCodeError] = useState<string | null>(null);
-  const [submitAttemptFieldErrors, setSubmitAttemptFieldErrors] = useState<DetailSubmitFieldErrors | null>(null);
+  const [submitAttemptFieldErrors, setSubmitAttemptFieldErrors] =
+    useState<DetailSubmitFieldErrors | null>(null);
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
@@ -232,7 +265,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
   const [auditRefresh, setAuditRefresh] = useState(0);
   const bumpAudit = useCallback(() => setAuditRefresh((n) => n + 1), []);
   const [paymentHistoryMenuOpen, setPaymentHistoryMenuOpen] = useState(false);
-  const [paymentHistoryPanelStyle, setPaymentHistoryPanelStyle] = useState<CSSProperties | null>(null);
+  const [paymentHistoryPanelStyle, setPaymentHistoryPanelStyle] = useState<CSSProperties | null>(
+    null,
+  );
   const paymentHistoryDropdownRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -282,9 +317,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       let merged =
         ensureMerged &&
         mergedId &&
-        !list.some(
-          (c) => (c.xero_contact_id || "").trim().toUpperCase() === mergedId,
-        )
+        !list.some((c) => (c.xero_contact_id || "").trim().toUpperCase() === mergedId)
           ? [...list, ensureMerged]
           : list;
       merged = [...merged].sort((a, b) =>
@@ -316,7 +349,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         applyEntityBillContacts(contacts);
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [applyEntityBillContacts]);
 
   const rollbackToPaymentRequestedIfNoPayments = useCallback(
@@ -339,7 +374,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       const b = await fetchBill(requestId);
       setBill(b);
       onBillUpdated?.();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [requestId, onBillUpdated]);
 
   const loadPayments = useCallback(async () => {
@@ -402,7 +439,11 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       .catch((e) => {
         if (!cancelled) {
           setBill(null);
-          setLoadError(e instanceof ApiError ? e.message : "This payment didn't come through. Mind trying again?");
+          setLoadError(
+            e instanceof ApiError
+              ? e.message
+              : "This payment didn't come through. Mind trying again?",
+          );
           attachmentUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
           attachmentUrlsRef.current = [];
           setAttachments([]);
@@ -686,7 +727,10 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       if (Object.prototype.hasOwnProperty.call(patch, "dueDate")) delete next.dueDate;
       if (Object.prototype.hasOwnProperty.call(patch, "amount")) delete next.amount;
       if (Object.prototype.hasOwnProperty.call(patch, "currencyCode")) delete next.amount;
-      if (Object.prototype.hasOwnProperty.call(patch, "contact") || Object.prototype.hasOwnProperty.call(patch, "xero_contact_id")) {
+      if (
+        Object.prototype.hasOwnProperty.call(patch, "contact") ||
+        Object.prototype.hasOwnProperty.call(patch, "xero_contact_id")
+      ) {
         delete next.contact;
       }
       if (Object.prototype.hasOwnProperty.call(patch, "accountCode")) delete next.accountCode;
@@ -829,10 +873,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       (p) => p.bill_id === requestId && p.payment_status !== "pending",
     );
     if (completedPayments.length > 0) {
-      const totalPaid = completedPayments.reduce(
-        (sum, p) => sum + parseFloat(p.amount || "0"),
-        0,
-      );
+      const totalPaid = completedPayments.reduce((sum, p) => sum + parseFloat(p.amount || "0"), 0);
       const newAmount = parseAmount(draft.amount) ?? NaN;
       if (Number.isFinite(newAmount) && newAmount < totalPaid - 1e-9) {
         setOverpaymentWarningOpen(true);
@@ -841,15 +882,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     }
 
     await executeSave();
-  }, [
-    requestId,
-    bill,
-    draft,
-    payments,
-    attachmentsReady,
-    attachments.length,
-    executeSave,
-  ]);
+  }, [requestId, bill, draft, payments, attachmentsReady, attachments.length, executeSave]);
 
   const handleRequestDeleteBill = useCallback(() => {
     setDeleteBillConfirmOpen(true);
@@ -876,7 +909,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       bumpAudit();
     } catch (e) {
       showToast(
-        e instanceof ApiError ? e.message : "This payment's being a bit stubborn. Mind trying again?",
+        e instanceof ApiError
+          ? e.message
+          : "This payment's being a bit stubborn. Mind trying again?",
         "error",
       );
     } finally {
@@ -1000,7 +1035,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         setSubmitAttemptFieldErrors(null);
       } else {
         showToast(
-          e instanceof ApiError ? e.message : "This payment didn't quite make it through. Mind trying again?",
+          e instanceof ApiError
+            ? e.message
+            : "This payment didn't quite make it through. Mind trying again?",
           "error",
         );
       }
@@ -1109,7 +1146,10 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     [bill?.status],
   );
 
-  const billDisplayStatus = useMemo(() => (bill ? billStatusToDisplayLabel(bill.status) : ""), [bill]);
+  const billDisplayStatus = useMemo(
+    () => (bill ? billStatusToDisplayLabel(bill.status) : ""),
+    [bill],
+  );
   const billStatusNormalized = useMemo(
     () => (bill?.status ?? "").trim().toLowerCase().replace(/-/g, "_"),
     [bill?.status],
@@ -1200,8 +1240,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
         continue;
       }
       const match = bill?.attachments?.find(
-        (ba) =>
-          (ba.attachment?.original_name ?? "").trim() === item.name.trim(),
+        (ba) => (ba.attachment?.original_name ?? "").trim() === item.name.trim(),
       );
       if (match) idsToStage.add(match.id);
     }
@@ -1276,8 +1315,18 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
           <BillActionBar
             onDeleteBill={handleRequestDeleteBill}
             onPublishToXero={handlePublishToXero}
-            deleteDisabled={loadingBill || !bill || isDeleting || isPublishing || isViewOnly || bill?.status === "void" || ((bill?.status === "paid" || bill?.status === "authorised") && !isElevated)}
-            publishDisabled={loadingBill || !bill || isViewOnly || bill?.status === "void" || !isElevated}
+            deleteDisabled={
+              loadingBill ||
+              !bill ||
+              isDeleting ||
+              isPublishing ||
+              isViewOnly ||
+              bill?.status === "void" ||
+              ((bill?.status === "paid" || bill?.status === "authorised") && !isElevated)
+            }
+            publishDisabled={
+              loadingBill || !bill || isViewOnly || bill?.status === "void" || !isElevated
+            }
             publishStatus={(bill?.published as "draft" | "published" | "failed") ?? "draft"}
             publishPending={isPublishing}
             showVoidBill={false}
@@ -1344,10 +1393,16 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
               isEditing={isEditing}
               isSaving={isSaving}
               unpaidAmount={unpaidAmountDisplay}
-              disabled={!bill || bill?.status === "void" || ((bill?.status === "paid" || bill?.status === "authorised") && !isElevated)}
+              disabled={
+                !bill ||
+                bill?.status === "void" ||
+                ((bill?.status === "paid" || bill?.status === "authorised") && !isElevated)
+              }
               billNoError={isEditing ? billNoError : null}
               accountCodeError={
-                isEditing ? (accountCodeError ?? submitAttemptFieldErrors?.accountCode ?? null) : null
+                isEditing
+                  ? (accountCodeError ?? submitAttemptFieldErrors?.accountCode ?? null)
+                  : null
               }
               invoiceDateError={submitAttemptFieldErrors?.invoiceDate ?? null}
               dueDateError={submitAttemptFieldErrors?.dueDate ?? null}
@@ -1363,7 +1418,11 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
               editInCardHeader={false}
               contactHeaderEnd={
                 !isEditing ? (
-                  <div id="payment-history" ref={paymentHistoryDropdownRef} className="relative shrink-0 scroll-mt-4">
+                  <div
+                    id="payment-history"
+                    ref={paymentHistoryDropdownRef}
+                    className="relative shrink-0 scroll-mt-4"
+                  >
                     <button
                       type="button"
                       aria-expanded={paymentHistoryMenuOpen}
@@ -1372,7 +1431,10 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
                       onClick={() => setPaymentHistoryMenuOpen((v) => !v)}
                     >
                       <span className="whitespace-nowrap">View Payment History</span>
-                      <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>
+                      <span
+                        className="material-symbols-outlined shrink-0 text-[20px] leading-none"
+                        aria-hidden
+                      >
                         {paymentHistoryMenuOpen ? "expand_less" : "expand_more"}
                       </span>
                     </button>
@@ -1385,7 +1447,10 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
                         className="overflow-y-auto overscroll-y-contain rounded-lg border border-gray-200 bg-white shadow-lg"
                       >
                         <div className="border-b border-gray-100 px-4 py-3 sm:px-5 sm:py-3.5">
-                          <h2 id="payment-history-dropdown-heading" className="text-base font-semibold text-primary sm:text-lg">
+                          <h2
+                            id="payment-history-dropdown-heading"
+                            className="text-base font-semibold text-primary sm:text-lg"
+                          >
                             Payment History
                           </h2>
                         </div>
@@ -1411,7 +1476,10 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
                   onClick={() => void handleReturn()}
                   className={returnPaymentRequestButtonClass}
                 >
-                  <span className="material-symbols-outlined shrink-0 text-[18px] leading-none" aria-hidden>
+                  <span
+                    className="material-symbols-outlined shrink-0 text-[18px] leading-none"
+                    aria-hidden
+                  >
                     undo
                   </span>
                   {isReturning ? "Returning…" : "Return"}
@@ -1439,7 +1507,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
               </div>
             ) : bill?.status === "void" ? (
               <div
-                className={isEditing ? "invisible pointer-events-none sm:self-start" : "sm:self-start"}
+                className={
+                  isEditing ? "invisible pointer-events-none sm:self-start" : "sm:self-start"
+                }
                 aria-hidden={isEditing || undefined}
               >
                 <button
@@ -1449,14 +1519,19 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
                   className={recordPaymentDetailButtonClass}
                 >
                   <span className="whitespace-nowrap">Record Payment</span>
-                  <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>
+                  <span
+                    className="material-symbols-outlined shrink-0 text-[20px] leading-none"
+                    aria-hidden
+                  >
                     add
                   </span>
                 </button>
               </div>
             ) : bill?.status === "paid" || bill?.status === "authorised" ? (
               <div
-                className={isEditing ? "invisible pointer-events-none sm:self-start" : "sm:self-start"}
+                className={
+                  isEditing ? "invisible pointer-events-none sm:self-start" : "sm:self-start"
+                }
                 aria-hidden={isEditing || undefined}
               >
                 <button
@@ -1467,7 +1542,9 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
                     setRecordPaymentOpen(true);
                   }}
                   aria-label={
-                    isElevated ? "View payments" : "Insufficient permissions — view payments not available"
+                    isElevated
+                      ? "View payments"
+                      : "Insufficient permissions — view payments not available"
                   }
                   className="box-border inline-flex h-12 w-fit max-w-full min-w-0 shrink-0 cursor-pointer items-center justify-start gap-1.5 rounded-lg border-0 bg-secondary/15 px-3 text-left text-base font-medium text-secondary transition-colors hover:bg-secondary/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:bg-[#F5F5F5] disabled:text-primary/40 disabled:hover:bg-[#F5F5F5] sm:h-[46px] sm:px-3.5"
                 >
@@ -1476,24 +1553,37 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
               </div>
             ) : (
               <div
-                className={isEditing ? "invisible pointer-events-none sm:self-start" : "sm:self-start"}
+                className={
+                  isEditing ? "invisible pointer-events-none sm:self-start" : "sm:self-start"
+                }
                 aria-hidden={isEditing || undefined}
               >
                 <button
                   type="button"
                   disabled={!isElevated || isViewOnly || isEditing}
-                  title={isViewOnly ? "Hmm, I can't let you in there. You have view-only access." : undefined}
+                  title={
+                    isViewOnly
+                      ? "Hmm, I can't let you in there. You have view-only access."
+                      : undefined
+                  }
                   onClick={() => {
                     if (!isViewOnly) {
                       setRecordPaymentReadOnly(false);
                       setRecordPaymentOpen(true);
                     }
                   }}
-                  aria-label={isViewOnly ? "Record payment - unavailable with view-only access" : "Record payment"}
+                  aria-label={
+                    isViewOnly
+                      ? "Record payment - unavailable with view-only access"
+                      : "Record payment"
+                  }
                   className={recordPaymentDetailButtonClass}
                 >
                   <span className="whitespace-nowrap">Record Payment</span>
-                  <span className="material-symbols-outlined shrink-0 text-[20px] leading-none" aria-hidden>
+                  <span
+                    className="material-symbols-outlined shrink-0 text-[20px] leading-none"
+                    aria-hidden
+                  >
                     add
                   </span>
                 </button>

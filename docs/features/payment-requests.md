@@ -31,7 +31,7 @@ this page is what the person sees and where each piece of the screen lives.
 
 ## Add Payment (`components/PaymentRequestModal.tsx`)
 
-The dialog (`role="dialog"`, *Add Payment Request*): amount, description, the **supplier**
+The dialog (`role="dialog"`, _Add Payment Request_): amount, description, the **supplier**
 (a searchable input over the entity's synced contacts — `BillContactPicker.tsx`; "create
 new" makes the contact in Xero; if that fails — e.g. the entity has no Xero connection —
 the menu closes, the field turns red and the API's message shows under it until the name
@@ -70,17 +70,17 @@ An untouched form is never shown as an error.
   arrives, so no new state was needed.
 - The same treatment is on `UploadInvoiceAttachmentModal` and `BankSlipDetailsModal`. Two
   cautions there: the bank slip only shows the mark when `showInlineUpload` is set, because
-  that dialog also just *lists* saved slips; and both red-line off
+  that dialog also just _lists_ saved slips; and both red-line off
   `uploadError && <staged> === 0`, never `uploadError` alone, since that also carries **API
   failures** - a failed POST leaves its files staged, a refused file does not, so blaming the
   drop zone for a server fault is avoided.
 - In the bank-slip dialog, pressing Upload with nothing staged is **not reachable** - the
-  button is disabled until a file is staged - so the red there comes from a *refused* file
+  button is disabled until a file is staged - so the red there comes from a _refused_ file
   (wrong type or too big), which is the path a test covers.
 
 Two buttons: **Save as draft** (`POST /api/bills/draft/`, nothing validated) and
 **Confirm** (`POST /api/bills/submit/`): the form validates the amount, supplier, account,
-both dates and *at least one attachment* before sending, shows each field's error inline
+both dates and _at least one attachment_ before sending, shows each field's error inline
 (`role="alert"`), uploads the files right after the bill exists, then opens the new
 request's detail page.
 
@@ -117,7 +117,7 @@ is fresh.
 
 - the header with the status badge (`PaymentRequestDetailStatusBadge`) and the **action
   bar** (`BillActionBar.tsx`): Edit / Save / Cancel, the draft's Submit button, and the
-  *payment actions* menu (`aria-label="More payment actions"` → `role="menu"` "Payment
+  _payment actions_ menu (`aria-label="More payment actions"` → `role="menu"` "Payment
   actions") with **Publish** (or **Republish** once `bill.published === "published"`) and
   **Void** / Delete; while a publish runs, a `role="status"` "Publishing…" is shown and
   the trigger is disabled; a failure is an error toast (`components/Toast.tsx`,

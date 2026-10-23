@@ -1,15 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 export type ThemedSelectOption = { value: string; label: string };
 
@@ -143,13 +135,12 @@ export function ThemedSelect({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [isOpen]);
 
-  const menuOptions =
-    placeholder !== undefined ? options.filter((o) => o.value !== "") : options;
+  const menuOptions = placeholder !== undefined ? options.filter((o) => o.value !== "") : options;
   const placeholderShowing = placeholder !== undefined && selectedValue === "";
   const selected = options.find((o) => o.value === selectedValue);
   const displayLabel = placeholderShowing
     ? placeholder
-    : selected?.label ?? (options[0]?.label ?? "");
+    : (selected?.label ?? options[0]?.label ?? "");
   const displayTextClass = `${placeholderShowing ? "text-gray-700" : ""} ${centerValue ? "text-center" : ""}`;
 
   const closedInputValue = placeholderShowing ? "" : (selected?.label ?? "");
@@ -159,15 +150,13 @@ export function ThemedSelect({
     const q = searchQuery.trim().toLowerCase();
     if (!q) return menuOptions;
     return menuOptions.filter(
-      (o) =>
-        o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
+      (o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
     );
   }, [searchable, menuOptions, searchQuery]);
 
   const listOptions = searchable ? filteredMenuOptions : menuOptions;
 
-  const inputDisplayValue =
-    searchable && isOpen ? searchQuery : searchable ? closedInputValue : "";
+  const inputDisplayValue = searchable && isOpen ? searchQuery : searchable ? closedInputValue : "";
 
   const handleSearchableFocus = useCallback(() => {
     if (disabled) return;
@@ -254,7 +243,10 @@ export function ThemedSelect({
   ) : null;
 
   const chevron = (
-    <span className="material-symbols-outlined shrink-0 text-[22px] leading-none text-primary" aria-hidden>
+    <span
+      className="material-symbols-outlined shrink-0 text-[22px] leading-none text-primary"
+      aria-hidden
+    >
       {isOpen ? "expand_less" : "expand_more"}
     </span>
   );
@@ -283,7 +275,7 @@ export function ThemedSelect({
               aria-autocomplete="list"
               aria-label={ariaLabel}
               aria-invalid={error}
-          aria-required={required || undefined}
+              aria-required={required || undefined}
               autoComplete="off"
               disabled={disabled}
               placeholder={placeholder}
@@ -314,7 +306,7 @@ export function ThemedSelect({
                 aria-autocomplete="list"
                 aria-label={ariaLabel}
                 aria-invalid={error}
-          aria-required={required || undefined}
+                aria-required={required || undefined}
                 autoComplete="off"
                 disabled={disabled}
                 placeholder={placeholder}

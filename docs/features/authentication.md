@@ -38,11 +38,11 @@ entity list with Minty still signed in.
 The pages live under the company's address, Flask's scheme (`Minty/docs/features/authentication.md`
 §3.2), built by `lib/companyPages.ts` from `lib/companyRef.ts` (a COPY of minty-web's):
 
-| Page | Address |
-|---|---|
-| The list | `/entity/<shortid>/<name>/payment-request` |
-| One payment request | `/entity/<shortid>/<name>/payment-request/<Payment No.>` - the id when it has none |
-| Payment Request Settings | `/entity/<shortid>/<name>/settings/payment-request` |
+| Page                     | Address                                                                            |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| The list                 | `/entity/<shortid>/<name>/payment-request`                                         |
+| One payment request      | `/entity/<shortid>/<name>/payment-request/<Payment No.>` - the id when it has none |
+| Payment Request Settings | `/entity/<shortid>/<name>/settings/payment-request`                                |
 
 The company is still the cookie's - every API call sends its id - so `middleware.ts` checks the
 address against the cookie before a page renders:
@@ -80,7 +80,7 @@ membership on every call — the database decides, not the claim
 ## What the role changes on screen
 
 `useUserRole()` decides which actions render: cashiers and shop managers create and
-edit; accountant / admin / super_admin (the *elevated* roles) also record payments,
+edit; accountant / admin / super_admin (the _elevated_ roles) also record payments,
 return, void and publish. The backend refuses the rest regardless
 (`minty-payment-request-api/core/permissions.py`).
 
@@ -101,8 +101,9 @@ company is held to the caller's membership of the company in the path. (Until 20
 read Flask's `/api/entity/<id>/subscription-notice`, which is deleted.) Two kinds come back,
 `past_due` and `pending_cancel` (no trial kind since 2026-10-01). Its button opens
 `settings_path` - a Flask path with its own query (`/handoff/minty-web?next=<the module page>&entity_id=<id>`)
+
 - through `/entity/<id>/enter` (`buildMintyEnterUrl`, which URL-encodes it whole as `next`). A
-failed notice shows nothing.
+  failed notice shows nothing.
 
 ## The sidebar talks to Flask and minty-subscription-api directly
 

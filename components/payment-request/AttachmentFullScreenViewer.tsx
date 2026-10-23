@@ -121,8 +121,10 @@ export function usePinchZoom() {
   const pinchRef = useRef<{ initialDistance: number; initialScale: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const getDistance = (a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) =>
-    Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const getDistance = (
+    a: { clientX: number; clientY: number },
+    b: { clientX: number; clientY: number },
+  ) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 
   const onTouchStart = useCallback(
     (e: React.TouchEvent) => {
@@ -159,7 +161,12 @@ export function usePinchZoom() {
 
   const resetScale = useCallback(() => setScale(1), []);
 
-  return { scale, resetScale, scrollRef, touchHandlers: { onTouchStart, onTouchMove, onTouchEnd, onTouchCancel: onTouchEnd } };
+  return {
+    scale,
+    resetScale,
+    scrollRef,
+    touchHandlers: { onTouchStart, onTouchMove, onTouchEnd, onTouchCancel: onTouchEnd },
+  };
 }
 
 const FOCUSABLE =
@@ -237,7 +244,11 @@ export function AttachmentFullScreenViewer({
       className="fixed inset-0 z-[340] flex flex-col bg-black/90"
     >
       <div className="flex min-w-0 shrink-0 items-center justify-between gap-2 px-3 py-2">
-        <p id={titleId} className="min-w-0 truncate text-sm font-medium text-white/95" title={item.name || undefined}>
+        <p
+          id={titleId}
+          className="min-w-0 truncate text-sm font-medium text-white/95"
+          title={item.name || undefined}
+        >
           {item.name || "Attachment"}
         </p>
         <div className="flex shrink-0 items-center gap-2">
@@ -267,7 +278,10 @@ export function AttachmentFullScreenViewer({
           className="visible-scrollbar mx-auto h-full max-h-full min-h-0 w-full max-w-5xl overflow-auto touch-pan-x touch-pan-y"
           {...touchHandlers}
         >
-          <div className="flex w-full flex-col p-2" style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}>
+          <div
+            className="flex w-full flex-col p-2"
+            style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
+          >
             <figure className="relative mx-auto w-full min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white shadow-lg">
               <PreviewBlock {...item} layout="fullscreen" />
             </figure>

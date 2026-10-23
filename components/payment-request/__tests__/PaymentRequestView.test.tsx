@@ -41,7 +41,10 @@ const answer = (status: number, body: unknown) =>
  * Answers by path. `pages` is consulted in order for each `/bills/?page=N` the loop asks for,
  * so a test states the WHOLE conversation rather than queueing responses blind.
  */
-function serve({ pages = [ALL_STATUSES], onBills }: { pages?: unknown[][]; onBills?: (page: number) => void } = {}) {
+function serve({
+  pages = [ALL_STATUSES],
+  onBills,
+}: { pages?: unknown[][]; onBills?: (page: number) => void } = {}) {
   const billsCalls: number[] = [];
   fetchMock.mockImplementation(async (input) => {
     const url = new URL(String(input));
@@ -178,7 +181,9 @@ describe("the rows it shows", () => {
   });
 
   it("show the amount due with the company's currency", async () => {
-    serve({ pages: [[billListItem({ id: "b1", contact: "One Supplier", amount_due: "6000.00" })]] });
+    serve({
+      pages: [[billListItem({ id: "b1", contact: "One Supplier", amount_due: "6000.00" })]],
+    });
 
     show();
 
@@ -213,7 +218,8 @@ describe("a list that did not load", () => {
       const path = new URL(String(input)).pathname;
       if (path.endsWith("/auth/entitlements")) return answer(200, { billing_enabled: true });
       if (path.endsWith("/auth/entity-currency")) return answer(200, { currency_code: "HKD" });
-      if (path.endsWith("/bills/")) return answer(403, { detail: "You don't have access to that." });
+      if (path.endsWith("/bills/"))
+        return answer(403, { detail: "You don't have access to that." });
       return answer(200, {});
     });
 
@@ -276,10 +282,20 @@ describe("bank slip counts that did not load", () => {
         if (path.endsWith("/attachments")) {
           return answer(200, [
             {
-              id: "att-1", attachment_role: "bank_slip", sort_order: 0, note: "", created_at: "2026-10-12T02:00:00Z",
+              id: "att-1",
+              attachment_role: "bank_slip",
+              sort_order: 0,
+              note: "",
+              created_at: "2026-10-12T02:00:00Z",
               attachment: {
-                id: "f-1", original_name: "slip.pdf", mime_type: "application/pdf", file_size: 10,
-                file_extension: "pdf", storage_provider: "s3", created_at: "2026-10-12T02:00:00Z", download_url: "",
+                id: "f-1",
+                original_name: "slip.pdf",
+                mime_type: "application/pdf",
+                file_size: 10,
+                file_extension: "pdf",
+                storage_provider: "s3",
+                created_at: "2026-10-12T02:00:00Z",
+                download_url: "",
               },
             },
           ]);
@@ -288,11 +304,21 @@ describe("bank slip counts that did not load", () => {
           if (!paymentsUp) return answer(500, { detail: "boom" });
           return answer(200, {
             paid_total: "0.00",
-            payments: [{ id: "pay-1", bill_id: "b1", payment_status: "completed", amount: "1.00", currency_code: "HKD" }],
+            payments: [
+              {
+                id: "pay-1",
+                bill_id: "b1",
+                payment_status: "completed",
+                amount: "1.00",
+                currency_code: "HKD",
+              },
+            ],
           });
         }
         if (path.endsWith("/bills/")) {
-          return answer(200, [billListItem({ id: "b1", contact: "One Supplier", status: "submitted" })]);
+          return answer(200, [
+            billListItem({ id: "b1", contact: "One Supplier", status: "submitted" }),
+          ]);
         }
         return answer(200, {});
       });
@@ -307,7 +333,9 @@ describe("bank slip counts that did not load", () => {
       paymentsUp = true;
       await userEvent.click(retry);
 
-      expect(await table().findByRole("button", { name: /View bank slip — 1 file uploaded/ })).toBeInTheDocument();
+      expect(
+        await table().findByRole("button", { name: /View bank slip — 1 file uploaded/ }),
+      ).toBeInTheDocument();
     } finally {
       consoleError.mockRestore();
     }
