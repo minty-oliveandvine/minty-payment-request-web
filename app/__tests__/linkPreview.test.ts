@@ -10,8 +10,7 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const CARD_SHA256 =
-  "dfbe96307705059a914d5b4d7440a71def981bf602bddd7ce3b890d15fa39cce";
+const CARD_SHA256 = "dfbe96307705059a914d5b4d7440a71def981bf602bddd7ce3b890d15fa39cce";
 
 describe.each(["opengraph-image", "twitter-image"])("app/%s", (name) => {
   it("is the shared 1200x630 PNG card", () => {
@@ -22,8 +21,6 @@ describe.each(["opengraph-image", "twitter-image"])("app/%s", (name) => {
   });
 
   it("carries its alt text", () => {
-    expect(readFileSync(resolve("app", `${name}.alt.txt`), "utf8").trim()).toBe(
-      "Minty",
-    );
+    expect(readFileSync(resolve("app", `${name}.alt.txt`), "utf8").trim()).toBe("Minty");
   });
 });
