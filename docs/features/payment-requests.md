@@ -227,8 +227,9 @@ payment actions"` → `role="menu"` "Payment actions" with **Publish** / **Repub
   - **Payments** (`#payment-history`, `PaymentHistoryCard.tsx`; `BankSlipDetailsModal.tsx`
     uploads a slip and can push it to the Xero invoice, then closes once the caller has
     refreshed — a failed refresh is logged, never rolled back; `PaymentDeleteConfirmModal`);
-  - **History** (`ActivityHistoryAccordion.tsx`) rendering the backend's audit rows — "published
-    Payment Request #… to Xero", "uploaded receipt.pdf", "submitted …". It starts collapsed;
+  - **History** (`ActivityHistoryAccordion.tsx`) rendering the backend's audit rows — "submitted",
+    "published to Xero", "uploaded receipt.pdf", "recorded a payment of HKD 1,200.00". It sits on
+    the request's own page, so an entry never repeats the request's name. It starts collapsed;
     opening it scrolls the section into view, closing it scrolls back. A failed read says so
     ("I couldn't load the history…") with Try again, never "No activity yet".
 

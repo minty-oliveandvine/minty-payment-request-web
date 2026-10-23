@@ -1428,7 +1428,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
 
           <ActivityHistoryAccordion
             billId={requestId}
-            billRef={bill?.reference ? `#${bill.reference}` : undefined}
+            currencyCode={currencyLabel}
             refreshSignal={auditRefresh}
           />
         </div>
