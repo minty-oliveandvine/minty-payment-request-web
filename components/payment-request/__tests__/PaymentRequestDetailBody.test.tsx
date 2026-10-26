@@ -275,11 +275,16 @@ describe("editing it", () => {
       // Carried along unchanged, which is what makes it a replace rather than a patch.
       contact: "Young Bros Transport",
       reference: "PR-0001",
-      amount: 6000,
+      // amounts go as "1234.50", the same shape as a new request (owner, 2026-10-26)
+      amount: "6000.00",
       currency_code: "HKD",
       invoice_date: "2026-03-03",
       due_date: "2026-03-31",
       xero_account_code: "429",
+    });
+    expect((put.body!.line_items as Record<string, unknown>[])[0]).toMatchObject({
+      unit_amount: "6000.00",
+      line_amount: "6000.00",
     });
   });
 

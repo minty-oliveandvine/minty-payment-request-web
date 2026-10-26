@@ -1,6 +1,6 @@
 import type { BillCreatePayload, BillDetail } from "./api";
 import type { PaymentRequestDetailedInfoData } from "@/components/payment-request/PaymentRequestDetailedInfo";
-import { formatAmount, parseAmount } from "@minty/shared/money";
+import { formatAmount, toAmountString } from "@minty/shared/money";
 
 function toIsoDateOnly(value: string | null): string {
   if (!value) return "";
@@ -42,7 +42,8 @@ export function buildBillUpdatePayload(
   bill: BillDetail,
   draft: PaymentRequestDetailedInfoData,
 ): Partial<BillCreatePayload> & { status?: string } {
-  const amount = parseAmount(draft.amount) ?? NaN;
+  // "1234.50", the same shape a new request sends (owner, 2026-10-26).
+  const amount = toAmountString(draft.amount ?? "");
   const { account_code, account_name } = parseAccountField(draft.accountCode);
 
   const payload: Partial<BillCreatePayload> = {
@@ -50,7 +51,7 @@ export function buildBillUpdatePayload(
     xero_contact_id: draft.xero_contact_id ?? "",
     description: draft.description,
     reference: draft.billNo,
-    amount: Number.isFinite(amount) ? amount : undefined,
+    amount,
     currency_code: draft.currencyCode,
     invoice_date: draft.invoiceDate || null,
     due_date: draft.dueDate || null,
@@ -59,7 +60,7 @@ export function buildBillUpdatePayload(
 
   const line0 = bill.line_items?.[0];
   if (line0) {
-    const ua = Number.isFinite(amount) ? amount : Number(line0.unit_amount);
+    const ua = amount ?? toAmountString(line0.unit_amount ?? "") ?? "0.00";
     payload.line_items = [
       {
         description: line0.description,
@@ -71,7 +72,7 @@ export function buildBillUpdatePayload(
       },
     ];
   } else if (account_code) {
-    const ua = Number.isFinite(amount) ? amount : 0;
+    const ua = amount ?? "0.00";
     payload.line_items = [
       {
         description: draft.description || "",

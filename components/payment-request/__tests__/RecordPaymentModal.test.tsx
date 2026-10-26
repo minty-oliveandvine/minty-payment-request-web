@@ -156,7 +156,7 @@ describe("paying in full", () => {
 
     await waitFor(() => expect(posted).toHaveLength(1));
     expect(posted[0].body).toMatchObject({
-      amount: 6000,
+      amount: "6000.00",
       currency_code: "HKD",
       payment_status: "completed",
     });
@@ -217,7 +217,7 @@ describe("paying part of it", () => {
     await userEvent.click(addPayment());
 
     await waitFor(() => expect(posted).toHaveLength(1));
-    expect(posted[0].body).toMatchObject({ amount: 1500, currency_code: "HKD" });
+    expect(posted[0].body).toMatchObject({ amount: "1500.00", currency_code: "HKD" });
   });
 
   it("refuses more than what is left, and says what the maximum is", async () => {

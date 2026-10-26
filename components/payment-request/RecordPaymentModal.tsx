@@ -27,7 +27,7 @@ import { buildBankSlipDetailsFromPaymentList } from "@/lib/bankSlipEnrichment";
 import { useEntityCurrency } from "@/lib/entityCurrency";
 import { shouldShowPaymentInHistory } from "@/lib/paymentHistoryDisplay";
 import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
-import { formatAmount, formatMoney, parseAmount } from "@minty/shared/money";
+import { formatAmount, formatMoney, parseAmount, toAmountString } from "@minty/shared/money";
 import { useAmountInput } from "@minty/shared/amountInput";
 
 export type RecordPaymentModalProps = {
@@ -384,7 +384,9 @@ export function RecordPaymentModal({
     try {
       await createPayment(billId, {
         payment_date: draftDate,
-        amount,
+        // "1234.50", the same shape a new request sends (owner, 2026-10-26); formatAmount first
+        // so a float remainder reads at 15 digits ("2.00", never "1.99").
+        amount: toAmountString(formatAmount(amount)) ?? "",
         currency_code: iso,
         payment_status: "completed",
       });
