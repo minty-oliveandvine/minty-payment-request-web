@@ -47,6 +47,8 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       chip row scrolls sideways rather than wrapping.
 - [ ] Search (supplier, reference, description), the amount range, the invoice/due date range,
       and the Xero publish-state filter each narrow the rows as expected, and compose together.
+- [ ] A min amount above the max, or a start date after the end date, says so under the pair
+      as it is typed, and Apply is disabled with its reason beside it until it is put right.
 - [ ] Table and Easy View show the same rows and totals; the Easy view | Table view control
       persists the choice, and is not shown below 768px (a phone always gets Easy view).
 - [ ] Each row offers only its ONE next action (Record payment, View payments, Continue or
@@ -74,6 +76,10 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
 
 - [ ] Supplier picker searches the entity's synced Xero contacts; "create new" adds the
       contact in Xero itself.
+- [ ] A new supplier's name of 101+ characters says "Keep the supplier's name to 100 characters
+      or fewer." as it is typed, and the create option does nothing until it is shorter.
+- [ ] Every amount field puts the commas in as it is typed; a JPY company's amount fields refuse
+      a "." and post `"1234"`; an HKD company's post `"1234.50"`.
 - [ ] Creating a new supplier while the entity has no live Xero connection fails visibly: the
       picker closes, the field turns red, and the API's own message shows under it until the
       name is edited (not a silent no-op).
@@ -114,6 +120,9 @@ WHERE id = '<id>';` plus `SELECT * FROM pettycashv3.bill_line WHERE bill_id = '<
       and on a phone the Primary is full width first with the rest on the row below.
 - [ ] Edit → Save Changes / Cancel works for a submitted request (with the "already submitted"
       banner); a draft or a returned request offers **Submit for payment** as its Primary.
+- [ ] Editing the supplier: an untouched older request with no Xero contact saves; a changed
+      name picked from the list saves; a changed name typed but not picked is refused with
+      "Pick the supplier from the list, or add them as a new supplier."
 - [ ] **Publish** shows a disabled, "Publishing…" state while in flight, and a failure surfaces
       as an inline danger alert under the header (not a toast, not a silently stuck button).
 - [ ] Once published, the same menu item reads **Republish** — including after a full page
@@ -127,6 +136,8 @@ WHERE id = '<id>';` plus `SELECT * FROM pettycashv3.bill_line WHERE bill_id = '<
       type, and **Record HKD …**. More than the unpaid amount says "Enter HKD X or less - that is
       what is unpaid." while typing; a double press records once; success is a toast and the
       drawer stays; Escape with an amount typed asks before discarding.
+- [ ] Record payment's date defaults to today on the person's clock, also just after local
+      midnight (when UTC is still on yesterday).
 - [ ] Recording a payment that would exceed the bill's outstanding amount shows the
       overpayment warning before it goes through.
 - [ ] A bank-slip upload on a payment can also be pushed to the Xero invoice from the same

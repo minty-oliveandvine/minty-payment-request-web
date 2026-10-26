@@ -9,8 +9,10 @@ import { inputClass } from "@/components/ui/Field";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { Icon } from "@/components/ui/Icon";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { useEntityCurrencyDecimals } from "@/lib/entityCurrency";
 import { useUserRole } from "@/lib/useUserRole";
-import { acceptAmountInput, formatAmount, toAmountEditString } from "@minty/shared/money";
+import { useAmountInput } from "@minty/shared/amountInput";
+import { parseAmount } from "@minty/shared/money";
 
 const FILTER_DATE_TYPE_OPTIONS = [
   { value: "Invoice Date", label: "Invoice Date" },
@@ -26,6 +28,12 @@ const FILTER_XERO_STATUS_OPTIONS = [
   { value: "published", label: "Published" },
   { value: "draft", label: "Not published" },
 ] as const;
+
+const AMOUNTS_OUT_OF_ORDER =
+  "The first amount is more than the second. Make the first amount the smaller one.";
+const DATES_OUT_OF_ORDER =
+  "The start date is after the end date. Choose a start on or before the end.";
+const APPLY_HELD_REASON = "Put the range in order to apply the filters.";
 
 /** Filter panel field labels — Part 13 `label` style. */
 const fieldLabelClass = "mb-1.5 block text-label text-text-secondary";
@@ -139,9 +147,29 @@ export function PaymentRequestToolbar({
   const bulkButtonRef = useRef<HTMLButtonElement | null>(null);
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
+  // Commas as typed, in the company currency's places (JPY takes no point).
+  const decimals = useEntityCurrencyDecimals();
+  const minAmountInput = useAmountInput({
+    value: minAmount ?? "",
+    onValue: setMinAmount,
+    decimals,
+  });
+  const maxAmountInput = useAmountInput({
+    value: maxAmount ?? "",
+    onValue: setMaxAmount,
+    decimals,
+  });
   const [dateType, setDateType] = useState<string>(DEFAULT_FILTER_DATE_TYPE);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  // Checked as the person types; only once both ends of a pair are filled.
+  const minAmountValue = parseAmount(minAmount);
+  const maxAmountValue = parseAmount(maxAmount);
+  const amountsOutOfOrder =
+    minAmountValue !== null && maxAmountValue !== null && minAmountValue > maxAmountValue;
+  // yyyy-mm-dd compares correctly as text.
+  const datesOutOfOrder = Boolean(startDate && endDate && startDate > endDate);
+  const filtersOutOfOrder = amountsOutOfOrder || datesOutOfOrder;
   const [xeroStatus, setXeroStatus] = useState("");
   /** The date range applies to whichever field Date Type names. */
   const dateRangeNoun = dateType === "Submitted Date" ? "Submitted" : "Invoice";
@@ -294,6 +322,7 @@ export function PaymentRequestToolbar({
   };
 
   const onSaveFilterChanges = () => {
+    if (filtersOutOfOrder) return;
     onApplyFilters?.({ minAmount, maxAmount, dateType, startDate, endDate, xeroStatus });
     setFilterOpen(false);
     setFilterMenu(null);
@@ -428,37 +457,36 @@ export function PaymentRequestToolbar({
                           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
                             <input
                               id={`${filterFieldIds}-min-amount`}
-                              type="text"
-                              inputMode="decimal"
-                              value={minAmount ?? ""}
-                              onChange={(e) => {
-                                const value = acceptAmountInput(e.target.value);
-                                if (value === null) return;
-                                setMinAmount(value);
-                              }}
-                              onFocus={() => setMinAmount(toAmountEditString(minAmount))}
-                              onBlur={(e) => setMinAmount(formatAmount(e.target.value))}
+                              {...minAmountInput}
+                              aria-invalid={amountsOutOfOrder || undefined}
+                              aria-describedby={
+                                amountsOutOfOrder ? `${filterFieldIds}-amount-order` : undefined
+                              }
                               placeholder="0.00"
-                              className={`${textInputClass} text-right tabular-nums`}
+                              className={`${amountsOutOfOrder ? inputClass(true) : textInputClass} text-right tabular-nums`}
                             />
                             <span className="shrink-0 text-label text-text-secondary">to</span>
                             <input
                               id={`${filterFieldIds}-max-amount`}
-                              type="text"
-                              inputMode="decimal"
+                              {...maxAmountInput}
                               aria-label="Amount to"
-                              value={maxAmount ?? ""}
-                              onChange={(e) => {
-                                const value = acceptAmountInput(e.target.value);
-                                if (value === null) return;
-                                setMaxAmount(value);
-                              }}
-                              onFocus={() => setMaxAmount(toAmountEditString(maxAmount))}
-                              onBlur={(e) => setMaxAmount(formatAmount(e.target.value))}
+                              aria-invalid={amountsOutOfOrder || undefined}
+                              aria-describedby={
+                                amountsOutOfOrder ? `${filterFieldIds}-amount-order` : undefined
+                              }
                               placeholder="0.00"
-                              className={`${textInputClass} text-right tabular-nums`}
+                              className={`${amountsOutOfOrder ? inputClass(true) : textInputClass} text-right tabular-nums`}
                             />
                           </div>
+                          {amountsOutOfOrder ? (
+                            <p
+                              id={`${filterFieldIds}-amount-order`}
+                              className="mt-1.5 text-caption text-status-danger-ink"
+                              role="alert"
+                            >
+                              {AMOUNTS_OUT_OF_ORDER}
+                            </p>
+                          ) : null}
                         </div>
                         <div>
                           <label
@@ -506,8 +534,14 @@ export function PaymentRequestToolbar({
                               id={`${filterFieldIds}-start-date`}
                               value={startDate ?? ""}
                               onChange={setStartDate}
+                              invalid={datesOutOfOrder}
+                              ariaDescribedBy={
+                                datesOutOfOrder ? `${filterFieldIds}-date-order` : undefined
+                              }
                               calendarAriaLabel={`Open calendar for ${dateRangeNoun.toLowerCase()} start date`}
-                              textInputClassName={filterDateTextClass}
+                              textInputClassName={
+                                datesOutOfOrder ? inputClass(true) : filterDateTextClass
+                              }
                               calendarButtonClassName={filterDateCalendarBtnClass}
                             />
                           </div>
@@ -522,24 +556,58 @@ export function PaymentRequestToolbar({
                               id={`${filterFieldIds}-end-date`}
                               value={endDate ?? ""}
                               onChange={setEndDate}
+                              invalid={datesOutOfOrder}
+                              ariaDescribedBy={
+                                datesOutOfOrder ? `${filterFieldIds}-date-order` : undefined
+                              }
                               calendarAriaLabel={`Open calendar for ${dateRangeNoun.toLowerCase()} end date`}
-                              textInputClassName={filterDateTextClass}
+                              textInputClassName={
+                                datesOutOfOrder ? inputClass(true) : filterDateTextClass
+                              }
                               calendarButtonClassName={filterDateCalendarBtnClass}
                             />
                           </div>
+                          {datesOutOfOrder ? (
+                            <p
+                              id={`${filterFieldIds}-date-order`}
+                              className="text-caption text-status-danger-ink sm:col-span-2"
+                              role="alert"
+                            >
+                              {DATES_OUT_OF_ORDER}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                     </div>
                     <div
-                      className="flex gap-3 border-t border-border-subtle px-4 py-3"
+                      className="border-t border-border-subtle px-4 py-3"
                       onMouseDown={(e) => e.stopPropagation()}
                     >
-                      <Button kind="secondary" full onClick={onResetFilterDraft}>
-                        Reset
-                      </Button>
-                      <Button kind="primary" full onClick={onSaveFilterChanges}>
-                        Apply
-                      </Button>
+                      <div className="flex gap-3">
+                        <Button kind="secondary" full onClick={onResetFilterDraft}>
+                          Reset
+                        </Button>
+                        {/* A held Primary shows its reason beside it (Part 15.2). */}
+                        <Button
+                          kind="primary"
+                          full
+                          onClick={onSaveFilterChanges}
+                          disabled={filtersOutOfOrder}
+                          aria-describedby={
+                            filtersOutOfOrder ? `${filterFieldIds}-apply-reason` : undefined
+                          }
+                        >
+                          Apply
+                        </Button>
+                      </div>
+                      {filtersOutOfOrder ? (
+                        <p
+                          id={`${filterFieldIds}-apply-reason`}
+                          className="mt-1.5 text-right text-caption text-text-secondary"
+                        >
+                          {APPLY_HELD_REASON}
+                        </p>
+                      ) : null}
                     </div>
                   </div>,
                   document.body,

@@ -19,17 +19,12 @@ import { BillContactPicker } from "@/components/BillContactPicker";
 import { DateTextField } from "@/components/DateTextField";
 import { ThemedSelect, type ThemedSelectOption } from "@/components/ThemedSelect";
 import { Field, inputClass } from "@/components/ui/Field";
-import {
-  acceptAmountInput,
-  formatAmount,
-  formatMoney,
-  parseAmount,
-  toAmountEditString,
-} from "@minty/shared/money";
+import { formatMoney, parseAmount } from "@minty/shared/money";
+import { useAmountInput } from "@minty/shared/amountInput";
 import type { EntityBillContact } from "@/lib/api";
 import { mergeSelectOption } from "@/lib/billFormSelectOptions";
 import { formatDay } from "@minty/shared/dates";
-import { useEntityCurrency } from "@/lib/entityCurrency";
+import { useEntityCurrency, useEntityCurrencyDecimals } from "@/lib/entityCurrency";
 
 /** Bill / request fields shown on the request's page. */
 export type PaymentRequestDetailedInfoData = {
@@ -137,8 +132,15 @@ export function PaymentRequestDetailedInfo({
   const patch = onPatchChange ?? (() => {});
   const uid = useId();
   const currency = useEntityCurrency();
+  // The currency's places (JPY 0), for the amount field and every amount shown.
+  const decimals = useEntityCurrencyDecimals();
+  const amountInput = useAmountInput({
+    value: amount ?? "",
+    decimals,
+    onValue: (v) => patch({ amount: v }),
+  });
   const accountOptions = mergeSelectOption(accountOptionsProp ?? [], accountCode);
-  const money = (v: string | number | undefined) => formatMoney(v, currency);
+  const money = (v: string | number | undefined) => formatMoney(v, currency, decimals);
 
   if (!isEditing) {
     const invoice = parseAmount(amount);
@@ -215,18 +217,9 @@ export function PaymentRequestDetailedInfo({
         {(a11y) => (
           <input
             {...a11y}
-            type="text"
-            inputMode="decimal"
+            {...amountInput}
             placeholder="0.00"
             translate="no"
-            value={amount ?? ""}
-            onChange={(e) => {
-              const value = acceptAmountInput(e.target.value);
-              if (value === null) return;
-              patch({ amount: value });
-            }}
-            onFocus={() => patch({ amount: toAmountEditString(amount) })}
-            onBlur={(e) => patch({ amount: formatAmount(e.target.value) })}
             disabled={disabled}
             className={`${inputClass(!!amountError)} text-right tabular-nums`}
           />

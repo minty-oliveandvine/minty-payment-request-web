@@ -386,9 +386,9 @@ export type BillCreatePayload = {
   contact?: string;
   xero_contact_id?: string;
   description?: string;
-  // Sent as an exact decimal string (e.g. "123456789012.00") to preserve
-  // precision end-to-end; number still accepted for the older edit path.
-  amount?: string | number;
+  // Always an exact decimal string ("1234.50"), on create and edit alike, to preserve
+  // precision end-to-end (owner, 2026-10-26).
+  amount?: string;
   due_date?: string | null;
   invoice_date?: string | null;
   reference?: string;
@@ -397,8 +397,8 @@ export type BillCreatePayload = {
   line_items?: {
     description?: string;
     quantity?: number;
-    unit_amount?: string | number;
-    line_amount?: string | number;
+    unit_amount?: string;
+    line_amount?: string;
     account_code?: string;
     account_name?: string;
   }[];
@@ -424,10 +424,17 @@ export type CurrencyInfo = {
   is_active: boolean;
 };
 
-/** ISO code of the entity's selected currency (entities.currency_id ->
- * currency_info.iso_code); currency_code is "" when the entity has none. */
-export function fetchEntityCurrency(): Promise<{ currency_code: string }> {
-  return apiFetch<{ currency_code: string }>("/auth/entity-currency");
+/** ISO code and decimal places of the entity's selected currency (entities.currency_id ->
+ * currency_info); currency_code is "" when the entity has none, and decimals then 2. */
+export async function fetchEntityCurrency(): Promise<{ currency_code: string; decimals: number }> {
+  const data = await apiFetch<{ currency_code: string; decimal_places?: number | null }>(
+    "/auth/entity-currency",
+  );
+  const places = data.decimal_places;
+  return {
+    currency_code: data.currency_code,
+    decimals: typeof places === "number" && Number.isInteger(places) && places >= 0 ? places : 2,
+  };
 }
 
 // ── Bills ────────────────────────────────────────────────────────────
@@ -597,7 +604,7 @@ export type PaymentListResponse = {
 
 export type PaymentCreatePayload = {
   payment_date?: string | null;
-  amount?: number;
+  amount?: string;
   currency_code?: string;
   payment_method?: string;
   payment_status?: string;

@@ -59,8 +59,9 @@ the last one. `next.config.ts` carries `transpilePackages: ["@minty/shared"]` (t
 `.ts` source) and `vitest.config.ts` carries `server.deps.inline`, since Vitest does not read
 `transpilePackages`. All of it is guarded by `app/__tests__/packagedStyles.test.ts`.
 
-**The pin is `v0.5` since 2026-10-19** (the owner: every app on the latest shared sidebar),
-the same tag as minty-web. v0.5 is v0.4 plus the `pettycash` preview label and a closed sheet
+**The pin is `v0.10` since 2026-10-26** (the amount fields' `@minty/shared/amountInput`, added
+in v0.9, and the currency's places; `docs/features/payment-requests.md`). The sidebar history
+below starts at `v0.5` (2026-10-19; the owner: every app on the latest shared sidebar). v0.5 is v0.4 plus the `pettycash` preview label and a closed sheet
 that casts no shadow onto the page's right edge. It draws minty-web's Minty v2 look: a 353px sheet, 44px rows in
 `text-title-l`, the module headings with their icons on the right, and the 99px logo. Before
 that, `v0.2` (2026-10-13) brought the token sheet (`@import "@minty/shared/tokens.css"` in

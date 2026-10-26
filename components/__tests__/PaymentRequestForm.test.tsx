@@ -259,13 +259,30 @@ describe("as you type (CLAUDE.md validation rule)", () => {
   it("takes digits and refuses the rest", async () => {
     show();
     await userEvent.type(amountField(), "12abc34");
-    expect(amountField()).toHaveValue("1234");
+    expect(amountField()).toHaveValue("1,234");
   });
 
   it("refuses a twelfth integer digit rather than truncating", async () => {
     show();
     await userEvent.type(amountField(), "123456789012");
-    expect(amountField()).toHaveValue("12345678901");
+    expect(amountField()).toHaveValue("12,345,678,901");
+  });
+
+  it("puts the commas in as the person types (@minty/shared/amountInput)", async () => {
+    show();
+    await userEvent.type(amountField(), "1234567.8");
+    expect(amountField()).toHaveValue("1,234,567.8");
+  });
+
+  it("still posts the amount as a plain decimal string", async () => {
+    const { posted } = serve();
+    show();
+    await userEvent.type(amountField(), "1234567.5");
+
+    await userEvent.click(saveDraft());
+
+    await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+    expect(posted[0].body).toMatchObject({ amount: "1234567.50" });
   });
 
   it("groups the amount once the field is left", async () => {
@@ -489,6 +506,24 @@ describe("the company's currency", () => {
     expect(submit()).toBeDisabled();
     expect(saveDraft()).toBeDisabled();
     expect(posted).toHaveLength(0);
+  });
+
+  it("takes no point for a 0-place currency (JPY), and posts whole yen", async () => {
+    const { posted } = serve({
+      currency: () => answer(200, { currency_code: "JPY", decimal_places: 0 }),
+    });
+    await showFresh();
+    const amount = await screen.findByRole("textbox", { name: /Invoice amount \(JPY\)/ });
+
+    await userEvent.type(amount, "12.5");
+    expect(amount).toHaveValue("125");
+
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "1234");
+    await userEvent.click(saveDraft());
+
+    await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+    expect(posted[0].body).toMatchObject({ amount: "1234" });
   });
 
   it("tells a failed read apart from none set, and tries again", async () => {

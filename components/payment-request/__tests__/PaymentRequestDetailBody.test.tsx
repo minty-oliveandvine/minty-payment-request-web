@@ -422,11 +422,16 @@ describe("editing it", () => {
       // Carried along unchanged, which is what makes it a replace rather than a patch.
       contact: "Young Bros Transport",
       reference: "PR-0001",
-      amount: 6000,
+      // amounts go as "1234.50", the same shape as a new request (owner, 2026-10-26)
+      amount: "6000.00",
       currency_code: "HKD",
       invoice_date: "2026-03-03",
       due_date: "2026-03-31",
       xero_account_code: "429",
+    });
+    expect((put.body!.line_items as Record<string, unknown>[])[0]).toMatchObject({
+      unit_amount: "6000.00",
+      line_amount: "6000.00",
     });
   });
 
@@ -617,5 +622,115 @@ describe("view-only access", () => {
     const rows = within(screen.getByRole("region", { name: "Payment request details" }));
     expect(rows.getByText("Young Bros Transport")).toBeInTheDocument();
     expect(rows.getByText("429 - General Expenses")).toBeInTheDocument();
+  });
+});
+
+describe.each(["submitted", "draft"])("the supplier on edit (a %s request)", (status) => {
+  // Owner's decision: a pick from the list is needed only when the supplier text changed.
+  const PICK = "Pick the supplier from the list, or add them as a new supplier.";
+  const OLD_BILL = bill({
+    id: BILL_ID,
+    status,
+    contact: "Young Bros Transport",
+    reference: "PR-0001",
+    xero_contact_id: "", // an older request saved before suppliers came from Xero
+    attachments: [billAttachment()],
+  });
+  const supplierField = () => screen.getByPlaceholderText("Search or add a supplier");
+  const startEditing = async () => {
+    await loaded();
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByDisplayValue("Young Bros Transport");
+  };
+
+  it("saves an untouched older request that has no Xero supplier", async () => {
+    const { calls } = serve({ detail: OLD_BILL });
+    show();
+    await startEditing();
+
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+    expect(screen.queryByText(PICK)).not.toBeInTheDocument();
+  });
+
+  it("saves a changed supplier that was picked from the list", async () => {
+    const { calls } = serve({ detail: OLD_BILL });
+    show();
+    await startEditing();
+
+    await userEvent.clear(supplierField());
+    await userEvent.type(supplierField(), "ABC");
+    await userEvent.click(await screen.findByRole("option", { name: "ABC Furniture" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+    expect(calls.find((c) => c.method === "PUT")!.body).toMatchObject({
+      contact: "ABC Furniture",
+      xero_contact_id: "XERO-2",
+    });
+  });
+
+  it("refuses a changed supplier that was typed but not picked, and says so", async () => {
+    const { calls } = serve({ detail: OLD_BILL });
+    show();
+    await startEditing();
+
+    await userEvent.clear(supplierField());
+    await userEvent.type(supplierField(), "Someone Unlisted");
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    // Under the field, where the supplier's error shows (and in the summary only with 2+).
+    await waitFor(() => expect(supplierField()).toHaveAccessibleDescription(PICK));
+    expect(calls.some((c) => c.method === "PUT")).toBe(false);
+  });
+});
+
+describe("editing for a company whose currency has no decimal places (JPY)", () => {
+  it("shows and sends the amount with no decimals", async () => {
+    const { calls } = serve();
+    const inner = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) =>
+      new URL(String(input)).pathname.endsWith("/auth/entity-currency")
+        ? answer(200, { currency_code: "JPY", decimal_places: 0 })
+        : inner(input, init),
+    );
+    // lib/entityCurrency.ts caches the currency for the page's life: fresh modules.
+    vi.resetModules();
+    const [{ PaymentRequestDetailBody: Body }, { ToastProvider: Toasts }, { setAuth: auth }] =
+      await Promise.all([
+        import("@/components/payment-request/PaymentRequestDetailBody"),
+        import("@/components/Toast"),
+        import("@/lib/auth"),
+      ]);
+    auth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
+    render(
+      <Toasts>
+        <Body />
+      </Toasts>,
+    );
+    await loaded();
+    // The view already reads in yen, with no places.
+    await waitFor(() =>
+      expect(screen.getByRole("region", { name: "Payment request details" })).toHaveTextContent(
+        "Invoice amountJPY 6,000",
+      ),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const amount = await screen.findByDisplayValue("6,000");
+
+    await userEvent.type(amount, ".5");
+    expect(amount).toHaveValue("60,005");
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "1234");
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+    const put = calls.find((c) => c.method === "PUT")!;
+    expect(put.body).toMatchObject({ amount: "1234" });
+    expect((put.body!.line_items as Record<string, unknown>[])[0]).toMatchObject({
+      unit_amount: "1234",
+      line_amount: "1234",
+    });
   });
 });

@@ -6,6 +6,10 @@ import { ApiError, createEntityBillContact, type EntityBillContact } from "@/lib
 import { useToast } from "@/components/Toast";
 import { inputClass } from "@/components/ui/Field";
 
+/** The API's cap (Bill.contact_name holds 100), checked as the name is typed. */
+const NEW_SUPPLIER_NAME_MAX = 100;
+const NAME_TOO_LONG = "Keep the supplier's name to 100 characters or fewer.";
+
 /**
  * Part 14 "Supplier picker": a 44px ARIA combobox; options 52px tall; "Add '…' as a new supplier"
  * comes LAST and is never automatic. Geometry and colours are the Field's (components/ui/Field.tsx).
@@ -57,6 +61,7 @@ export function BillContactPicker({
     contacts.some((c) => c.name.trim().toLowerCase() === trimmedName.toLowerCase());
 
   const showAddNewRow = trimmedName.length > 0 && !nameMatchesExisting;
+  const nameTooLong = showAddNewRow && trimmedName.length > NEW_SUPPLIER_NAME_MAX;
   const menuHasContent = filtered.length > 0 || showAddNewRow;
 
   const updatePosition = useCallback(() => {
@@ -109,7 +114,7 @@ export function BillContactPicker({
 
   const handleAddToXero = async () => {
     const name = trimmedName;
-    if (!name || creating || disabled) return;
+    if (!name || nameTooLong || creating || disabled) return;
     setCreating(true);
     setCreateError(null);
     try {
@@ -133,8 +138,10 @@ export function BillContactPicker({
     }
   };
 
-  const invalid = error || createError !== null;
+  const invalid = error || createError !== null || nameTooLong;
   const createErrorId = `${listboxId}-create-error`;
+  /** The picker's own message: a failed create, else a name over the cap (said as it is typed). */
+  const ownError = createError ?? (nameTooLong ? NAME_TOO_LONG : null);
 
   const addRowText = creating ? "Creating supplier…" : `+ Add '${trimmedName}' as a new supplier`;
 
@@ -174,13 +181,14 @@ export function BillContactPicker({
           <li
             role="option"
             aria-selected={false}
+            aria-disabled={nameTooLong || undefined}
             aria-label={
               creating ? "Creating supplier in Xero" : `Add ${trimmedName} as a new supplier`
             }
             className={
               "flex min-h-13 cursor-pointer items-center px-3 text-left text-body-m font-semibold text-text-link transition-colors " +
               (filtered.length > 0 ? "border-t border-border-subtle " : "") +
-              (creating || disabled
+              (creating || disabled || nameTooLong
                 ? "cursor-not-allowed text-text-disabled"
                 : "hover:bg-state-hover")
             }
@@ -188,7 +196,7 @@ export function BillContactPicker({
               e.preventDefault();
             }}
             onClick={() => {
-              if (!disabled && !creating) void handleAddToXero();
+              if (!disabled && !creating && !nameTooLong) void handleAddToXero();
             }}
           >
             {addRowText}
@@ -212,7 +220,7 @@ export function BillContactPicker({
           aria-invalid={invalid || undefined}
           aria-required={required || undefined}
           aria-describedby={
-            [ariaDescribedBy, createError ? createErrorId : undefined].filter(Boolean).join(" ") ||
+            [ariaDescribedBy, ownError ? createErrorId : undefined].filter(Boolean).join(" ") ||
             undefined
           }
           disabled={disabled || creating}
@@ -227,9 +235,9 @@ export function BillContactPicker({
           className={inputClass(invalid)}
         />
       </div>
-      {createError ? (
+      {ownError ? (
         <p id={createErrorId} className="mt-1.5 text-caption text-status-danger-ink" role="alert">
-          {createError}
+          {ownError}
         </p>
       ) : null}
       {typeof document !== "undefined" && menu ? createPortal(menu, document.body) : null}

@@ -75,7 +75,11 @@ nested under a request ("Invoice INV-… · 2 bank slips").
   Several can be stacked.
 - **Filters**: search (supplier, reference, description), amount range, a date range on
   invoice or due date, Xero publish state (`lib/paymentRequestSearch.ts`, sorting in
-  `lib/paymentRequestRowSort.ts`).
+  `lib/paymentRequestRowSort.ts`). A range the wrong way round says so under its pair as it is
+  typed - "The first amount is more than the second. Make the first amount the smaller one."
+  (compared with `parseAmount`, only once both are filled) and "The start date is after the end
+  date. Choose a start on or before the end." - and Apply is disabled with its reason beside it
+  ("Put the range in order to apply the filters.") until the range is in order.
 - **Easy view** (`PaymentRequestEasyView.tsx`): record rows at most 960px wide — the supplier is
   the row's link (stretched over it), then the Unpaid amount in a 160px track, then the Status
   pill and the one next action in a 360px track (from 1024px; stacked below). Five skeleton
@@ -99,8 +103,16 @@ nested under a request ("Invoice INV-… · 2 bank slips").
   a negative is "-HKD 120.00"; extra decimals are cut, not rounded ("9.999" → "9.99"); with no
   currency yet the number stands alone. Payment requests always show
   the places (`formatMoney`, never `formatPrice`). The totals banner's figures carry no code
-  (`formatAmount`; a mixed set names each currency above its group). Typing keeps plain digits,
-  capped at 11 before the point and 2 after, and groups on blur.
+  (`formatAmount`; a mixed set names each currency above its group).
+- Every amount **input** (Add payment request, the detail edit, Record payment, the amount
+  filter) is `@minty/shared/amountInput` (owner, 2026-10-26; pinned `v0.10`): commas as it is
+  typed, the caret kept on its digit, the places padded on blur; a 12th whole digit, a place
+  beyond the currency's or a letter is refused. The places are the company currency's
+  (`decimal_places` from the same endpoint - `useEntityCurrencyDecimals()` /
+  `useEntityCurrencyState().decimals`, 2 when absent): a JPY company's fields take no point and
+  send `"1234"`, an HKD one's `"1234.50"`. Create, edit and Record payment all send amounts as
+  that text, never a number (`toAmountString(amount, decimals)` in the form,
+  `buildBillUpdatePayload` with the line item, and the payment create; owner, 2026-10-26).
 - **Bank slip counts** load per visible row (`lib/bankSlipEnrichment.ts`). An unknown count is
   never shown as zero: while loading the row shows "…", and a failed lookup is logged and shows
   **Retry** (`BankSlipLoadState.tsx`, re-reads the rows on screen) — never **Upload**, which
@@ -113,7 +125,9 @@ nested under a request ("Invoice INV-… · 2 bank slips").
 A drawer (480px; full screen on a phone): Invoice amount, Paid so far and **Unpaid** as
 description rows, then **Pay in full | Part payment** (Pay in full disabled, with its reason,
 once something has been paid), the amount (helper "Unpaid: …"; above the unpaid amount it says
-"Enter HKD X or less - that is what is unpaid." as you type), the payment date, an optional bank
+"Enter HKD X or less - that is what is unpaid." as you type), the payment date (defaulting to
+today on the person's own clock - `todayLocalISODate`, `lib/dateDisplayFormat.ts`, shared with
+the Add payment request page - never UTC's day), an optional bank
 slip, the payments already recorded, and the Primary **Record HKD …** ("Recording…" while it
 runs; pressed twice it sends once). Success is a toast and the row's new status, no navigation; a
 failure stays in the drawer. Escape with an amount typed asks before discarding.
@@ -136,7 +150,9 @@ A page (max 720px), not a dialog, since 2026-10-13 (`PaymentRequestModal.tsx` is
 2. **Supplier** — `BillContactPicker.tsx`, a `role="combobox"` over the entity's synced
    contacts ("Search or add a supplier"); "create new" makes the contact in Xero, and if that
    fails — e.g. no Xero connection — the API's message shows under the field until the name is
-   edited.
+   edited. A new supplier's name over 100 characters says "Keep the supplier's name to 100
+   characters or fewer." under the field as it is typed, and the create option is held until it
+   is shorter (the API refuses the same: `Bill.contact_name` holds 100).
 3. **Invoice amount** in the entity's currency. With no currency set an alert says so (linking
    to Entity & Integration settings) and both buttons are disabled with that reason; a failed
    read says so with **Try again**.
@@ -223,7 +239,12 @@ payment actions"` → `role="menu"` "Payment actions" with **Publish** / **Repub
     through the backend's `…/preview/` proxy;
   - the details (`PaymentRequestDetailedInfo.tsx`): description rows (`dl`, "Not set yet" when
     empty) — Supplier, Description, Invoice amount, Paid so far, **Unpaid**, the dates, Account
-    code, Payment No. — and `Field`s in the same order while editing;
+    code, Payment No. — and `Field`s in the same order while editing. Editing the supplier
+    needs a pick from the list, or a new supplier, only when its text changed from the saved one
+    (owner, 2026-10-26): a changed name with no `xero_contact_id` is refused with "Pick the
+    supplier from the list, or add them as a new supplier." under the supplier field
+    (`supplierNeedsPick` / `PICK_SUPPLIER_MESSAGE`, `lib/paymentRequestBillMap.ts`), while an
+    untouched older request with no Xero contact still saves;
   - **Payments** (`#payment-history`, `PaymentHistoryCard.tsx`; `BankSlipDetailsModal.tsx`
     uploads a slip and can push it to the Xero invoice, then closes once the caller has
     refreshed — a failed refresh is logged, never rolled back; `PaymentDeleteConfirmModal`);

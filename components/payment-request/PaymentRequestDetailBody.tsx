@@ -33,7 +33,7 @@ import {
 } from "@/lib/api";
 import type { ThemedSelectOption } from "@/components/ThemedSelect";
 import { joinFileNames, uploadEachAttachment } from "@/lib/attachmentUploads";
-import { useEntityCurrency } from "@/lib/entityCurrency";
+import { useEntityCurrency, useEntityCurrencyDecimals } from "@/lib/entityCurrency";
 import {
   MAX_AMOUNT_INT_DIGITS,
   formatAmount,
@@ -47,7 +47,12 @@ import {
   billStatusShouldRollbackWhenNoPayments,
 } from "@/lib/billStatusRollback";
 import { enrichAccountCodeWithOptions } from "@/lib/billFormSelectOptions";
-import { billToDetailedInfo, buildBillUpdatePayload } from "@/lib/paymentRequestBillMap";
+import {
+  billToDetailedInfo,
+  buildBillUpdatePayload,
+  PICK_SUPPLIER_MESSAGE,
+  supplierNeedsPick,
+} from "@/lib/paymentRequestBillMap";
 import { formatDay } from "@minty/shared/dates";
 import { shouldShowPaymentInHistory } from "@/lib/paymentHistoryDisplay";
 import {
@@ -93,9 +98,13 @@ type DetailSubmitFieldErrors = Partial<
  */
 function validateDetailRequiredForSubmit(
   d: PaymentRequestDetailedInfoData,
+  savedContact: string,
 ): DetailSubmitFieldErrors | null {
   const errors: DetailSubmitFieldErrors = {};
   if (!d.contact.trim()) errors.contact = "The supplier is still empty. Choose one to continue.";
+  // A supplier whose text changed must be picked from the list (or added); an untouched older
+  // request with no Xero contact still saves (owner, 2026-10-26).
+  else if (supplierNeedsPick(d, savedContact)) errors.contact = PICK_SUPPLIER_MESSAGE;
   const amt = parseAmount(d.amount);
   if (amt === null || amt <= 0) {
     errors.amount = "The amount is still empty. Add the invoice amount to continue.";
@@ -149,6 +158,7 @@ function serverBillAttachmentsFingerprint(rows: BillAttachment[]): string {
 
 export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetailBodyProps) {
   const entityCurrency = useEntityCurrency();
+  const decimals = useEntityCurrencyDecimals();
   const params = useParams<{ ref?: string }>();
   const router = useRouter();
   const { requestId, pending: lookupPending, error: lookupError } = useRequestId();
@@ -499,12 +509,12 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
 
   const viewData = useMemo(() => {
     if (!bill) return null;
-    const base = billToDetailedInfo(bill);
+    const base = billToDetailedInfo(bill, decimals);
     return {
       ...base,
       accountCode: enrichAccountCodeWithOptions(base.accountCode, accountOptions),
     };
-  }, [bill, accountOptions]);
+  }, [bill, accountOptions, decimals]);
 
   const formData = isEditing && draft ? draft : viewData;
 
@@ -518,7 +528,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
 
   const handleEdit = useCallback(() => {
     if (!bill) return;
-    const base = billToDetailedInfo(bill);
+    const base = billToDetailedInfo(bill, decimals);
     setDraft({
       ...base,
       accountCode: enrichAccountCodeWithOptions(base.accountCode, accountOptions),
@@ -528,7 +538,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     setAccountCodeError(null);
     setSubmitAttemptFieldErrors(null);
     setUploadWarning(null);
-  }, [bill, accountOptions]);
+  }, [bill, accountOptions, decimals]);
 
   const handleCancel = useCallback(() => {
     setBillNoError(null);
@@ -616,7 +626,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       if (!requestId || !bill || !draft) return;
       setIsSaving(true);
       try {
-        const payload = buildBillUpdatePayload(bill, draft);
+        const payload = buildBillUpdatePayload(bill, draft, decimals);
         if (overrideStatus) {
           (payload as typeof payload & { status?: string }).status = overrideStatus;
         }
@@ -721,6 +731,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       commitPendingAttachmentDeletes,
       mapServerAttachmentsToPreviewItems,
       showToast,
+      decimals,
     ],
   );
 
@@ -729,7 +740,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     setBillNoError(null);
     setAccountCodeError(null);
 
-    const detailErrors = validateDetailRequiredForSubmit(draft);
+    const detailErrors = validateDetailRequiredForSubmit(draft, bill.contact);
     if (detailErrors) {
       setSubmitAttemptFieldErrors(detailErrors);
       setSubmitAttempt((n) => n + 1);
@@ -797,7 +808,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     setBillNoError(null);
     setAccountCodeError(null);
 
-    const detailErrors = validateDetailRequiredForSubmit(info);
+    const detailErrors = validateDetailRequiredForSubmit(info, bill.contact);
     if (detailErrors) {
       setSubmitAttemptFieldErrors(detailErrors);
       setSubmitAttempt((n) => n + 1);
@@ -831,7 +842,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
 
     setIsSubmittingDraft(true);
     try {
-      const payload = buildBillUpdatePayload(bill, info);
+      const payload = buildBillUpdatePayload(bill, info, decimals);
       const updated = await updateBill(requestId, { ...payload, status: "submitted" });
       setUploadWarning(null);
       await commitPendingAttachmentDeletes(requestId);
@@ -934,6 +945,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     commitPendingAttachmentDeletes,
     mapServerAttachmentsToPreviewItems,
     showToast,
+    decimals,
   ]);
 
   const handlePublishToXero = useCallback(async () => {

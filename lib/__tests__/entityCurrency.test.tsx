@@ -120,6 +120,34 @@ describe("useEntityCurrency", () => {
   });
 });
 
+describe("useEntityCurrencyDecimals", () => {
+  async function decimalsShown(body: unknown) {
+    const { useEntityCurrencyDecimals } = await freshModule();
+    function Probe() {
+      return <p role="status">{`places=${useEntityCurrencyDecimals()}`}</p>;
+    }
+    fetchMock.mockResolvedValueOnce(answer(200, body));
+    render(<Probe />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    return screen.getByRole("status");
+  }
+
+  it("is the currency's own places - JPY has none", async () => {
+    const status = await decimalsShown({ currency_code: "JPY", decimal_places: 0 });
+    await waitFor(() => expect(status.textContent).toBe("places=0"));
+  });
+
+  it("is 2 for HKD", async () => {
+    const status = await decimalsShown({ currency_code: "HKD", decimal_places: 2 });
+    await waitFor(() => expect(status.textContent).toBe("places=2"));
+  });
+
+  it("is 2 when the API does not say", async () => {
+    const status = await decimalsShown({ currency_code: "HKD" });
+    await waitFor(() => expect(status.textContent).toBe("places=2"));
+  });
+});
+
 describe("useEntityCurrencyState", () => {
   function probe(useState: () => { code: string; status: string; retry: () => void }) {
     return function Probe() {
@@ -152,6 +180,20 @@ describe("useEntityCurrencyState", () => {
     render(<Probe />);
 
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("unset:"));
+  });
+
+  it("carries the currency's decimal places", async () => {
+    const { useEntityCurrencyState } = await freshModule();
+    function Probe() {
+      const { code, decimals } = useEntityCurrencyState();
+      return <p role="status">{`${code}:${decimals}`}</p>;
+    }
+    fetchMock.mockResolvedValueOnce(answer(200, { currency_code: "JPY", decimal_places: 0 }));
+
+    render(<Probe />);
+
+    expect(screen.getByRole("status").textContent).toBe(":2");
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("JPY:0"));
   });
 
   it("says error when the read fails, logs it, and reads again on retry", async () => {

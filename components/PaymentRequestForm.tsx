@@ -39,13 +39,11 @@ import { Icon } from "@/components/ui/Icon";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import {
   MAX_AMOUNT_INT_DIGITS,
-  acceptAmountInput,
   amountIntegerDigits,
   cleanAmountString,
-  formatAmount,
-  toAmountEditString,
   toAmountString,
 } from "@minty/shared/money";
+import { useAmountInput } from "@minty/shared/amountInput";
 import {
   ApiError,
   dedupeEntityBillContactsForPicker,
@@ -59,6 +57,7 @@ import {
 } from "@/lib/api";
 import { joinFileNames, uploadEachAttachment } from "@/lib/attachmentUploads";
 import { getEntityIdSnapshot } from "@/lib/auth";
+import { todayLocalISODate } from "@/lib/dateDisplayFormat";
 import { useEntityCurrencyState } from "@/lib/entityCurrency";
 import {
   ATTACHMENT_ACCEPT,
@@ -147,11 +146,6 @@ function validatePaymentRequestForm(values: {
   if (!values.accountCode.trim())
     e.accountCode = "The account code is still empty. Choose one to continue.";
   return e;
-}
-
-function todayLocalISODate() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function PaymentRequestForm() {
@@ -260,6 +254,21 @@ export function PaymentRequestForm() {
     });
   };
 
+  // Commas as the person types, places padded on blur, in the currency's own places
+  // (@minty/shared/amountInput; JPY takes no point). As you type: the digit limit shows the
+  // moment it is crossed and clears the moment the amount fits; an empty-field message only
+  // clears here.
+  const amountInput = useAmountInput({
+    value: amount ?? "",
+    decimals: currency.decimals,
+    onValue: (value) => {
+      setAmount(value);
+      const err = amountLimitError(value);
+      if (err) setFieldErrors((prev) => ({ ...prev, amount: err }));
+      else clearFieldError("amount");
+    },
+  });
+
   const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const list = e.target.files;
     if (!list?.length) return;
@@ -349,7 +358,7 @@ export function PaymentRequestForm() {
     setFormError(null);
     setDraftSubmitting(true);
     try {
-      const amountStr = toAmountString(amount);
+      const amountStr = toAmountString(amount, currency.decimals);
       const acctCode = accountCode.split(" - ")[0]?.trim() ?? "";
       const selectedContact = contactsMap.get(contact);
       const contactName = selectedContact?.name ?? (contact || contactInput);
@@ -419,7 +428,7 @@ export function PaymentRequestForm() {
     setFormError(null);
     setConfirmSubmitting(true);
     try {
-      const amountStr = toAmountString(amount) ?? "0";
+      const amountStr = toAmountString(amount, currency.decimals) ?? "0";
       const acctCode = accountCode.split(" - ")[0]?.trim() ?? "";
       const selectedContact = contactsMap.get(contact);
       const contactName = selectedContact?.name ?? (contact || contactInput);
@@ -609,22 +618,8 @@ export function PaymentRequestForm() {
             {(a11y) => (
               <input
                 {...a11y}
-                type="text"
-                inputMode="decimal"
+                {...amountInput}
                 translate="no"
-                value={amount ?? ""}
-                onChange={(e) => {
-                  const value = acceptAmountInput(e.target.value);
-                  if (value === null) return;
-                  setAmount(value);
-                  // As you type: the digit limit shows the moment it is crossed and clears the
-                  // moment the amount fits; an empty-field message only clears here.
-                  const err = amountLimitError(value);
-                  if (err) setFieldErrors((prev) => ({ ...prev, amount: err }));
-                  else clearFieldError("amount");
-                }}
-                onFocus={() => setAmount((prev) => toAmountEditString(prev))}
-                onBlur={(e) => setAmount(formatAmount(e.target.value))}
                 placeholder="0.00"
                 className={`${inputClass(!!fieldErrors.amount)} text-right tabular-nums`}
               />

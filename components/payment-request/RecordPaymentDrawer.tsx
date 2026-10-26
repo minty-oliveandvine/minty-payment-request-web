@@ -31,13 +31,8 @@ import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Drawer } from "@/components/ui/Overlay";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Skeleton } from "@/components/ui/Skeleton";
-import {
-  acceptAmountInput,
-  formatAmount,
-  formatMoney,
-  parseAmount,
-  toAmountEditString,
-} from "@minty/shared/money";
+import { formatAmount, formatMoney, parseAmount, toAmountString } from "@minty/shared/money";
+import { useAmountInput } from "@minty/shared/amountInput";
 import {
   ApiError,
   createPayment,
@@ -55,7 +50,8 @@ import {
   normalizeBillStatusKey,
 } from "@/lib/billStatusRollback";
 import { formatDay } from "@minty/shared/dates";
-import { useEntityCurrency } from "@/lib/entityCurrency";
+import { todayLocalISODate } from "@/lib/dateDisplayFormat";
+import { useEntityCurrency, useEntityCurrencyDecimals } from "@/lib/entityCurrency";
 import { shouldShowPaymentInHistory } from "@/lib/paymentHistoryDisplay";
 import { useUserRole } from "@/lib/useUserRole";
 
@@ -90,10 +86,6 @@ function formatPaymentDateLabel(dateStr: string | null) {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return formatDay(`${y}-${m}-${day}`) || dateStr;
-}
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 const EMPTY_BANK_SLIP_DETAILS: BankSlipDetails = {
@@ -136,6 +128,8 @@ export function RecordPaymentDrawer({
   // Currency ALWAYS comes from the entity's selected currency (entities.currency_id -> iso_code)
   // - display and payloads alike; no per-bill or hardcoded fallback. Blank until it resolves.
   const iso = useEntityCurrency();
+  // The currency's places (JPY 0): the amount field, every amount shown and the payload.
+  const decimals = useEntityCurrencyDecimals();
   const { isElevated, isViewOnly } = useUserRole();
   // Deleting payments needs an elevated role AND a member's access.
   const canDeletePayments = isElevated && !isViewOnly;
@@ -148,10 +142,19 @@ export function RecordPaymentDrawer({
   const billIdRef = useRef(billId);
   billIdRef.current = billId;
   const paymentsLoadGenerationRef = useRef(0);
-  const [draftDate, setDraftDate] = useState(todayISO);
+  // Today on the person's own clock, never UTC's day.
+  const [draftDate, setDraftDate] = useState(todayLocalISODate);
   const [draftAmount, setDraftAmount] = useState("");
   /** A refused submit's message for the amount (the empty / zero case waits for the submit). */
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const amountInput = useAmountInput({
+    value: draftAmount ?? "",
+    decimals,
+    onValue: (value) => {
+      setSubmitError(null);
+      setDraftAmount(value);
+    },
+  });
   /** A server refusal or a failed request, shown in the drawer - never a toast (Part 14). */
   const [actionError, setActionError] = useState<string | null>(null);
   const { showToast } = useToast();
@@ -273,7 +276,7 @@ export function RecordPaymentDrawer({
     if (open && billId) {
       loadPayments();
       setPayMode("full");
-      setDraftDate(todayISO());
+      setDraftDate(todayLocalISODate());
       setDraftAmount("");
       setSubmitError(null);
       setActionError(null);
@@ -293,8 +296,8 @@ export function RecordPaymentDrawer({
 
   useEffect(() => {
     if (!open || payMode !== "full") return;
-    setDraftAmount(remaining > 0 ? formatAmount(remaining) : "");
-  }, [open, payMode, remaining]);
+    setDraftAmount(remaining > 0 ? formatAmount(remaining, decimals) : "");
+  }, [open, payMode, remaining, decimals]);
 
   useEffect(() => {
     if (!open || !fullPayLocked || payMode !== "full") return;
@@ -351,7 +354,7 @@ export function RecordPaymentDrawer({
   const typedAmount = parseAmount(draftAmount);
   const overLimit = payMode === "partial" && typedAmount !== null && typedAmount > remaining + 1e-9;
   const amountError = overLimit
-    ? `Enter ${formatMoney(remaining, iso)} or less - that is what is unpaid.`
+    ? `Enter ${formatMoney(remaining, iso, decimals)} or less - that is what is unpaid.`
     : submitError;
   const recordAmount = payMode === "full" ? remaining : (typedAmount ?? 0);
   const unpaidAfter = Math.max(
@@ -388,14 +391,16 @@ export function RecordPaymentDrawer({
     try {
       await createPayment(billId, {
         payment_date: draftDate,
-        amount,
+        // "1234.50", the same shape a new request sends (owner, 2026-10-26), in the currency's
+        // places; formatAmount first so a float remainder reads at 15 digits ("2.00", never "1.99").
+        amount: toAmountString(formatAmount(amount, decimals), decimals) ?? "",
         currency_code: iso,
         payment_status: "completed",
       });
       await loadPayments();
       onPaymentSaved?.();
       showToast(
-        `Payment of ${formatMoney(amount, iso)} recorded${contactTitle ? ` for ${contactTitle}` : ""}.`,
+        `Payment of ${formatMoney(amount, iso, decimals)} recorded${contactTitle ? ` for ${contactTitle}` : ""}.`,
         "success",
       );
       if (payMode === "partial") setDraftAmount("");
@@ -422,8 +427,8 @@ export function RecordPaymentDrawer({
       : isPartialPayment
         ? `Partial pay on ${dateBit}`
         : `Paid on ${dateBit}`;
-    return `${kind} · ${formatMoney(amt, iso)}`;
-  }, [paymentPendingDelete, invoiceAmount, iso]);
+    return `${kind} · ${formatMoney(amt, iso, decimals)}`;
+  }, [paymentPendingDelete, invoiceAmount, iso, decimals]);
 
   const handleDeletePayment = async (p: PaymentItem) => {
     setDeletingId(p.id);
@@ -456,7 +461,7 @@ export function RecordPaymentDrawer({
     }
   };
 
-  const money = (n: number) => formatMoney(n, iso);
+  const money = (n: number) => formatMoney(n, iso, decimals);
   const title = effectiveReadOnly ? "Payments" : "Record payment";
   const bankSlipLabel =
     bankSlipFileCount > 0
@@ -576,20 +581,10 @@ export function RecordPaymentDrawer({
                   <input
                     {...a11y}
                     ref={amountRef}
-                    type="text"
-                    inputMode="decimal"
+                    {...amountInput}
                     placeholder="0.00"
                     translate="no"
-                    value={draftAmount ?? ""}
                     readOnly={payMode === "full"}
-                    onChange={(e) => {
-                      const value = acceptAmountInput(e.target.value);
-                      if (value === null) return;
-                      setSubmitError(null);
-                      setDraftAmount(value);
-                    }}
-                    onFocus={() => setDraftAmount((prev) => toAmountEditString(prev))}
-                    onBlur={(e) => setDraftAmount(formatAmount(e.target.value))}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") void handleAddPayment();
                     }}

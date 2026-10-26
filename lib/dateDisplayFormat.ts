@@ -1,5 +1,5 @@
 /**
- * This app's own two date helpers. Everything else about days - `formatDay` ("05 Sep 2026"),
+ * This app's own date helpers. Everything else about days - `formatDay` ("05 Sep 2026"),
  * `formatInstantDay`, `isoDateInTimeZone(timeZone, date)`, `HK_TIME_ZONE`, `MONTHS` - is
  * `@minty/shared/dates` (owner 2026-10-21: one shared module).
  */
@@ -13,6 +13,15 @@ export function formatLocalDateForDisplay(d: Date): string {
   const m = d.getMonth() + 1;
   const day = d.getDate();
   return formatDay(`${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+}
+
+/** Today on the person's own clock, as `yyyy-mm-dd` - never `toISOString()`, which is UTC's day. */
+export function todayLocalISODate(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 /** The month a three-letter token names (any case), as 0-11, or -1. */
