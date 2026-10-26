@@ -16,7 +16,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@minty/shared": "github:minty-oliveandvine/minty-shared-ts#v0.10",
+    "@minty/shared": "github:minty-oliveandvine/minty-shared-ts#v0.11",
     "@vercel/analytics": "^2.0.1",
     "material-symbols": "^0.48.1",
     "next": "16.4.2",
