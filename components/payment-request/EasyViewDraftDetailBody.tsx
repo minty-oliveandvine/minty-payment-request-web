@@ -17,7 +17,13 @@ import {
   type EntityBillContact,
 } from "@/lib/api";
 import { enrichAccountCodeWithOptions } from "@/lib/billFormSelectOptions";
-import { billToDetailedInfo, buildBillUpdatePayload } from "@/lib/paymentRequestBillMap";
+import { useEntityCurrencyDecimals } from "@/lib/entityCurrency";
+import {
+  billToDetailedInfo,
+  buildBillUpdatePayload,
+  PICK_SUPPLIER_MESSAGE,
+  supplierNeedsPick,
+} from "@/lib/paymentRequestBillMap";
 import { BillActionBar } from "./BillActionBar";
 import { useToast } from "@/components/Toast";
 import {
@@ -34,10 +40,14 @@ type FieldErrors = Partial<
   Record<"invoiceDate" | "dueDate" | "amount" | "contact" | "accountCode", string>
 >;
 
-function validateDraftDetail(d: PaymentRequestDetailedInfoData): FieldErrors | null {
+function validateDraftDetail(
+  d: PaymentRequestDetailedInfoData,
+  savedContact: string,
+): FieldErrors | null {
   const errors: FieldErrors = {};
   if (!d.accountCode.trim()) errors.accountCode = "We'll need an account code here.";
   if (!d.contact.trim()) errors.contact = "We'll need a supplier here.";
+  else if (supplierNeedsPick(d, savedContact)) errors.contact = PICK_SUPPLIER_MESSAGE;
   if (!d.invoiceDate.trim()) errors.invoiceDate = "We'll need an invoice date here.";
   if (!d.dueDate.trim()) errors.dueDate = "We'll need a due date here.";
   const amt = Number.parseFloat((d.amount ?? "").replace(/,/g, ""));
@@ -76,6 +86,7 @@ export function EasyViewDraftDetailBody({
     null,
   );
   const { showToast } = useToast();
+  const decimals = useEntityCurrencyDecimals();
 
   const applyEntityBillContacts = useCallback((contacts: EntityBillContact[]) => {
     setEntityBillContacts(dedupeEntityBillContactsForPicker(contacts));
@@ -174,7 +185,7 @@ export function EasyViewDraftDetailBody({
 
   const handleEdit = useCallback(() => {
     if (!bill) return;
-    const base = billToDetailedInfo(bill);
+    const base = billToDetailedInfo(bill, decimals);
     setDraft({
       ...base,
       accountCode: enrichAccountCodeWithOptions(base.accountCode, accountOptions),
@@ -183,7 +194,7 @@ export function EasyViewDraftDetailBody({
     setBillNoError(null);
     setAccountCodeError(null);
     setSubmitAttemptFieldErrors(null);
-  }, [bill, accountOptions]);
+  }, [bill, accountOptions, decimals]);
 
   const handleCancel = useCallback(async () => {
     setBillNoError(null);
@@ -209,7 +220,7 @@ export function EasyViewDraftDetailBody({
     if (!bill || !draft) return;
     setBillNoError(null);
     setAccountCodeError(null);
-    const fieldErr = validateDraftDetail(draft);
+    const fieldErr = validateDraftDetail(draft, bill.contact);
     if (fieldErr) {
       setSubmitAttemptFieldErrors(fieldErr);
       return;
@@ -217,9 +228,9 @@ export function EasyViewDraftDetailBody({
     setSubmitAttemptFieldErrors(null);
     setIsSaving(true);
     try {
-      const payload = buildBillUpdatePayload(bill, draft);
+      const payload = buildBillUpdatePayload(bill, draft, decimals);
       const updated = await updateBill(billId, payload);
-      const d = billToDetailedInfo(updated);
+      const d = billToDetailedInfo(updated, decimals);
       setBill(updated);
       setDetail({
         ...d,
@@ -240,7 +251,7 @@ export function EasyViewDraftDetailBody({
     } finally {
       setIsSaving(false);
     }
-  }, [bill, draft, billId, accountOptions, onBillSaved]);
+  }, [bill, draft, billId, accountOptions, onBillSaved, decimals]);
 
   if (loading) {
     return <EasyViewDetailedInformationSkeleton mode="draftCard" />;

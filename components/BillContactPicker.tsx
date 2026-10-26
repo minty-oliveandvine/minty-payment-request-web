@@ -5,6 +5,10 @@ import { createPortal } from "react-dom";
 import { ApiError, createEntityBillContact, type EntityBillContact } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 
+/** The API's cap (Bill.contact_name holds 100), checked as the name is typed. */
+const NEW_SUPPLIER_NAME_MAX = 100;
+const NAME_TOO_LONG = "Keep the supplier's name to 100 characters or fewer.";
+
 const inputClassBase =
   "box-border h-11 min-h-[44px] w-full border bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:text-sm ";
 
@@ -55,6 +59,7 @@ export function BillContactPicker({
     contacts.some((c) => c.name.trim().toLowerCase() === trimmedName.toLowerCase());
 
   const showAddNewRow = trimmedName.length > 0 && !nameMatchesExisting;
+  const nameTooLong = showAddNewRow && trimmedName.length > NEW_SUPPLIER_NAME_MAX;
   const menuHasContent = filtered.length > 0 || showAddNewRow;
 
   const updatePosition = useCallback(() => {
@@ -107,7 +112,7 @@ export function BillContactPicker({
 
   const handleAddToXero = async () => {
     const name = trimmedName;
-    if (!name || creating || disabled) return;
+    if (!name || nameTooLong || creating || disabled) return;
     setCreating(true);
     setCreateError(null);
     try {
@@ -131,7 +136,7 @@ export function BillContactPicker({
     }
   };
 
-  const invalid = error || createError !== null;
+  const invalid = error || createError !== null || nameTooLong;
   const borderTone = invalid
     ? "border-red-500 focus:border-red-500 focus:ring-red-200/50 "
     : "border-gray-300 focus:border-secondary focus:ring-secondary/25 ";
@@ -174,19 +179,22 @@ export function BillContactPicker({
           <li
             role="option"
             aria-selected={false}
+            aria-disabled={nameTooLong || undefined}
             aria-label={
               creating ? "Creating supplier in Xero" : `Add ${trimmedName} as a new supplier`
             }
             className={
               "cursor-pointer px-3 py-2.5 text-left text-sm font-medium text-primary transition-colors " +
               (filtered.length > 0 ? "border-t border-gray-100 " : "") +
-              (creating || disabled ? "cursor-not-allowed opacity-60" : "hover:bg-secondary/10")
+              (creating || disabled || nameTooLong
+                ? "cursor-not-allowed opacity-60"
+                : "hover:bg-secondary/10")
             }
             onMouseDown={(e) => {
               e.preventDefault();
             }}
             onClick={() => {
-              if (!disabled && !creating) void handleAddToXero();
+              if (!disabled && !creating && !nameTooLong) void handleAddToXero();
             }}
           >
             {addRowText}
@@ -223,6 +231,10 @@ export function BillContactPicker({
       {createError ? (
         <p className="mt-1 text-xs text-red-600" role="alert">
           {createError}
+        </p>
+      ) : nameTooLong ? (
+        <p className="mt-1 text-xs text-red-600" role="alert">
+          {NAME_TOO_LONG}
         </p>
       ) : null}
       {typeof document !== "undefined" && menu ? createPortal(menu, document.body) : null}

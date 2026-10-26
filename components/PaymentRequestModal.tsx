@@ -37,6 +37,7 @@ import {
 } from "@/lib/api";
 import type { EntityBillContact } from "@/lib/api";
 import { DateTextField } from "@/components/DateTextField";
+import { todayLocalISODate } from "@/lib/dateDisplayFormat";
 import {
   MAX_AMOUNT_INT_DIGITS,
   amountIntegerDigits,
@@ -140,14 +141,6 @@ function validatePaymentRequestForm(values: {
     e.attachments = "We'll need at least one attachment.";
   }
   return e;
-}
-
-function todayLocalISODate() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
 }
 
 function FieldLabel({
@@ -270,6 +263,7 @@ export function PaymentRequestModal({
   // error shows only while it applies and clears the moment the amount is valid again.
   const amountInput = useAmountInput({
     value: amount ?? "",
+    decimals: currency.decimals,
     onValue: (value) => {
       setAmount(value);
       const err = amountLimitError(value);
@@ -427,7 +421,7 @@ export function PaymentRequestModal({
     setFormError(null);
     setDraftSubmitting(true);
     try {
-      const amountStr = toAmountString(amount);
+      const amountStr = toAmountString(amount, currency.decimals);
       const acctCode = accountCode.split(" - ")[0]?.trim() ?? "";
 
       const selectedContact = contactsMap.get(contact);
@@ -522,7 +516,7 @@ export function PaymentRequestModal({
     if (confirmSubmitting) return;
     setConfirmSubmitting(true);
     try {
-      const amountStr = toAmountString(amount) ?? "0";
+      const amountStr = toAmountString(amount, currency.decimals) ?? "0";
       const acctCode = accountCode.split(" - ")[0]?.trim() ?? "";
 
       const selectedContact = contactsMap.get(contact);

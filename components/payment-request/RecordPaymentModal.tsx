@@ -24,9 +24,9 @@ import { useUserRole } from "@/lib/useUserRole";
 import { PaymentDeleteConfirmModal } from "./PaymentDeleteConfirmModal";
 import { BankSlipDetailsModal, type BankSlipDetails } from "./BankSlipDetailsModal";
 import { buildBankSlipDetailsFromPaymentList } from "@/lib/bankSlipEnrichment";
-import { useEntityCurrency } from "@/lib/entityCurrency";
+import { useEntityCurrency, useEntityCurrencyDecimals } from "@/lib/entityCurrency";
 import { shouldShowPaymentInHistory } from "@/lib/paymentHistoryDisplay";
-import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
+import { formatIsoDateForDisplay, todayLocalISODate } from "@/lib/dateDisplayFormat";
 import { formatAmount, formatMoney, parseAmount, toAmountString } from "@minty/shared/money";
 import { useAmountInput } from "@minty/shared/amountInput";
 
@@ -59,10 +59,6 @@ function formatPaymentDateLabel(dateStr: string | null) {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return formatIsoDateForDisplay(`${y}-${m}-${day}`) || dateStr;
-}
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 const EMPTY_BANK_SLIP_DETAILS: BankSlipDetails = {
@@ -110,6 +106,7 @@ export function RecordPaymentModal({
   const entityCurrency = useEntityCurrency();
   const currencyLabel = entityCurrency;
   const iso = entityCurrency;
+  const decimals = useEntityCurrencyDecimals();
   const { isElevated, isViewOnly } = useUserRole();
   // Delete payments requires elevated role AND the user must not be in
   // read-only mode (system superuser without entity membership).
@@ -125,9 +122,13 @@ export function RecordPaymentModal({
   const billIdRef = useRef(billId);
   billIdRef.current = billId;
   const paymentsLoadGenerationRef = useRef(0);
-  const [draftDate, setDraftDate] = useState(todayISO);
+  const [draftDate, setDraftDate] = useState(todayLocalISODate);
   const [draftAmount, setDraftAmount] = useState("");
-  const amountInput = useAmountInput({ value: draftAmount ?? "", onValue: setDraftAmount });
+  const amountInput = useAmountInput({
+    value: draftAmount ?? "",
+    onValue: setDraftAmount,
+    decimals,
+  });
   /** Inline validation shown next to the payment form. Action failures
    *  (save/delete) surface as toasts instead. */
   const [formError, setFormError] = useState<string | null>(null);
@@ -262,7 +263,7 @@ export function RecordPaymentModal({
     if (open && billId) {
       loadPayments();
       setPayMode("full");
-      setDraftDate(todayISO());
+      setDraftDate(todayLocalISODate());
       setDraftAmount("");
       setFormError(null);
     }
@@ -294,8 +295,8 @@ export function RecordPaymentModal({
 
   useEffect(() => {
     if (!open || payMode !== "full") return;
-    setDraftAmount(remaining > 0 ? formatAmount(remaining) : "");
-  }, [open, payMode, remaining]);
+    setDraftAmount(remaining > 0 ? formatAmount(remaining, decimals) : "");
+  }, [open, payMode, remaining, decimals]);
   //
   //
   //test3
@@ -371,7 +372,7 @@ export function RecordPaymentModal({
     }
     if (amount > remaining + 1e-9) {
       setFormError(
-        `That's a bit more than what's left - ${formatMoney(remaining, currencyLabel)} is the max.`,
+        `That's a bit more than what's left - ${formatMoney(remaining, currencyLabel, decimals)} is the max.`,
       );
       return;
     }
@@ -386,7 +387,7 @@ export function RecordPaymentModal({
         payment_date: draftDate,
         // "1234.50", the same shape a new request sends (owner, 2026-10-26); formatAmount first
         // so a float remainder reads at 15 digits ("2.00", never "1.99").
-        amount: toAmountString(formatAmount(amount)) ?? "",
+        amount: toAmountString(formatAmount(amount, decimals), decimals) ?? "",
         currency_code: iso,
         payment_status: "completed",
       });
@@ -417,8 +418,8 @@ export function RecordPaymentModal({
       : isPartialPayment
         ? `Partial pay on ${dateBit}`
         : `Paid on ${dateBit}`;
-    return `${kind} · ${formatMoney(amt, currencyLabel)}`;
-  }, [paymentPendingDelete, invoiceAmount, currencyLabel]);
+    return `${kind} · ${formatMoney(amt, currencyLabel, decimals)}`;
+  }, [paymentPendingDelete, invoiceAmount, currencyLabel, decimals]);
 
   const handleDeletePayment = async (p: PaymentItem) => {
     setDeletingId(p.id);
@@ -545,7 +546,7 @@ export function RecordPaymentModal({
             <p
               className={`mt-1 font-bold text-primary ${isEasyInline ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"}`}
             >
-              {formatMoney(invoiceAmount, currencyLabel)}
+              {formatMoney(invoiceAmount, currencyLabel, decimals)}
             </p>
           </div>
           <button
@@ -695,7 +696,7 @@ export function RecordPaymentModal({
                     ) : null}
                   </div>
                   <span className="shrink-0 text-sm font-bold text-primary tabular-nums">
-                    ({formatMoney(amt, currencyLabel)})
+                    ({formatMoney(amt, currencyLabel, decimals)})
                   </span>
                   {!effectiveReadOnly || canDeletePayments ? (
                     <button
@@ -857,7 +858,7 @@ export function RecordPaymentModal({
                     />
                   ) : (
                     <span className="text-xl font-bold text-secondary sm:text-2xl">
-                      {formatMoney(remaining, currencyLabel)}
+                      {formatMoney(remaining, currencyLabel, decimals)}
                     </span>
                   )}
                 </div>
@@ -919,7 +920,7 @@ export function RecordPaymentModal({
                     />
                   ) : (
                     <span className="text-2xl font-bold text-secondary sm:text-3xl">
-                      {formatMoney(remaining, currencyLabel)}
+                      {formatMoney(remaining, currencyLabel, decimals)}
                     </span>
                   )}
                 </div>

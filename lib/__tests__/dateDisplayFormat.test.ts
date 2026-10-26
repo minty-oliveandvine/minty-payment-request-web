@@ -5,7 +5,7 @@
 // taking the first ten characters of an API timestamp is what once made the submitted-date
 // column and its filter disagree.
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   BILLING_TIME_ZONE,
@@ -15,7 +15,25 @@ import {
   formatLocalDateForDisplay,
   isoDateInTimeZone,
   parseDdMmmYyyyToIso,
+  todayLocalISODate,
 } from "@/lib/dateDisplayFormat";
+
+describe("todayLocalISODate", () => {
+  const originalTz = process.env.TZ;
+  afterEach(() => {
+    vi.useRealTimers();
+    process.env.TZ = originalTz;
+  });
+
+  it("is the calendar day on the person's clock, not UTC's", () => {
+    process.env.TZ = "Asia/Hong_Kong";
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-25T18:00:00Z")); // 02:00 on 26 Oct in Hong Kong
+
+    expect(new Date().toISOString().slice(0, 10)).toBe("2026-10-25");
+    expect(todayLocalISODate()).toBe("2026-10-26");
+  });
+});
 
 describe("BILLING_TIME_ZONE", () => {
   it("is Hong Kong - display and date filtering must agree on it", () => {

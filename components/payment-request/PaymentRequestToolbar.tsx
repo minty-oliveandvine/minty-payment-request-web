@@ -5,8 +5,10 @@ import { createPortal } from "react-dom";
 import { DateTextField } from "@/components/DateTextField";
 import { PaymentRequestModal } from "@/components/PaymentRequestModal";
 import { ThemedSelect } from "@/components/ThemedSelect";
+import { useEntityCurrencyDecimals } from "@/lib/entityCurrency";
 import { useUserRole } from "@/lib/useUserRole";
 import { useAmountInput } from "@minty/shared/amountInput";
+import { parseAmount } from "@minty/shared/money";
 
 const FILTER_DATE_TYPE_OPTIONS = [
   { value: "Invoice Date", label: "Invoice Date" },
@@ -22,6 +24,12 @@ const FILTER_XERO_STATUS_OPTIONS = [
   { value: "published", label: "Published" },
   { value: "draft", label: "Not published" },
 ] as const;
+
+const AMOUNTS_OUT_OF_ORDER =
+  "The first amount is more than the second. Make the first amount the smaller one.";
+const DATES_OUT_OF_ORDER =
+  "The start date is after the end date. Choose a start on or before the end.";
+const APPLY_HELD_REASON = "Put the range in order to apply the filters.";
 
 /** Filter panel field labels — sentence case (not all-caps). */
 const fieldLabelClass =
@@ -138,11 +146,28 @@ export function PaymentRequestToolbar({
   const statusButtonRef = useRef<HTMLButtonElement | null>(null);
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
-  const minAmountInput = useAmountInput({ value: minAmount ?? "", onValue: setMinAmount });
-  const maxAmountInput = useAmountInput({ value: maxAmount ?? "", onValue: setMaxAmount });
+  const decimals = useEntityCurrencyDecimals();
+  const minAmountInput = useAmountInput({
+    value: minAmount ?? "",
+    onValue: setMinAmount,
+    decimals,
+  });
+  const maxAmountInput = useAmountInput({
+    value: maxAmount ?? "",
+    onValue: setMaxAmount,
+    decimals,
+  });
   const [dateType, setDateType] = useState<string>(DEFAULT_FILTER_DATE_TYPE);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  // Checked as the person types; only once both ends of a pair are filled.
+  const minAmountValue = parseAmount(minAmount);
+  const maxAmountValue = parseAmount(maxAmount);
+  const amountsOutOfOrder =
+    minAmountValue !== null && maxAmountValue !== null && minAmountValue > maxAmountValue;
+  // yyyy-mm-dd compares correctly as text.
+  const datesOutOfOrder = Boolean(startDate && endDate && startDate > endDate);
+  const filtersOutOfOrder = amountsOutOfOrder || datesOutOfOrder;
   const [xeroStatus, setXeroStatus] = useState("");
   /** The date range applies to whichever field Date Type names. */
   const dateRangeNoun = dateType === "Submitted Date" ? "Submitted" : "Invoice";
@@ -326,6 +351,7 @@ export function PaymentRequestToolbar({
   };
 
   const onSaveFilterChanges = () => {
+    if (filtersOutOfOrder) return;
     onApplyFilters?.({ minAmount, maxAmount, dateType, startDate, endDate, xeroStatus });
     setFilterOpen(false);
     setFilterMenu(null);
@@ -565,6 +591,10 @@ export function PaymentRequestToolbar({
                               <input
                                 id={`${filterFieldIds}-min-amount`}
                                 {...minAmountInput}
+                                aria-invalid={amountsOutOfOrder || undefined}
+                                aria-describedby={
+                                  amountsOutOfOrder ? `${filterFieldIds}-amount-order` : undefined
+                                }
                                 placeholder="0.00"
                                 className={textInputClass}
                               />
@@ -574,10 +604,23 @@ export function PaymentRequestToolbar({
                               <input
                                 id={`${filterFieldIds}-max-amount`}
                                 {...maxAmountInput}
+                                aria-invalid={amountsOutOfOrder || undefined}
+                                aria-describedby={
+                                  amountsOutOfOrder ? `${filterFieldIds}-amount-order` : undefined
+                                }
                                 placeholder="0.00"
                                 className={textInputClass}
                               />
                             </div>
+                            {amountsOutOfOrder ? (
+                              <p
+                                id={`${filterFieldIds}-amount-order`}
+                                className="mt-1 text-xs text-red-600"
+                                role="alert"
+                              >
+                                {AMOUNTS_OUT_OF_ORDER}
+                              </p>
+                            ) : null}
                           </div>
                           <div>
                             <label
@@ -627,6 +670,7 @@ export function PaymentRequestToolbar({
                                 id={`${filterFieldIds}-start-date`}
                                 value={startDate ?? ""}
                                 onChange={setStartDate}
+                                invalid={datesOutOfOrder}
                                 calendarAriaLabel={`Open calendar for ${dateRangeNoun.toLowerCase()} start date`}
                                 textInputClassName={filterDateTextClass}
                                 calendarButtonClassName={filterDateCalendarBtnClass}
@@ -643,11 +687,17 @@ export function PaymentRequestToolbar({
                                 id={`${filterFieldIds}-end-date`}
                                 value={endDate ?? ""}
                                 onChange={setEndDate}
+                                invalid={datesOutOfOrder}
                                 calendarAriaLabel={`Open calendar for ${dateRangeNoun.toLowerCase()} end date`}
                                 textInputClassName={filterDateTextClass}
                                 calendarButtonClassName={filterDateCalendarBtnClass}
                               />
                             </div>
+                            {datesOutOfOrder ? (
+                              <p className="text-xs text-red-600 sm:col-span-2" role="alert">
+                                {DATES_OUT_OF_ORDER}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -666,11 +716,23 @@ export function PaymentRequestToolbar({
                           <button
                             type="button"
                             onClick={onSaveFilterChanges}
-                            className="box-border h-12 min-h-[48px] w-full min-w-0 flex-1 rounded-lg border border-transparent bg-secondary px-5 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:h-11 sm:min-h-[44px]"
+                            disabled={filtersOutOfOrder}
+                            aria-describedby={
+                              filtersOutOfOrder ? `${filterFieldIds}-apply-reason` : undefined
+                            }
+                            className="box-border h-12 min-h-[48px] w-full min-w-0 flex-1 rounded-lg border border-transparent bg-secondary px-5 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:min-h-[44px]"
                           >
                             Apply
                           </button>
                         </div>
+                        {filtersOutOfOrder ? (
+                          <p
+                            id={`${filterFieldIds}-apply-reason`}
+                            className="mt-1.5 text-right text-xs text-gray-700"
+                          >
+                            {APPLY_HELD_REASON}
+                          </p>
+                        ) : null}
                       </div>
                     </div>,
                     document.body,

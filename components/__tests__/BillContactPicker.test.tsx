@@ -7,6 +7,7 @@
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BillContactPicker } from "@/components/BillContactPicker";
@@ -182,6 +183,66 @@ describe("the picker", () => {
       "A supplier with that name already exists in Xero.",
     );
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  describe("a new supplier's name is capped at 100 characters", () => {
+    const TOO_LONG = "Keep the supplier's name to 100 characters or fewer.";
+
+    // Controlled like the real forms, so typing moves the value.
+    function Typed({ initial }: { initial: string }) {
+      const [name, setName] = useState(initial);
+      return (
+        <ToastProvider>
+          <BillContactPicker
+            id="supplier"
+            contacts={SUPPLIERS}
+            xeroContactId=""
+            contactName={name}
+            onChange={(p) => setName(p.contact)}
+            refetchContacts={refetchContacts}
+          />
+        </ToastProvider>
+      );
+    }
+
+    it("says so as the 101st character is typed, and clears it when one is removed", async () => {
+      render(<Typed initial={"A".repeat(100)} />);
+      await userEvent.click(field());
+      expect(screen.queryByText(TOO_LONG)).not.toBeInTheDocument();
+
+      await userEvent.type(field(), "B");
+      expect(screen.getByText(TOO_LONG)).toBeInTheDocument();
+      expect(field()).toHaveAttribute("aria-invalid", "true");
+
+      await userEvent.type(field(), "{Backspace}");
+      expect(screen.queryByText(TOO_LONG)).not.toBeInTheDocument();
+    });
+
+    it("will not create a supplier while the name is too long", async () => {
+      show({ contactName: "A".repeat(101) });
+      await userEvent.click(field());
+
+      await userEvent.click(screen.getByRole("option", { name: /as a new supplier/ }));
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(onChange).not.toHaveBeenCalled();
+      expect(screen.getByText(TOO_LONG)).toBeInTheDocument();
+    });
+
+    it("creates one of exactly 100 characters", async () => {
+      const name = "A".repeat(100);
+      fetchMock.mockResolvedValueOnce(
+        answer(201, entityBillContact({ id: "c-100", xero_contact_id: "XERO-100", name })),
+      );
+      show({ contactName: name });
+      await userEvent.click(field());
+
+      await userEvent.click(screen.getByRole("option", { name: /as a new supplier/ }));
+
+      await waitFor(() =>
+        expect(onChange).toHaveBeenCalledWith({ xero_contact_id: "XERO-100", contact: name }),
+      );
+    });
   });
 
   it("takes no input while disabled", async () => {

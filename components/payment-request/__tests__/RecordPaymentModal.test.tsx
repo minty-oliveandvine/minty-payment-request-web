@@ -206,6 +206,33 @@ describe("paying in full", () => {
   });
 });
 
+describe("the payment date", () => {
+  // 02:00 on 26 Oct in Hong Kong is still 25 Oct in UTC: the default must be the person's day.
+  const originalTz = process.env.TZ;
+  beforeEach(() => {
+    process.env.TZ = "Asia/Hong_Kong";
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-25T18:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    process.env.TZ = originalTz;
+  });
+
+  it("defaults to today's LOCAL date, not the UTC one", async () => {
+    expect(new Date().getDate()).toBe(26); // the clock really is past local midnight
+    const { posted } = serve();
+    show();
+    await loadedPayments();
+
+    await userEvent.click(fullPay());
+    await userEvent.click(addPayment());
+
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0].body).toMatchObject({ payment_date: "2026-10-26" });
+  });
+});
+
 describe("paying part of it", () => {
   it("posts the amount that was typed", async () => {
     const { posted } = serve();
@@ -374,5 +401,70 @@ describe("read-only", () => {
     await loadedPayments();
     expect(within(dialog()).queryByRole("button", { name: /Add Payment/ })).not.toBeInTheDocument();
     expect(within(dialog()).queryByRole("button", { name: "Full Pay" })).not.toBeInTheDocument();
+  });
+});
+
+describe("a company whose currency has no decimal places (JPY)", () => {
+  // lib/entityCurrency.ts caches the currency for the page's life, so these take fresh modules.
+  async function showFresh() {
+    vi.resetModules();
+    const [{ RecordPaymentModal: Modal }, { ToastProvider: Toasts }, { setAuth: auth }] =
+      await Promise.all([
+        import("@/components/payment-request/RecordPaymentModal"),
+        import("@/components/Toast"),
+        import("@/lib/auth"),
+      ]);
+    auth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
+    render(
+      <Toasts>
+        <Modal
+          open
+          onClose={onClose}
+          billId={BILL_ID}
+          billStatus="submitted"
+          invoiceAmount={6000}
+        />
+      </Toasts>,
+    );
+  }
+  function serveJpy() {
+    const served = serve();
+    const inner = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) =>
+      new URL(String(input)).pathname.endsWith("/auth/entity-currency")
+        ? answer(200, { currency_code: "JPY", decimal_places: 0 })
+        : inner(input, init),
+    );
+    return served;
+  }
+
+  it("refuses a point while typing and posts the whole amount", async () => {
+    const { posted } = serveJpy();
+    await showFresh();
+    await loadedPayments();
+    await waitFor(() => expect(dialog()).toHaveTextContent("JPY 6,000"));
+    await userEvent.click(partialPay());
+
+    await userEvent.type(amountField(), "15.5");
+    expect(amountField()).toHaveValue("155");
+    await userEvent.clear(amountField());
+    await userEvent.type(amountField(), "1500");
+    await userEvent.click(addPayment());
+
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0].body).toMatchObject({ amount: "1500", currency_code: "JPY" });
+  });
+
+  it("posts the full amount with no decimals", async () => {
+    const { posted } = serveJpy();
+    await showFresh();
+    await loadedPayments();
+    await waitFor(() => expect(dialog()).toHaveTextContent("JPY 6,000"));
+
+    await userEvent.click(fullPay());
+    await userEvent.click(addPayment());
+
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0].body).toMatchObject({ amount: "6000", currency_code: "JPY" });
   });
 });

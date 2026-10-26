@@ -10,13 +10,21 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchEntityCurrency } from "./api";
 import { currencyLabelForCode } from "./currencyDisplay";
 
-let cached: Promise<string> | null = null;
+/** Places an amount has until the company's currency says otherwise. */
+export const DEFAULT_CURRENCY_DECIMALS = 2;
 
-/** The code ("" = the company has none set); rejects when the read fails. */
-function loadEntityCurrencyCode(): Promise<string> {
+type EntityCurrency = { code: string; decimals: number };
+
+let cached: Promise<EntityCurrency> | null = null;
+
+/** The code ("" = the company has none set) and its places; rejects when the read fails. */
+function loadEntityCurrency(): Promise<EntityCurrency> {
   if (!cached) {
     cached = fetchEntityCurrency()
-      .then((data) => currencyLabelForCode(data.currency_code || ""))
+      .then((data) => ({
+        code: currencyLabelForCode(data.currency_code || ""),
+        decimals: data.decimals,
+      }))
       .catch((err: unknown) => {
         cached = null;
         throw err;
@@ -25,12 +33,16 @@ function loadEntityCurrencyCode(): Promise<string> {
   return cached;
 }
 
+function getEntityCurrency(): Promise<EntityCurrency> {
+  return loadEntityCurrency().catch((err: unknown) => {
+    console.error("Could not read the company's currency:", err);
+    return { code: "", decimals: DEFAULT_CURRENCY_DECIMALS };
+  });
+}
+
 /** Resolve the entity's ISO currency code ("" when unset/unavailable). */
 export function getEntityCurrencyCode(): Promise<string> {
-  return loadEntityCurrencyCode().catch((err: unknown) => {
-    console.error("Could not read the company's currency:", err);
-    return "";
-  });
+  return getEntityCurrency().then((c) => c.code);
 }
 
 /** ISO code of the entity's selected currency; "" until loaded (callers fall
@@ -49,8 +61,26 @@ export function useEntityCurrency(): string {
   return code;
 }
 
+/** Decimal places of the entity's currency (JPY 0) for amount fields and payloads; 2 until
+ * loaded, and when unset or unreadable. */
+export function useEntityCurrencyDecimals(): number {
+  const [decimals, setDecimals] = useState(DEFAULT_CURRENCY_DECIMALS);
+  useEffect(() => {
+    let alive = true;
+    getEntityCurrency().then((c) => {
+      if (alive) setDecimals(c.decimals);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return decimals;
+}
+
 export type EntityCurrencyState = {
   code: string;
+  /** The currency's decimal places (2 while loading or unset). */
+  decimals: number;
   /** "unset": the company has no currency; "error": the read failed. */
   status: "loading" | "ready" | "unset" | "error";
   retry: () => void;
@@ -62,17 +92,18 @@ export function useEntityCurrencyState(): EntityCurrencyState {
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<Omit<EntityCurrencyState, "retry">>({
     code: "",
+    decimals: DEFAULT_CURRENCY_DECIMALS,
     status: "loading",
   });
   useEffect(() => {
     let alive = true;
-    loadEntityCurrencyCode().then(
-      (code) => {
-        if (alive) setState({ code, status: code ? "ready" : "unset" });
+    loadEntityCurrency().then(
+      ({ code, decimals }) => {
+        if (alive) setState({ code, decimals, status: code ? "ready" : "unset" });
       },
       (err: unknown) => {
         console.error("Could not read the company's currency:", err);
-        if (alive) setState({ code: "", status: "error" });
+        if (alive) setState({ code: "", decimals: DEFAULT_CURRENCY_DECIMALS, status: "error" });
       },
     );
     return () => {
@@ -80,7 +111,7 @@ export function useEntityCurrencyState(): EntityCurrencyState {
     };
   }, [attempt]);
   const retry = useCallback(() => {
-    setState({ code: "", status: "loading" });
+    setState({ code: "", decimals: DEFAULT_CURRENCY_DECIMALS, status: "loading" });
     setAttempt((n) => n + 1);
   }, []);
   return { ...state, retry };

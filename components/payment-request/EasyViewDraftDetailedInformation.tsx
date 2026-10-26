@@ -6,7 +6,7 @@ import { BillContactPicker } from "@/components/BillContactPicker";
 import { DateTextField } from "@/components/DateTextField";
 import { ThemedSelect, type ThemedSelectOption } from "@/components/ThemedSelect";
 import { mergeSelectOption } from "@/lib/billFormSelectOptions";
-import { useEntityCurrency } from "@/lib/entityCurrency";
+import { useEntityCurrency, useEntityCurrencyDecimals } from "@/lib/entityCurrency";
 import { useAmountInput } from "@minty/shared/amountInput";
 import {
   formatPaymentRequestDetailLongDate,
@@ -334,8 +334,10 @@ export function EasyViewDraftDetailedInformationEdit({
     dueDate,
   } = data;
 
+  const decimals = useEntityCurrencyDecimals();
   const amountInput = useAmountInput({
     value: amount ?? "",
+    decimals,
     onValue: (v) => onPatchChange({ amount: v }),
   });
   const mergedAccountOptions = mergeSelectOption(accountOptions, accountCode);

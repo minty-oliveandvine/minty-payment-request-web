@@ -13,7 +13,11 @@ this page is what the person sees and where each piece of the screen lives.
   single-select menu.
 - **Filters**: search (supplier, reference, description), amount range, a date range on
   invoice or due date, Xero publish state (`lib/paymentRequestSearch.ts`, sorting in
-  `lib/paymentRequestRowSort.ts`).
+  `lib/paymentRequestRowSort.ts`). A range the wrong way round says so under its pair as it is
+  typed - "The first amount is more than the second. Make the first amount the smaller one."
+  (compared with `parseAmount`, only once both are filled) and "The start date is after the end
+  date. Choose a start on or before the end." - and Apply is disabled with its reason beside it
+  until the range is in order.
 - Two renderings of the same rows: the **table** (`PaymentRequestTable.tsx`) and the
   **easy view** (`PaymentRequestEasyView.tsx`, cards with a row-actions menu —
   `role="menu"`, "More options for <supplier>"), toggled in the header
@@ -23,8 +27,12 @@ this page is what the person sees and where each piece of the screen lives.
   `GET /api/auth/entity-currency`), never the bill's stored code.
 - Every amount **input** (Add Payment, the detail and Easy View edits, Record Payment, the
   amount filter) is `@minty/shared/amountInput` (owner, 2026-10-26): commas as it is typed, the
-  caret kept on its digit, the places padded on blur; a 12th whole digit, a third place or a
-  letter is refused. What reaches the API is unchanged.
+  caret kept on its digit, the places padded on blur; a 12th whole digit, a place beyond the
+  currency's or a letter is refused. The places are the company currency's
+  (`decimal_places` from the same endpoint - `useEntityCurrencyDecimals()` /
+  `useEntityCurrencyState().decimals`, 2 when absent): a JPY company's fields take no point and
+  send `"1234"`, an HKD one's `"1234.50"` (`toAmountString(amount, decimals)` in the create
+  dialog, `buildBillUpdatePayload` and Record Payment).
 - The Add Payment Request dialog uses `useEntityCurrencyState()`: with no currency set it says
   so under Amount (linking to Entity & Integration settings) and disables Confirm and Save as
   Draft; a failed read says so with **Try again**. Neither shows as an empty box.
@@ -39,7 +47,9 @@ The dialog (`role="dialog"`, _Add Payment Request_): amount, description, the **
 (a searchable input over the entity's synced contacts — `BillContactPicker.tsx`; "create
 new" makes the contact in Xero; if that fails — e.g. the entity has no Xero connection —
 the menu closes, the field turns red and the API's message shows under it until the name
-is edited), the **account code** (a combobox over
+is edited; a new supplier's name over 100 characters says "Keep the supplier's name to 100
+characters or fewer." under the field as it is typed, and the create option is held until it
+is shorter - the API refuses the same, since `Bill.contact_name` holds 100), the **account code** (a combobox over
 `entity_bill_account_xero`), bill number (with a suggested reference from
 `GET /api/bills/suggested-reference/`), invoice date and due date (`#pr-invoice-date`,
 `#pr-due-date`, native date inputs behind a formatted overlay — `DateTextField.tsx`), and
@@ -131,9 +141,16 @@ is fresh.
   `/public/pdfjs` — `PdfJsCanvasPreview.tsx`; images inline) with upload / delete
   (`UploadInvoiceAttachmentModal`, `AttachmentDeleteConfirmModal`) — the bytes are fetched
   through the backend's `…/preview/` proxy;
-- the details card (`PaymentRequestDetailedInfo.tsx`, editable in place);
+- the details card (`PaymentRequestDetailedInfo.tsx`, editable in place). Editing the
+  supplier (here and in Easy View's draft edit) needs a pick from the list, or a new supplier,
+  only when its text changed from the saved one (owner's decision): a changed name with no
+  `xero_contact_id` is refused with "Pick the supplier from the list, or add them as a new
+  supplier." where the supplier error shows (`supplierNeedsPick`,
+  `lib/paymentRequestBillMap.ts`), while an untouched older request with no Xero contact still
+  saves;
 - **payments** (`PaymentHistoryCard.tsx`, `RecordPaymentModal.tsx` — date, amount, method,
-  reference; `OverpaymentWarningModal` when the sum would exceed the bill;
+  reference; the date defaults to today on the person's own clock (`todayLocalISODate`,
+  `lib/dateDisplayFormat.ts`, shared with the Add Payment dialog), never UTC's day; `OverpaymentWarningModal` when the sum would exceed the bill;
   `BankSlipDetailsModal.tsx` uploads the slip and can push it to the Xero invoice, then
   closes once the caller has refreshed (a failed refresh is logged, never rolled back);
   `PaymentDeleteConfirmModal`);

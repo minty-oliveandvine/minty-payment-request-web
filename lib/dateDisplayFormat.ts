@@ -48,6 +48,15 @@ export function formatLocalDateForDisplay(d: Date): string {
   );
 }
 
+/** Today on the person's own clock, as `yyyy-mm-dd` - never `toISOString()`, which is UTC's day. */
+export function todayLocalISODate(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /** The timezone bills are reckoned in — display and date filtering must agree on it. */
 export const BILLING_TIME_ZONE = "Asia/Hong_Kong";
 

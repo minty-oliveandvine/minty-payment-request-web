@@ -46,6 +46,8 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       filter correctly; several can be stacked on desktop, only one at a time on mobile.
 - [ ] Search (supplier, reference, description), the amount range, the invoice/due date range,
       and the Xero publish-state filter each narrow the rows as expected, and compose together.
+- [ ] A min amount above the max, or a start date after the end date, says so under the pair
+      as it is typed, and Apply is disabled with its reason beside it until it is put right.
 - [ ] Table and Easy View show the same rows and totals; the toggle persists the choice.
 - [ ] The totals banner reflects only the rows currently shown (after filtering), not the whole
       list.
@@ -61,6 +63,10 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
 
 - [ ] Supplier picker searches the entity's synced Xero contacts; "create new" adds the
       contact in Xero itself.
+- [ ] A new supplier's name of 101+ characters says "Keep the supplier's name to 100 characters
+      or fewer." as it is typed, and the create option does nothing until it is shorter.
+- [ ] A JPY company's amount fields refuse a "." and post `"1234"`; an HKD company's post
+      `"1234.50"`.
 - [ ] Creating a new supplier while the entity has no live Xero connection fails visibly: the
       picker closes, the field turns red, and the API's own message shows under it until the
       name is edited (not a silent no-op).
@@ -99,6 +105,11 @@ WHERE id = '<id>';` plus `SELECT * FROM pettycashv3.bill_line WHERE bill_id = '<
       still works normally afterward.
 - [ ] Edit → Save / Cancel on the details card works for a submitted request; a draft shows the
       draft-specific body (`EasyViewDraftDetailBody`) with its own Submit button instead.
+- [ ] Editing the supplier: an untouched older request with no Xero contact saves; a changed
+      name picked from the list saves; a changed name typed but not picked is refused with
+      "Pick the supplier from the list, or add them as a new supplier."
+- [ ] Record Payment's date defaults to today on the person's clock, also just after local
+      midnight (when UTC is still on yesterday).
 - [ ] **Publish** shows a disabled, "Publishing…" state while in flight, and a failure surfaces
       as an error toast (not a silently stuck button).
 - [ ] Once published, the same menu item reads **Republish** — including after a full page

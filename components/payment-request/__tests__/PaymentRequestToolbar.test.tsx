@@ -6,7 +6,7 @@
 // asserted through what is ON SCREEN (the field values, the menu's presence) and never through
 // a render count or an effect's timing, so the refactor can change how they happen.
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -244,6 +244,73 @@ describe("the filter panel", () => {
   });
 });
 
+describe("the filter panel's order checks", () => {
+  const AMOUNTS =
+    "The first amount is more than the second. Make the first amount the smaller one.";
+  const DATES = "The start date is after the end date. Choose a start on or before the end.";
+  const apply = (panel: HTMLElement) => within(panel).getByRole("button", { name: "Apply" });
+  const amountFields = (panel: HTMLElement) => within(panel).getAllByPlaceholderText("0.00");
+
+  it("says so as the amounts are typed the wrong way round, and holds Apply with a reason", async () => {
+    show();
+    const panel = await openFilters();
+    const [min, max] = amountFields(panel);
+
+    await userEvent.type(min, "500");
+    expect(within(panel).queryByText(AMOUNTS)).not.toBeInTheDocument(); // one side only
+    await userEvent.type(max, "40");
+
+    expect(within(panel).getByText(AMOUNTS)).toBeInTheDocument();
+    expect(apply(panel)).toBeDisabled();
+    expect(apply(panel)).toHaveAccessibleDescription(/order/i);
+
+    await userEvent.type(max, "0"); // 400 - still less
+    expect(within(panel).getByText(AMOUNTS)).toBeInTheDocument();
+    await userEvent.type(max, "0"); // 4,000
+    expect(within(panel).queryByText(AMOUNTS)).not.toBeInTheDocument();
+    expect(apply(panel)).toBeEnabled();
+  });
+
+  it("compares the numbers, not the text, so 1,000 is more than 900", async () => {
+    show({ appliedMinAmount: "900.00", appliedMaxAmount: "1,000.00" });
+    const panel = await openFilters();
+
+    expect(within(panel).queryByText(AMOUNTS)).not.toBeInTheDocument();
+    expect(apply(panel)).toBeEnabled();
+  });
+
+  it("takes equal amounts", async () => {
+    show({ appliedMinAmount: "500.00", appliedMaxAmount: "500.00" });
+    const panel = await openFilters();
+
+    expect(within(panel).queryByText(AMOUNTS)).not.toBeInTheDocument();
+  });
+
+  it("says so when the start date is after the end date, and clears when it is moved", async () => {
+    show({ appliedStartDate: "2026-10-20", appliedEndDate: "2026-10-01" });
+    const panel = await openFilters();
+
+    expect(within(panel).getByText(DATES)).toBeInTheDocument();
+    expect(apply(panel)).toBeDisabled();
+
+    fireEvent.change(panel.querySelector('input[type="date"]')!, {
+      target: { value: "2026-10-01" },
+    });
+
+    expect(within(panel).queryByText(DATES)).not.toBeInTheDocument();
+    expect(apply(panel)).toBeEnabled();
+  });
+
+  it("never applies an out-of-order range", async () => {
+    show({ appliedStartDate: "2026-10-20", appliedEndDate: "2026-10-01" });
+    const panel = await openFilters();
+
+    await userEvent.click(apply(panel));
+
+    expect(onApplyFilters).not.toHaveBeenCalled();
+  });
+});
+
 describe("the bulk actions menu", () => {
   it("does not open while nothing is selected", async () => {
     show({ bulkActionsEnabled: false });
@@ -348,5 +415,46 @@ describe("Add Payment", () => {
       "title",
       "Hmm, I can't let you in there. You have view-only access.",
     );
+  });
+});
+
+describe("the amount filter for a company whose currency has no decimal places (JPY)", () => {
+  it("refuses a point while typing", async () => {
+    fetchMock.mockImplementation(async (input) =>
+      new URL(String(input)).pathname.endsWith("/auth/entity-currency")
+        ? answer(200, { currency_code: "JPY", decimal_places: 0 })
+        : answer(200, {}),
+    );
+    vi.resetModules();
+    const [{ PaymentRequestToolbar: Toolbar }, { ToastProvider: Toasts }, { setAuth: auth }] =
+      await Promise.all([
+        import("@/components/payment-request/PaymentRequestToolbar"),
+        import("@/components/Toast"),
+        import("@/lib/auth"),
+      ]);
+    auth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
+    render(
+      <Toasts>
+        <Toolbar
+          activeStatuses={[]}
+          onActiveStatusesChange={onActiveStatusesChange}
+          searchQuery=""
+          onSearchChange={onSearchChange}
+          bulkActionsEnabled={false}
+          onApplyFilters={onApplyFilters}
+        />
+      </Toasts>,
+    );
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith("/auth/entity-currency"))).toBe(
+        true,
+      ),
+    );
+    const panel = await openFilters();
+    const [min] = within(panel).getAllByPlaceholderText("0.00");
+
+    await userEvent.type(min, "12.5");
+
+    await waitFor(() => expect(min).toHaveValue("125"));
   });
 });

@@ -468,3 +468,110 @@ describe("view-only access", () => {
     expect(screen.getByText("429 - General Expenses")).toBeInTheDocument();
   });
 });
+
+describe("the supplier on edit", () => {
+  // Owner's decision: a pick from the list is needed only when the supplier text changed.
+  const PICK = "Pick the supplier from the list, or add them as a new supplier.";
+  const OLD_BILL = bill({
+    id: BILL_ID,
+    status: "submitted",
+    contact: "Young Bros Transport",
+    reference: "PR-0001",
+    xero_contact_id: "", // an older request saved before suppliers came from Xero
+    attachments: [billAttachment()],
+  });
+  const supplierField = () => screen.getByPlaceholderText("Select a supplier");
+  const startEditing = async () => {
+    await loaded();
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByDisplayValue("Young Bros Transport");
+  };
+
+  it("saves an untouched older request that has no Xero supplier", async () => {
+    const { calls } = serve({ detail: OLD_BILL });
+    show();
+    await startEditing();
+
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+    expect(screen.queryByText(PICK)).not.toBeInTheDocument();
+  });
+
+  it("saves a changed supplier that was picked from the list", async () => {
+    const { calls } = serve({ detail: OLD_BILL });
+    show();
+    await startEditing();
+
+    await userEvent.clear(supplierField());
+    await userEvent.type(supplierField(), "ABC");
+    await userEvent.click(await screen.findByRole("option", { name: "ABC Furniture" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+    expect(calls.find((c) => c.method === "PUT")!.body).toMatchObject({
+      contact: "ABC Furniture",
+      xero_contact_id: "XERO-2",
+    });
+  });
+
+  it("refuses a changed supplier that was typed but not picked, and says so", async () => {
+    const { calls } = serve({ detail: OLD_BILL });
+    show();
+    await startEditing();
+
+    await userEvent.clear(supplierField());
+    await userEvent.type(supplierField(), "Someone Unlisted");
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    expect(await screen.findByText(PICK)).toBeInTheDocument();
+    expect(calls.some((c) => c.method === "PUT")).toBe(false);
+  });
+});
+
+describe("editing for a company whose currency has no decimal places (JPY)", () => {
+  it("shows and sends the amount with no decimals", async () => {
+    const { calls } = serve();
+    const inner = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) =>
+      new URL(String(input)).pathname.endsWith("/auth/entity-currency")
+        ? answer(200, { currency_code: "JPY", decimal_places: 0 })
+        : inner(input, init),
+    );
+    vi.resetModules();
+    const [{ PaymentRequestDetailBody: Body }, { ToastProvider: Toasts }, { setAuth: auth }] =
+      await Promise.all([
+        import("@/components/payment-request/PaymentRequestDetailBody"),
+        import("@/components/Toast"),
+        import("@/lib/auth"),
+      ]);
+    auth(unsignedToken({ role: "admin", system_role: "normal" }), ENTITY_ID, ENTITY_NAME);
+    render(
+      <Toasts>
+        <Body />
+      </Toasts>,
+    );
+    await loaded();
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith("/auth/entity-currency"))).toBe(
+        true,
+      ),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const amount = await screen.findByDisplayValue("6,000");
+
+    await userEvent.type(amount, ".5");
+    expect(amount).toHaveValue("60,005");
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "1234");
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+    const put = calls.find((c) => c.method === "PUT")!;
+    expect(put.body).toMatchObject({ amount: "1234" });
+    expect((put.body!.line_items as Record<string, unknown>[])[0]).toMatchObject({
+      unit_amount: "1234",
+      line_amount: "1234",
+    });
+  });
+});

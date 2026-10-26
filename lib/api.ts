@@ -557,10 +557,17 @@ export type CurrencyInfo = {
   is_active: boolean;
 };
 
-/** ISO code of the entity's selected currency (entities.currency_id ->
- * currency_info.iso_code); currency_code is "" when the entity has none. */
-export function fetchEntityCurrency(): Promise<{ currency_code: string }> {
-  return apiFetch<{ currency_code: string }>("/auth/entity-currency");
+/** ISO code and decimal places of the entity's selected currency (entities.currency_id ->
+ * currency_info); currency_code is "" when the entity has none, and decimals then 2. */
+export async function fetchEntityCurrency(): Promise<{ currency_code: string; decimals: number }> {
+  const data = await apiFetch<{ currency_code: string; decimal_places?: number | null }>(
+    "/auth/entity-currency",
+  );
+  const places = data.decimal_places;
+  return {
+    currency_code: data.currency_code,
+    decimals: typeof places === "number" && Number.isInteger(places) && places >= 0 ? places : 2,
+  };
 }
 
 // ── Bills ────────────────────────────────────────────────────────────

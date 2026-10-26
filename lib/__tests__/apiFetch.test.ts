@@ -55,7 +55,8 @@ describe("the request", () => {
   it("goes to the API's /api/v1 with the bearer and the company", async () => {
     fetchMock.mockResolvedValueOnce(answer(200, { currency_code: "HKD" }));
 
-    await expect(fetchEntityCurrency()).resolves.toEqual({ currency_code: "HKD" });
+    // decimal_places missing: amounts keep 2 places.
+    await expect(fetchEntityCurrency()).resolves.toEqual({ currency_code: "HKD", decimals: 2 });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
@@ -63,6 +64,12 @@ describe("the request", () => {
     const headers = new Headers(init?.headers);
     expect(headers.get("Authorization")).toBe(`Bearer ${TOKEN}`);
     expect(headers.get("X-Entity-Id")).toBe(ENTITY_ID);
+  });
+
+  it("reads the currency's decimal places (JPY 0)", async () => {
+    fetchMock.mockResolvedValueOnce(answer(200, { currency_code: "JPY", decimal_places: 0 }));
+
+    await expect(fetchEntityCurrency()).resolves.toEqual({ currency_code: "JPY", decimals: 0 });
   });
 
   it("sends JSON with its content type", async () => {

@@ -5,7 +5,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { BillContactPicker } from "@/components/BillContactPicker";
 import { DateTextField } from "@/components/DateTextField";
 import { ThemedSelect } from "@/components/ThemedSelect";
-import { useEntityCurrency } from "@/lib/entityCurrency";
+import { useEntityCurrency, useEntityCurrencyDecimals } from "@/lib/entityCurrency";
 import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
 import type { ThemedSelectOption } from "@/components/ThemedSelect";
 import { mergeSelectOption } from "@/lib/billFormSelectOptions";
@@ -300,7 +300,12 @@ export function PaymentRequestDetailedInfo({
   } = data;
 
   const patch = onPatchChange ?? (() => {});
-  const amountInput = useAmountInput({ value: amount ?? "", onValue: (v) => patch({ amount: v }) });
+  const decimals = useEntityCurrencyDecimals();
+  const amountInput = useAmountInput({
+    value: amount ?? "",
+    decimals,
+    onValue: (v) => patch({ amount: v }),
+  });
 
   const uid = useId();
 

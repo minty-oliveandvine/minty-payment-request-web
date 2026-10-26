@@ -455,6 +455,27 @@ describe("the company's currency", () => {
     expect(posted).toHaveLength(0);
   });
 
+  it("takes no point for a 0-place currency (JPY), and posts whole yen", async () => {
+    const { posted } = serve({
+      currency: () => answer(200, { currency_code: "JPY", decimal_places: 0 }),
+    });
+    await showFresh();
+    await waitFor(() =>
+      expect(within(dialog()).getByLabelText("Currency")).toHaveTextContent("JPY"),
+    );
+    const amount = within(dialog()).getByPlaceholderText("0.00");
+
+    await userEvent.type(amount, "12.5");
+    expect(amount).toHaveValue("125");
+
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "1234");
+    await userEvent.click(saveDraft());
+
+    await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+    expect(posted[0].body).toMatchObject({ amount: "1234" });
+  });
+
   it("tells a failed read apart from none set, and tries again", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     try {

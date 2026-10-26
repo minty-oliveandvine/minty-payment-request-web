@@ -7,14 +7,17 @@ function toIsoDateOnly(value: string | null): string {
   return value.slice(0, 10);
 }
 
-export function billToDetailedInfo(bill: BillDetail): PaymentRequestDetailedInfoData {
+export function billToDetailedInfo(
+  bill: BillDetail,
+  decimals?: number,
+): PaymentRequestDetailedInfoData {
   const line0 = bill.line_items?.[0];
   const code = (line0?.account_code ?? bill.xero_account_code ?? "").trim();
   const name = (line0?.account_name ?? "").trim();
   const accountCode = code && name ? `${code} - ${name}` : code;
   return {
     billNo: bill.reference,
-    amount: formatAmount(bill.amount),
+    amount: formatAmount(bill.amount, decimals),
     currencyCode: bill.currency_code,
     description: bill.description ?? "",
     contact: bill.contact,
@@ -23,6 +26,23 @@ export function billToDetailedInfo(bill: BillDetail): PaymentRequestDetailedInfo
     invoiceDate: toIsoDateOnly(bill.invoice_date),
     dueDate: toIsoDateOnly(bill.due_date),
   };
+}
+
+export const PICK_SUPPLIER_MESSAGE =
+  "Pick the supplier from the list, or add them as a new supplier.";
+
+/**
+ * Owner's decision: an edited supplier must be picked from the list (or added) only when its text
+ * changed from the saved one, so an untouched older request with no Xero contact still saves.
+ */
+export function supplierNeedsPick(
+  draft: Pick<PaymentRequestDetailedInfoData, "contact" | "xero_contact_id">,
+  savedContact: string | null | undefined,
+): boolean {
+  const contact = draft.contact.trim();
+  return (
+    contact !== "" && contact !== (savedContact ?? "").trim() && !(draft.xero_contact_id ?? "")
+  );
 }
 
 function parseAccountField(raw: string): { account_code: string; account_name: string } {
@@ -37,13 +57,15 @@ function parseAccountField(raw: string): { account_code: string; account_name: s
 
 /**
  * Builds the PUT body for `updateBill`, merging account/amount into the first line item when present.
+ * `decimals` is the company currency's places (JPY 0 sends "1234").
  */
 export function buildBillUpdatePayload(
   bill: BillDetail,
   draft: PaymentRequestDetailedInfoData,
+  decimals?: number,
 ): Partial<BillCreatePayload> & { status?: string } {
   // "1234.50", the same shape a new request sends (owner, 2026-10-26).
-  const amount = toAmountString(draft.amount ?? "");
+  const amount = toAmountString(draft.amount ?? "", decimals);
   const { account_code, account_name } = parseAccountField(draft.accountCode);
 
   const payload: Partial<BillCreatePayload> = {
@@ -60,7 +82,7 @@ export function buildBillUpdatePayload(
 
   const line0 = bill.line_items?.[0];
   if (line0) {
-    const ua = amount ?? toAmountString(line0.unit_amount ?? "") ?? "0.00";
+    const ua = amount ?? toAmountString(line0.unit_amount ?? "", decimals) ?? "0.00";
     payload.line_items = [
       {
         description: line0.description,
