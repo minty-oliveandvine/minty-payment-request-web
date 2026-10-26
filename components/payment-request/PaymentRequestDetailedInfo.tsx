@@ -65,12 +65,13 @@ export const paymentRequestDetailFieldLabelClass =
 export const paymentRequestDetailModalTextInputClass =
   "box-border h-11 min-h-[44px] w-full rounded-2xl border border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm";
 
+/** The amount input: the right half of one row with the currency cell, at every width. */
 export const paymentRequestDetailAmountValueInputClass =
-  "box-border h-11 min-h-[44px] min-w-0 w-full rounded-2xl border border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:flex-1 sm:rounded-l-none sm:rounded-r-2xl sm:border-l-0 sm:text-sm focus:border-secondary focus:ring-secondary/25";
+  "box-border h-11 min-h-[44px] min-w-0 flex-1 rounded-l-none rounded-r-2xl border border-l-0 border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:text-sm focus:border-secondary focus:ring-secondary/25";
 
 /** Static currency cell left of the amount input — mirrors the amount input's border/size. */
 export const paymentRequestDetailCurrencyCellClass =
-  "box-border flex h-11 min-h-[44px] w-full shrink-0 items-center justify-center rounded-2xl border bg-white px-2 text-base text-black sm:min-h-11 sm:w-24 sm:rounded-l-2xl sm:rounded-r-none sm:border-r-0 sm:px-3 sm:text-sm";
+  "box-border flex h-11 min-h-[44px] w-20 shrink-0 items-center justify-center rounded-l-2xl rounded-r-none border border-r-0 bg-white px-2 text-base text-black sm:min-h-11 sm:w-24 sm:px-3 sm:text-sm";
 
 export const paymentRequestDetailDateTextInputClass =
   "relative z-[1] box-border h-11 min-h-[44px] w-full rounded-2xl border border-gray-300 bg-white py-0 pl-3 pr-3 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 [color-scheme:light] sm:min-h-11 sm:text-sm";
@@ -231,15 +232,15 @@ export function PaymentRequestReadOnlyAmountRow({
 }) {
   const amountColorClass = tone === "secondary" ? "text-secondary" : "text-black";
   return (
-    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-0">
+    <div className="flex min-w-0 items-center">
       <div
-        className="box-border flex h-11 min-h-[44px] w-full shrink-0 items-center justify-between gap-2 rounded-lg bg-transparent px-2 pl-3 pr-2 text-base font-semibold text-black sm:w-24 sm:rounded-l-lg sm:rounded-r-none sm:px-3 sm:text-sm"
+        className="box-border flex h-11 min-h-[44px] w-20 shrink-0 items-center justify-between gap-2 rounded-l-lg rounded-r-none bg-transparent px-2 pl-3 pr-2 text-base font-semibold text-black sm:w-24 sm:px-3 sm:text-sm"
         aria-label="Currency"
       >
         <span className="min-w-0 flex-1 truncate">{currencyDisplayLabel}</span>
       </div>
       <div
-        className={`box-border flex min-h-[52px] min-w-0 w-full items-center rounded-lg bg-transparent px-3 py-1 font-semibold tabular-nums ${amountColorClass} sm:min-h-14 sm:flex-1 sm:rounded-l-none sm:rounded-r-lg sm:leading-snug ${highlightError ? "ring-2 ring-inset ring-red-500" : ""}`}
+        className={`box-border flex min-h-[52px] min-w-0 flex-1 items-center rounded-l-none rounded-r-lg bg-transparent px-3 py-1 font-semibold tabular-nums ${amountColorClass} sm:min-h-14 sm:leading-snug ${highlightError ? "ring-2 ring-inset ring-red-500" : ""}`}
         aria-readonly="true"
       >
         <FitAmountText>{amount || "—"}</FitAmountText>
@@ -491,7 +492,7 @@ export function PaymentRequestDetailedInfo({
             </FieldLabel>
             {isEditing ? (
               <>
-                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:gap-0">
+                <div className="flex min-w-0">
                   <div
                     id={idCurrency}
                     aria-label="Currency"

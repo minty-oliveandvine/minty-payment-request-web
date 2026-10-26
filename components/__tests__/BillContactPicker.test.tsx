@@ -206,27 +206,51 @@ describe("the picker", () => {
     }
 
     it("says so as the 101st character is typed, and clears it when one is removed", async () => {
-      render(<Typed initial={"A".repeat(100)} />);
+      const { container } = render(<Typed initial={"A".repeat(100)} />);
       await userEvent.click(field());
       expect(screen.queryByText(TOO_LONG)).not.toBeInTheDocument();
 
       await userEvent.type(field(), "B");
-      expect(screen.getByText(TOO_LONG)).toBeInTheDocument();
+      // Under the field (the open menu is portalled to <body>, so not inside the container)...
+      expect(within(container).getByText(TOO_LONG)).toBeInTheDocument();
       expect(field()).toHaveAttribute("aria-invalid", "true");
 
       await userEvent.type(field(), "{Backspace}");
       expect(screen.queryByText(TOO_LONG)).not.toBeInTheDocument();
     });
 
-    it("will not create a supplier while the name is too long", async () => {
+    it("says why on the greyed-out option itself, so the open menu never hides the reason", async () => {
       show({ contactName: "A".repeat(101) });
+      await userEvent.click(field());
+
+      const add = within(screen.getByRole("listbox")).getByRole("option", {
+        name: /as a new supplier/,
+      });
+      expect(add).toHaveAttribute("aria-disabled", "true");
+      expect(within(add).getByText(TOO_LONG)).toBeInTheDocument();
+      expect(add).toHaveAccessibleName(expect.stringContaining(TOO_LONG));
+    });
+
+    it("drops the reason from the option once the name fits again", async () => {
+      show({ contactName: "A".repeat(100) });
+      await userEvent.click(field());
+
+      const add = within(screen.getByRole("listbox")).getByRole("option", {
+        name: /as a new supplier/,
+      });
+      expect(add).not.toHaveAttribute("aria-disabled");
+      expect(within(add).queryByText(TOO_LONG)).not.toBeInTheDocument();
+    });
+
+    it("will not create a supplier while the name is too long", async () => {
+      const { container } = show({ contactName: "A".repeat(101) });
       await userEvent.click(field());
 
       await userEvent.click(screen.getByRole("option", { name: /as a new supplier/ }));
 
       expect(fetchMock).not.toHaveBeenCalled();
       expect(onChange).not.toHaveBeenCalled();
-      expect(screen.getByText(TOO_LONG)).toBeInTheDocument();
+      expect(within(container).getByText(TOO_LONG)).toBeInTheDocument();
     });
 
     it("creates one of exactly 100 characters", async () => {

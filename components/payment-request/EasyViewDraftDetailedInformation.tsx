@@ -448,7 +448,7 @@ export function EasyViewDraftDetailedInformationEdit({
             <label htmlFor={idAmt} className={paymentRequestDetailFieldLabelClass}>
               Amount<span className="text-red-500"> *</span>
             </label>
-            <div className="mt-0.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:gap-0">
+            <div className="mt-0.5 flex min-w-0">
               <div
                 id={idCur}
                 aria-label="Currency"

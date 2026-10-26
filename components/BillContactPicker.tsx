@@ -181,14 +181,20 @@ export function BillContactPicker({
             aria-selected={false}
             aria-disabled={nameTooLong || undefined}
             aria-label={
-              creating ? "Creating supplier in Xero" : `Add ${trimmedName} as a new supplier`
+              creating
+                ? "Creating supplier in Xero"
+                : nameTooLong
+                  ? `Add ${trimmedName} as a new supplier. ${NAME_TOO_LONG}`
+                  : `Add ${trimmedName} as a new supplier`
             }
             className={
-              "cursor-pointer px-3 py-2.5 text-left text-sm font-medium text-primary transition-colors " +
+              "cursor-pointer px-3 py-2.5 text-left text-sm font-medium break-words text-primary transition-colors " +
               (filtered.length > 0 ? "border-t border-gray-100 " : "") +
-              (creating || disabled || nameTooLong
-                ? "cursor-not-allowed opacity-60"
-                : "hover:bg-secondary/10")
+              (nameTooLong
+                ? "cursor-not-allowed"
+                : creating || disabled
+                  ? "cursor-not-allowed opacity-60"
+                  : "hover:bg-secondary/10")
             }
             onMouseDown={(e) => {
               e.preventDefault();
@@ -197,7 +203,17 @@ export function BillContactPicker({
               if (!disabled && !creating && !nameTooLong) void handleAddToXero();
             }}
           >
-            {addRowText}
+            {nameTooLong ? (
+              <>
+                {/* The reason lives on the option too: the open menu covers the note under the field. */}
+                <span className="block opacity-60">{addRowText}</span>
+                <span className="mt-0.5 block text-xs font-normal text-red-600">
+                  {NAME_TOO_LONG}
+                </span>
+              </>
+            ) : (
+              addRowText
+            )}
           </li>
         ) : null}
       </ul>
