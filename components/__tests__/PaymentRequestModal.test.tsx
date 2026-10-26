@@ -487,7 +487,7 @@ describe("the amount field", () => {
 
     await userEvent.type(amount, "12abc34");
 
-    expect(amount).toHaveValue("1234");
+    expect(amount).toHaveValue("1,234");
   });
 
   it("refuses a twelfth integer digit rather than truncating", async () => {
@@ -496,7 +496,27 @@ describe("the amount field", () => {
 
     await userEvent.type(amount, "123456789012");
 
-    expect(amount).toHaveValue("12345678901");
+    expect(amount).toHaveValue("12,345,678,901");
+  });
+
+  it("puts the commas in as the person types", async () => {
+    show();
+    const amount = within(dialog()).getByPlaceholderText("0.00");
+
+    await userEvent.type(amount, "1234567.8");
+
+    expect(amount).toHaveValue("1,234,567.8");
+  });
+
+  it("still posts the amount as a plain decimal string", async () => {
+    const { posted } = serve();
+    show();
+    await userEvent.type(within(dialog()).getByPlaceholderText("0.00"), "1234567.5");
+
+    await userEvent.click(saveDraft());
+
+    await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+    expect(posted[0].body).toMatchObject({ amount: "1234567.50" });
   });
 
   it("groups the amount once the field is left", async () => {

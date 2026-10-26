@@ -10,7 +10,7 @@ import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
 import type { ThemedSelectOption } from "@/components/ThemedSelect";
 import { mergeSelectOption } from "@/lib/billFormSelectOptions";
 import type { EntityBillContact } from "@/lib/api";
-import { acceptAmountInput, formatAmount, toAmountEditString } from "@minty/shared/money";
+import { useAmountInput } from "@minty/shared/amountInput";
 
 /** Bill / request fields shown in the “Detailed Information” card. */
 export type PaymentRequestDetailedInfoData = {
@@ -300,6 +300,7 @@ export function PaymentRequestDetailedInfo({
   } = data;
 
   const patch = onPatchChange ?? (() => {});
+  const amountInput = useAmountInput({ value: amount ?? "", onValue: (v) => patch({ amount: v }) });
 
   const uid = useId();
 
@@ -498,19 +499,8 @@ export function PaymentRequestDetailedInfo({
                   </div>
                   <input
                     id={idAmount}
-                    type="text"
-                    inputMode="decimal"
                     placeholder="0.00"
-                    value={amount ?? ""}
-                    onChange={(e) => {
-                      const value = acceptAmountInput(e.target.value);
-                      if (value === null) return;
-                      patch({ amount: value });
-                    }}
-                    onFocus={() => patch({ amount: toAmountEditString(amount) })}
-                    onBlur={(e) => {
-                      patch({ amount: formatAmount(e.target.value) });
-                    }}
+                    {...amountInput}
                     aria-invalid={!!amountError}
                     aria-describedby={amountError ? idAmountError : undefined}
                     className={

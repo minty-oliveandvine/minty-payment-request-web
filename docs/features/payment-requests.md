@@ -21,6 +21,10 @@ this page is what the person sees and where each piece of the screen lives.
   shown; pagination in `PaymentRequestPagination`. Bulk delete of drafts from the table.
 - Every amount is shown in the **entity's currency** (`lib/entityCurrency.ts` from
   `GET /api/auth/entity-currency`), never the bill's stored code.
+- Every amount **input** (Add Payment, the detail and Easy View edits, Record Payment, the
+  amount filter) is `@minty/shared/amountInput` (owner, 2026-10-26): commas as it is typed, the
+  caret kept on its digit, the places padded on blur; a 12th whole digit, a third place or a
+  letter is refused. What reaches the API is unchanged.
 - The Add Payment Request dialog uses `useEntityCurrencyState()`: with no currency set it says
   so under Amount (linking to Entity & Integration settings) and disables Confirm and Save as
   Draft; a failed read says so with **Try again**. Neither shows as an empty box.

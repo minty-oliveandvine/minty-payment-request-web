@@ -27,13 +27,8 @@ import { buildBankSlipDetailsFromPaymentList } from "@/lib/bankSlipEnrichment";
 import { useEntityCurrency } from "@/lib/entityCurrency";
 import { shouldShowPaymentInHistory } from "@/lib/paymentHistoryDisplay";
 import { formatIsoDateForDisplay } from "@/lib/dateDisplayFormat";
-import {
-  acceptAmountInput,
-  formatAmount,
-  formatMoney,
-  parseAmount,
-  toAmountEditString,
-} from "@minty/shared/money";
+import { formatAmount, formatMoney, parseAmount } from "@minty/shared/money";
+import { useAmountInput } from "@minty/shared/amountInput";
 
 export type RecordPaymentModalProps = {
   open: boolean;
@@ -132,6 +127,7 @@ export function RecordPaymentModal({
   const paymentsLoadGenerationRef = useRef(0);
   const [draftDate, setDraftDate] = useState(todayISO);
   const [draftAmount, setDraftAmount] = useState("");
+  const amountInput = useAmountInput({ value: draftAmount ?? "", onValue: setDraftAmount });
   /** Inline validation shown next to the payment form. Action failures
    *  (save/delete) surface as toasts instead. */
   const [formError, setFormError] = useState<string | null>(null);
@@ -769,17 +765,8 @@ export function RecordPaymentModal({
                     </span>
                     <input
                       id={amountFieldId}
-                      type="text"
-                      inputMode="decimal"
                       placeholder="0.00"
-                      value={draftAmount ?? ""}
-                      onChange={(e) => {
-                        const value = acceptAmountInput(e.target.value);
-                        if (value === null) return;
-                        setDraftAmount(value);
-                      }}
-                      onFocus={() => setDraftAmount((prev) => toAmountEditString(prev))}
-                      onBlur={(e) => setDraftAmount(formatAmount(e.target.value))}
+                      {...amountInput}
                       readOnly={payMode === "full"}
                       className="box-border min-h-[44px] min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-base text-black placeholder:text-gray-700 read-only:cursor-default read-only:text-gray-700 read-only:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:min-h-11 sm:text-sm"
                     />
@@ -815,17 +802,8 @@ export function RecordPaymentModal({
                   </label>
                   <input
                     id={amountFieldId}
-                    type="text"
-                    inputMode="decimal"
                     placeholder="0.00"
-                    value={draftAmount ?? ""}
-                    onChange={(e) => {
-                      const value = acceptAmountInput(e.target.value);
-                      if (value === null) return;
-                      setDraftAmount(value);
-                    }}
-                    onFocus={() => setDraftAmount((prev) => toAmountEditString(prev))}
-                    onBlur={(e) => setDraftAmount(formatAmount(e.target.value))}
+                    {...amountInput}
                     readOnly={payMode === "full"}
                     className="box-border h-11 min-h-[44px] w-full rounded-2xl border border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm read-only:cursor-default read-only:border-gray-200 read-only:bg-gray-100 read-only:text-gray-700 read-only:shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)] read-only:placeholder:text-gray-500 read-only:focus:border-gray-300 read-only:focus:ring-1 read-only:focus:ring-gray-300/50"
                   />

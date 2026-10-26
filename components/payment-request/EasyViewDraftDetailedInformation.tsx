@@ -7,7 +7,7 @@ import { DateTextField } from "@/components/DateTextField";
 import { ThemedSelect, type ThemedSelectOption } from "@/components/ThemedSelect";
 import { mergeSelectOption } from "@/lib/billFormSelectOptions";
 import { useEntityCurrency } from "@/lib/entityCurrency";
-import { acceptAmountInput, formatAmount, toAmountEditString } from "@minty/shared/money";
+import { useAmountInput } from "@minty/shared/amountInput";
 import {
   formatPaymentRequestDetailLongDate,
   paymentRequestDetailAmountValueInputClass,
@@ -334,6 +334,10 @@ export function EasyViewDraftDetailedInformationEdit({
     dueDate,
   } = data;
 
+  const amountInput = useAmountInput({
+    value: amount ?? "",
+    onValue: (v) => onPatchChange({ amount: v }),
+  });
   const mergedAccountOptions = mergeSelectOption(accountOptions, accountCode);
 
   return (
@@ -455,17 +459,8 @@ export function EasyViewDraftDetailedInformationEdit({
               </div>
               <input
                 id={idAmt}
-                type="text"
-                inputMode="decimal"
                 placeholder="0.00"
-                value={amount ?? ""}
-                onChange={(e) => {
-                  const value = acceptAmountInput(e.target.value);
-                  if (value === null) return;
-                  onPatchChange({ amount: value });
-                }}
-                onFocus={() => onPatchChange({ amount: toAmountEditString(amount) })}
-                onBlur={(e) => onPatchChange({ amount: formatAmount(e.target.value) })}
+                {...amountInput}
                 disabled={disabled}
                 aria-invalid={!!amountError}
                 className={

@@ -39,13 +39,11 @@ import type { EntityBillContact } from "@/lib/api";
 import { DateTextField } from "@/components/DateTextField";
 import {
   MAX_AMOUNT_INT_DIGITS,
-  acceptAmountInput,
   amountIntegerDigits,
   cleanAmountString,
-  formatAmount,
-  toAmountEditString,
   toAmountString,
 } from "@minty/shared/money";
+import { useAmountInput } from "@minty/shared/amountInput";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 import { joinNames, uploadEachAttachment } from "@/lib/uploadAttachments";
 import { useToast } from "@/components/Toast";
@@ -267,6 +265,21 @@ export function PaymentRequestModal({
       return next;
     });
   };
+
+  // Commas as the person types, places padded on blur (@minty/shared/amountInput). The 12-digit
+  // error shows only while it applies and clears the moment the amount is valid again.
+  const amountInput = useAmountInput({
+    value: amount ?? "",
+    onValue: (value) => {
+      setAmount(value);
+      const err = amountLimitError(value);
+      if (err) {
+        setFieldErrors((prev) => ({ ...prev, amount: err }));
+      } else {
+        clearFieldError("amount");
+      }
+    },
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -869,36 +882,7 @@ export function PaymentRequestModal({
                   <input
                     id="pr-amount"
                     required
-                    type="text"
-                    inputMode="decimal"
-                    value={amount ?? ""}
-                    onChange={(e) => {
-                      const value = acceptAmountInput(e.target.value);
-                      if (value === null) return;
-                      setAmount(value);
-
-                      // Show the 12-digit limit error only while it applies; clear
-                      // it the moment the amount is valid again so it doesn't stick.
-                      const err = amountLimitError(value);
-                      if (err) {
-                        setFieldErrors((prev) => ({ ...prev, amount: err }));
-                      } else {
-                        clearFieldError("amount");
-                      }
-                    }}
-                    onFocus={() => setAmount((prev) => toAmountEditString(prev))}
-                    onBlur={(e) => {
-                      const formatted = formatAmount(e.target.value);
-                      setAmount(formatted);
-
-                      // Keep the error in sync with the formatted value.
-                      const err = amountLimitError(formatted);
-                      if (err) {
-                        setFieldErrors((prev) => ({ ...prev, amount: err }));
-                      } else {
-                        clearFieldError("amount");
-                      }
-                    }}
+                    {...amountInput}
                     placeholder="0.00"
                     aria-invalid={!!fieldErrors.amount}
                     className={
