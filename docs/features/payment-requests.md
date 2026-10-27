@@ -96,7 +96,10 @@ Two buttons: **Save as draft** (`POST /api/bills/draft/`, nothing validated) and
 **Confirm** (`POST /api/bills/submit/`): the form validates the amount, supplier, account,
 both dates and _at least one attachment_ before sending, shows each field's error inline
 (`role="alert"`), uploads the files right after the bill exists, then opens the new
-request's detail page.
+request's detail page. A file that fails to upload is named in a warning toast and the
+request stays submitted without it; the API then refuses to **publish** a request with no
+attachment ("Add the invoice attachment to publish this payment request.", owner 2026-10-27),
+which every publish path shows as an error toast in those words.
 
 The files go up **one per call** (`lib/uploadAttachments.ts` `uploadEachAttachment`), so one
 refused file does not take the others with it. The request exists by then, so a failed file is

@@ -53,6 +53,7 @@ function serve({
   payments = [],
   save,
   upload,
+  publish,
 }: {
   detail?: ReturnType<typeof bill>;
   billAnswer?: () => Response;
@@ -60,6 +61,8 @@ function serve({
   save?: () => Response;
   /** `POST /bills/{id}/attachments`. */
   upload?: () => Response;
+  /** `POST /bills/{id}/publish/`. */
+  publish?: () => Response;
 } = {}) {
   const calls: Call[] = [];
   fetchMock.mockImplementation(async (input, init) => {
@@ -83,6 +86,9 @@ function serve({
       return (upload ?? (() => answer(201, [billAttachment()])))();
     }
     if (path.includes("/attachments")) return answer(200, []);
+    if (method === "POST" && path.endsWith(`/bills/${BILL_ID}/publish/`)) {
+      return (publish ?? (() => answer(200, detail)))();
+    }
     if (path.includes("/bills/by-reference/")) {
       return (billAnswer ?? (() => answer(200, detail)))();
     }
@@ -395,6 +401,27 @@ describe("editing it", () => {
         "Someone else changed that first.",
       ),
     );
+  });
+});
+
+describe("publishing it", () => {
+  it("says why the API refused, in its words - a request needs its invoice (2026-10-27)", async () => {
+    const { calls } = serve({
+      publish: () =>
+        answer(422, { detail: "Add the invoice attachment to publish this payment request." }),
+    });
+    show();
+    await loaded();
+
+    await userEvent.click(screen.getByRole("button", { name: "More payment actions" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Publish" }));
+
+    await waitFor(() =>
+      expect(document.querySelector("[data-toast-type='error']")).toHaveTextContent(
+        "Add the invoice attachment to publish this payment request.",
+      ),
+    );
+    expect(calls.some((c) => c.path.endsWith(`/bills/${BILL_ID}/publish/`))).toBe(true);
   });
 });
 
