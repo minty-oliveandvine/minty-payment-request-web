@@ -173,7 +173,10 @@ invoice.pdf didn't upload. Edit the request and add it again." / "Draft saved, b
 didn't upload. Edit the draft and add it again." - and a draft then opens its own page rather
 than the list. The detail page's Save / Submit for payment do the same: the changes are saved,
 edit mode closes, and an inline warning names the file ("Your changes are saved, but … didn't
-upload …") instead of the old "Your changes didn't save".
+upload …") instead of the old "Your changes didn't save". A request left with no invoice this
+way cannot be published: minty-payment-request-api refuses ("Add the invoice attachment to
+publish this payment request.", owner 2026-10-27), and the detail page says so beside its
+actions, next to the "This request has no invoice attached." banner.
 
 ### Validation (Part 14 + the owner's 2026-10-13 decisions)
 

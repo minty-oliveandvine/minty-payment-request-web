@@ -55,6 +55,7 @@ function serve({
   payments = [],
   save,
   upload,
+  publish,
 }: {
   detail?: ReturnType<typeof bill>;
   billAnswer?: () => Response;
@@ -62,6 +63,8 @@ function serve({
   save?: () => Response;
   /** `POST /bills/{id}/attachments` - one call per file. */
   upload?: () => Response;
+  /** `POST /bills/{id}/publish/`. */
+  publish?: () => Response;
 } = {}) {
   const calls: Call[] = [];
   fetchMock.mockImplementation(async (input, init) => {
@@ -83,6 +86,9 @@ function serve({
     if (path.endsWith("/payments")) return answer(200, { paid_total: "0.00", payments });
     if (path.includes("/attachments")) {
       return method === "POST" ? (upload ?? (() => answer(201, [])))() : answer(200, []);
+    }
+    if (method === "POST" && path.endsWith(`/bills/${BILL_ID}/publish/`)) {
+      return (publish ?? (() => answer(200, detail)))();
     }
     if (path.includes("/bills/by-reference/")) {
       return (billAnswer ?? (() => answer(200, detail)))();
@@ -323,6 +329,25 @@ describe("a request with no invoice attached", () => {
     await loaded();
 
     expect(screen.queryByText(BANNER)).not.toBeInTheDocument();
+  });
+
+  it("says why publishing it is refused, in the API's words (2026-10-27)", async () => {
+    const { calls } = serve({
+      detail: noInvoice(),
+      publish: () =>
+        answer(422, { error: "Add the invoice attachment to publish this payment request." }),
+    });
+    show();
+    await loaded();
+
+    await userEvent.click(screen.getByRole("button", { name: "More payment actions" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Publish" }));
+
+    // Said on the page beside the actions, not in a toast (Part 14).
+    expect(
+      await screen.findByText("Add the invoice attachment to publish this payment request."),
+    ).toBeInTheDocument();
+    expect(calls.some((c) => c.path.endsWith(`/bills/${BILL_ID}/publish/`))).toBe(true);
   });
 });
 
