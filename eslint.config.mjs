@@ -1,6 +1,6 @@
 // @minty/shared/eslint: next/core-web-vitals + typescript and the folders no app lints (pdf.js's
 // worker, copied into public/pdfjs/ by next.config.ts, among them).
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 import minty from "@minty/shared/eslint";
 
 export default defineConfig([
@@ -15,4 +15,6 @@ export default defineConfig([
       "react-hooks/refs": "warn",
     },
   },
+  // The Cloudflare Workers build (OpenNext) and wrangler's local state: generated, not ours.
+  globalIgnores([".open-next/**", ".wrangler/**"]),
 ]);

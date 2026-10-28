@@ -1,0 +1,16 @@
+// The redesign (branch `redesign`, 2026-10-28): this app as a Worker on its workers.dev address.
+// Built against development's dev-* backends (cloudflare.env), deployed by hand with
+// `npm run cf:deploy`. No custom domain: dailyminty.com stays on Vercel DNS.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "payment-request",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  // next/image's optimiser runs on Cloudflare Images.
+  "images": { "binding": "IMAGES" },
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "preview_urls": false,
+}
