@@ -10,7 +10,7 @@ import { unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
 import { cookieCompanyPages } from "@/lib/useCompanyPages";
 import { env } from "@/lib/env";
-import { MINTY_MODULE_URL, buildMintyEnterUrl, buildMintyProfileUrl } from "@/lib/mintyUrls";
+import { MINTY_MODULE_URL, buildMintyEnterUrl } from "@/lib/mintyUrls";
 
 const TOKEN = unsignedToken();
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
@@ -50,27 +50,6 @@ describe("buildMintyEnterUrl", () => {
   it("falls back when there is a token but no company", () => {
     setAuth(TOKEN, "", "");
     expect(buildMintyEnterUrl()).toBe(`${env.PETTY_CASH_URL}/entity`);
-  });
-});
-
-describe("buildMintyProfileUrl", () => {
-  it("names the company it was opened in, through /enter", () => {
-    setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
-
-    const url = new URL(buildMintyProfileUrl());
-    const next = new URLSearchParams(url.search).get("next")!;
-
-    expect(url.pathname).toBe(`/entity/${ENTITY_ID}/enter`);
-    expect(next).toBe(`/profile?entity_id=${ENTITY_ID}`);
-  });
-
-  it("carries no from=bills - the profile's Back returns where the person came from", () => {
-    setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
-    expect(buildMintyProfileUrl()).not.toContain("from=bills");
-  });
-
-  it("goes straight to Minty's profile router with no company in the cookie", () => {
-    expect(buildMintyProfileUrl()).toBe(`${env.PETTY_CASH_URL}/profile`);
   });
 });
 

@@ -66,7 +66,6 @@ describe("links", () => {
       links.subscriptions(),
       links.pettyCashDashboard(),
       links.pettyCashReports(ENTITY_ID),
-      links.profile(),
     ]) {
       expect(href.startsWith(env.PETTY_CASH_URL)).toBe(true);
     }
@@ -78,6 +77,10 @@ describe("links", () => {
     expect(new URL(links.pettyCashReports(ENTITY_ID)).searchParams.get("next")).toBe(
       `/entity/${ENTITY_ID}/petty-cash/reports`,
     );
+  });
+
+  it("have no profile link - My Profile opens only in the sidebar (@minty/shared v0.12)", () => {
+    expect("profile" in links).toBe(false);
   });
 
   it("send Subscriptions to minty-web through Flask's login-gated re-handoff", () => {

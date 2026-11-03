@@ -100,8 +100,9 @@ The same reads minty-web makes, with this app's token:
 
 This app has no profile PAGE since 2026-10-01: `/profile` and the old portal addresses forward
 to minty-web through Minty ([payer-portal.md](payer-portal.md)). Where the initials or the
-menu's name are drawn outside the drawer, they are plain links to Minty's `/profile`
-(`links.profile`), which opens minty-web's.
+menu's name are drawn outside the drawer (no sheet mounted), they are plain links to Minty's
+entity list (`links.profile`, the same target as `links.entities`): minty-web has no profile page
+either - My Profile opens only as the sidebar's sheet (owner).
 
 ## Tests
 

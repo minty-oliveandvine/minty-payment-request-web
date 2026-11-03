@@ -26,7 +26,7 @@ import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import { env } from "@/lib/env";
 import { clearAuth, getAuth, isTokenExpiringSoon, redirectToLogin, refreshToken } from "@/lib/auth";
 import { getModuleClaims } from "@/lib/moduleClaims";
-import { buildMintyEnterUrl, buildMintyProfileUrl, MINTY_MODULE_URL } from "@/lib/mintyUrls";
+import { buildMintyEnterUrl, MINTY_MODULE_URL } from "@/lib/mintyUrls";
 import { cookieCompanyPages } from "@/lib/useCompanyPages";
 
 /** minty-subscription-api - the Subscriptions Overview's read (`SUBSCRIPTION_API_URL`, lib/env.ts). */
@@ -48,7 +48,7 @@ type ModuleAccess = { pettyCash: boolean; billing: boolean };
 /**
  * Into minty-web through Flask's login-gated re-handoff - by way of `/enter` when a company is in
  * the cookie, so a Flask session that lapsed while this app's longer token lived is
- * re-established from that token on the way (as `buildMintyProfileUrl` does).
+ * re-established from that token on the way (as `buildMintyEnterUrl` does).
  */
 function handoff(next: string): string {
   const path = `/handoff/minty-web?${new URLSearchParams({ next }).toString()}`;
@@ -85,8 +85,6 @@ export const links = {
    * is pressed in) - the page this app's old drawer opened. minty-web's menu keeps its own.
    */
   settings: () => cookieCompanyPages()?.settings ?? "/",
-  /** The initials' way in without the sidebar: Minty's profile router. */
-  profile: () => buildMintyProfileUrl(),
 };
 
 /**
