@@ -21,6 +21,7 @@ import {
   ViewFullButton,
 } from "@/components/payment-request/AttachmentFullScreenViewer";
 import { saveAttachmentBlobs } from "@/lib/paymentRequestAttachmentStore";
+import { parseAccountField } from "@/lib/paymentRequestBillMap";
 import { ThemedSelect, type ThemedSelectOption } from "@/components/ThemedSelect";
 import { RequiredMark } from "@/components/RequiredMark";
 
@@ -376,7 +377,8 @@ export function PaymentRequestModal({
       e.target.value = "";
       return;
     }
-    // Images are converted/compressed to JPEG at upload time (compressImage); stage the raw file here.
+    // Images are shrunk at upload time (compressImage: PNG and JPEG keep their type, others become
+    // JPEG); stage the raw file here.
     const added: UploadedEntry[] = Array.from(list).map((file) => ({
       id:
         typeof crypto !== "undefined" && crypto.randomUUID
@@ -422,7 +424,7 @@ export function PaymentRequestModal({
     setDraftSubmitting(true);
     try {
       const amountStr = toAmountString(amount, currency.decimals);
-      const acctCode = accountCode.split(" - ")[0]?.trim() ?? "";
+      const { account_code: acctCode, account_name: acctName } = parseAccountField(accountCode);
 
       const selectedContact = contactsMap.get(contact);
       const contactName = selectedContact?.name ?? contact;
@@ -445,6 +447,7 @@ export function PaymentRequestModal({
                   unit_amount: amountStr,
                   line_amount: amountStr,
                   account_code: acctCode || undefined,
+                  account_name: acctName || undefined,
                 },
               ]
             : undefined,
@@ -517,7 +520,7 @@ export function PaymentRequestModal({
     setConfirmSubmitting(true);
     try {
       const amountStr = toAmountString(amount, currency.decimals) ?? "0";
-      const acctCode = accountCode.split(" - ")[0]?.trim() ?? "";
+      const { account_code: acctCode, account_name: acctName } = parseAccountField(accountCode);
 
       const selectedContact = contactsMap.get(contact);
       const contactName = selectedContact?.name ?? contact;
@@ -538,6 +541,7 @@ export function PaymentRequestModal({
             unit_amount: amountStr,
             line_amount: amountStr,
             account_code: acctCode,
+            account_name: acctName,
           },
         ],
       });

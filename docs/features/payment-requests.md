@@ -55,7 +55,9 @@ is shorter - the API refuses the same, since `Bill.contact_name` holds 100), the
 `#pr-due-date`, native date inputs behind a formatted overlay — `DateTextField.tsx`), and
 the attachments drop zone (`input[aria-label="Choose files to attach"]`; pdf, jpg, png,
 html — **no spreadsheets since 2026-10-09**, so every accepted type is one the browser can
-draw; images compressed client-side — `lib/compressImage.ts`). The allowlist is the shared
+draw; images shrunk client-side — `lib/compressImage.ts`: a PNG stays a PNG and a JPEG a
+JPEG, under their own names (2026-11-03; a PNG used to arrive as `.jpg`), other images become
+JPEG). The allowlist is the shared
 `ATTACHMENT_ACCEPT` / `isAllowedAttachment` from `lib/fileAttachmentPreview.ts`, so this
 modal, the upload-invoice modal and the bank-slip modal agree by construction. The server
 (`attachment_service.py`) still accepts Excel — it is shared with bank slips and with Xero
@@ -154,8 +156,13 @@ is fresh.
 - **payments** (`PaymentHistoryCard.tsx`, `RecordPaymentModal.tsx` — date, amount, method,
   reference; the date defaults to today on the person's own clock (`todayLocalISODate`,
   `lib/dateDisplayFormat.ts`, shared with the Add Payment dialog), never UTC's day; `OverpaymentWarningModal` when the sum would exceed the bill;
-  `BankSlipDetailsModal.tsx` uploads the slip and can push it to the Xero invoice, then
-  closes once the caller has refreshed (a failed refresh is logged, never rolled back);
+  `BankSlipDetailsModal.tsx` uploads the slip onto the bill's payment (the newest pending,
+  else the newest settled, never an old 0.00 slip holder beside a real one) and can push it to
+  the Xero invoice, then closes once the caller has refreshed (a failed refresh is logged,
+  never rolled back). **It never creates a payment** (2026-11-03; it used to make a 0.00 one
+  with no date to hold a slip): with no payment yet, inside Record Payment the slips wait
+  ("Bank slip ready: …") and go onto the payment Add Payment creates; from a list row it says
+  "This request has no payment yet. Record the payment first, then attach its bank slip.";
   `PaymentDeleteConfirmModal`);
 - the **Activity history** (`ActivityHistoryAccordion.tsx`) rendering the backend's audit
   rows — "submitted", "published to Xero", "uploaded receipt.pdf", "recorded a payment of

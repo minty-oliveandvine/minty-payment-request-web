@@ -611,7 +611,7 @@ export function fetchBillByReference(reference: string): Promise<BillDetail> {
   return apiFetch<BillDetail>(`/bills/by-reference/${encodeURIComponent(reference)}`);
 }
 
-/** Suggested bill number from backend (MBI + 3 name letters + HK time/date). */
+/** Suggested bill number from backend (MBI + 3 letters of the company name + HK time/date). */
 export function fetchSuggestedBillReference(): Promise<{ reference: string }> {
   return apiFetch<{ reference: string }>("/bills/suggested-reference/");
 }

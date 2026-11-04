@@ -382,8 +382,13 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       const b = await fetchBill(requestId);
       setBill(b);
       onBillUpdated?.();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      // Never keep drawing a request that could not be read back (2026-11-03: a deleted draft
+      // stayed on screen): the page says what the first load would have said.
+      setBill(null);
+      setLoadError(
+        e instanceof ApiError ? e.message : "This payment didn't come through. Mind trying again?",
+      );
     }
   }, [requestId, onBillUpdated]);
 
@@ -908,7 +913,15 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
       if (bill?.status === "returned") {
         await returnBillApi(requestId, "void");
       } else {
-        await deleteBill(requestId);
+        const { message } = await deleteBill(requestId);
+        if (message === "Bill deleted") {
+          // A draft is removed outright: there is no request left to show, so go to the list.
+          if (bill?.reference) forgetRequest((params?.ref ?? "").toLowerCase(), bill.reference);
+          setDeleteBillConfirmOpen(false);
+          showToast("Draft deleted.", "success");
+          router.replace(pages.list);
+          return;
+        }
       }
       setDeleteBillConfirmOpen(false);
       setIsEditing(false);
@@ -926,7 +939,7 @@ export function PaymentRequestDetailBody({ onBillUpdated }: PaymentRequestDetail
     } finally {
       setIsDeleting(false);
     }
-  }, [requestId, bill, reloadBill, bumpAudit, loadPayments, showToast]);
+  }, [requestId, bill, reloadBill, bumpAudit, loadPayments, showToast, params, router, pages]);
 
   const handleSubmitDraft = useCallback(async () => {
     if (!requestId || !bill) return;

@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import {
   fetchPayments,
@@ -11,6 +11,7 @@ import {
   updatePayment,
   deletePayment,
   updateBill,
+  uploadPaymentAttachment,
   type PaymentItem,
 } from "@/lib/api";
 import {
@@ -140,6 +141,9 @@ export function RecordPaymentModal({
   const [bankSlipPreviewOpen, setBankSlipPreviewOpen] = useState(false);
   const [bankSlipFileCount, setBankSlipFileCount] = useState(0);
   const [bankSlipDetails, setBankSlipDetails] = useState<BankSlipDetails>(EMPTY_BANK_SLIP_DETAILS);
+  /** Bank slips chosen before the bill had a payment: they go onto the payment Add Payment
+   *  creates (never onto a HKD 0.00 payment of their own). */
+  const [slipsForNextPayment, setSlipsForNextPayment] = useState<File[]>([]);
 
   const bankSlipRowForEnrichment = useMemo(
     () => ({ ...MIN_BANK_SLIP_ROW, contactTitle: (contactTitle ?? "").trim() }),
@@ -151,6 +155,8 @@ export function RecordPaymentModal({
     if (!hint || bankSlipDetails.toName.trim()) return bankSlipDetails;
     return { ...bankSlipDetails, toName: hint };
   }, [bankSlipDetails, contactTitle]);
+
+  const slipBadgeCount = bankSlipFileCount + slipsForNextPayment.length;
 
   const paymentsForBill = useMemo(
     () => payments.filter((p) => p.bill_id === billId),
@@ -258,14 +264,22 @@ export function RecordPaymentModal({
       }
     }
   }, [billId, bankSlipRowForEnrichment, syncSubmittedIfNoPaymentsLeft, onPaymentSaved]);
+  // The reset below runs on open / bill change only. loadPayments changes with the page's
+  // callbacks (a new onPaymentSaved on every render), and resetting on that threw away a
+  // half-entered Partial Pay whenever a bank slip was attached.
+  const loadPaymentsRef = useRef(loadPayments);
+  useLayoutEffect(() => {
+    loadPaymentsRef.current = loadPayments;
+  }, [loadPayments]);
 
   useEffect(() => {
     if (open && billId) {
-      loadPayments();
+      loadPaymentsRef.current();
       setPayMode("full");
       setDraftDate(todayLocalISODate());
       setDraftAmount("");
       setFormError(null);
+      setSlipsForNextPayment([]);
     }
     if (!open) {
       paymentsLoadGenerationRef.current += 1;
@@ -277,7 +291,7 @@ export function RecordPaymentModal({
       setBankSlipFileCount(0);
       setBankSlipDetails(EMPTY_BANK_SLIP_DETAILS);
     }
-  }, [open, billId, loadPayments]);
+  }, [open, billId]);
 
   useEffect(() => {
     if (!open || presentation !== "modal") return;
@@ -383,7 +397,7 @@ export function RecordPaymentModal({
 
     setAdding(true);
     try {
-      await createPayment(billId, {
+      const created = await createPayment(billId, {
         payment_date: draftDate,
         // "1234.50", the same shape a new request sends (owner, 2026-10-26); formatAmount first
         // so a float remainder reads at 15 digits ("2.00", never "1.99").
@@ -391,6 +405,23 @@ export function RecordPaymentModal({
         currency_code: iso,
         payment_status: "completed",
       });
+      if (slipsForNextPayment.length > 0) {
+        try {
+          for (const file of slipsForNextPayment) {
+            await uploadPaymentAttachment(billId, created.id, file, "bank_slip");
+          }
+          setSlipsForNextPayment([]);
+        } catch (err) {
+          // The payment is saved; only the slip is missing, so say that rather than undo it.
+          showToast(
+            err instanceof ApiError
+              ? `The payment is saved, but its bank slip didn't upload: ${err.message}`
+              : "The payment is saved, but its bank slip didn't upload. Attach it again from Upload Bank Slip.",
+            "error",
+          );
+          setSlipsForNextPayment([]);
+        }
+      }
       await loadPayments();
       onPaymentSaved?.();
       if (payMode === "partial") setDraftAmount("");
@@ -405,6 +436,26 @@ export function RecordPaymentModal({
       setAdding(false);
     }
   };
+
+  const slipsReadyNote =
+    slipsForNextPayment.length > 0 ? (
+      <div
+        className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-primary"
+        role="status"
+      >
+        <span className="min-w-0 break-words">
+          Bank slip ready: {slipsForNextPayment.map((f) => f.name).join(", ")}. It goes on with the
+          payment you add.
+        </span>
+        <button
+          type="button"
+          onClick={() => setSlipsForNextPayment([])}
+          className="min-h-[44px] cursor-pointer rounded-lg px-3 text-sm font-semibold text-secondary hover:bg-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary sm:min-h-[36px]"
+        >
+          Remove
+        </button>
+      </div>
+    ) : null;
 
   const deleteConfirmSummary = useMemo(() => {
     const p = paymentPendingDelete;
@@ -562,9 +613,9 @@ export function RecordPaymentModal({
             >
               upload_file
             </span>
-            {bankSlipFileCount > 0 ? (
+            {slipBadgeCount > 0 ? (
               <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-secondary px-1 text-[10px] font-bold leading-none text-white">
-                {bankSlipFileCount > 99 ? "99+" : bankSlipFileCount}
+                {slipBadgeCount > 99 ? "99+" : slipBadgeCount}
               </span>
             ) : null}
           </button>
@@ -819,6 +870,8 @@ export function RecordPaymentModal({
                 </p>
               ) : null}
 
+              {slipsReadyNote ? <div className="mt-3">{slipsReadyNote}</div> : null}
+
               <div className="mt-4 flex justify-end">
                 <button
                   type="button"
@@ -885,6 +938,7 @@ export function RecordPaymentModal({
                     />
                   </div>
                 ) : null}
+                {slipsReadyNote}
                 <div className="flex flex-wrap justify-end gap-2 pt-1">
                   <button
                     type="button"
@@ -980,6 +1034,7 @@ export function RecordPaymentModal({
         details={bankSlipDetailsForModal}
         allowRemoveFiles={canDeletePayments}
         inlineUploadBillContext={{ billId, currencyCode: iso }}
+        onStageForNextPayment={(files) => setSlipsForNextPayment((prev) => [...prev, ...files])}
         onInlineUploadSuccess={async () => {
           await loadPayments();
           onPaymentSaved?.();

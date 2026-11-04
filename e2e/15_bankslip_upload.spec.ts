@@ -1,5 +1,7 @@
-// Uploading a bank slip from the list: the dialog closes once the slip is saved, and the row
-// shows its file count in place of the Upload button.
+// Uploading a bank slip from the list: the dialog closes once the slip is saved onto the
+// request's payment, and the row shows its file count in place of the Upload button. A request
+// with no payment yet is refused with what to do - the upload never creates a payment (2026-11-03:
+// it used to make a 0.00 one with no date to hold the slip).
 //
 // STUBBED - every `/api/v1/**` call is answered here, so this needs `npm run dev` and nothing
 // else, and no file ever reaches storage (the B2 bucket is shared with production).
@@ -25,6 +27,7 @@ const creds = () => stubCredentials();
 
 const UPLOAD = billListItem({ id: "bill-up", contact: "Harbour Stationers", status: "submitted" });
 const SLIP = billListItem({ id: "bill-slip", contact: "Kowloon Couriers", status: "submitted" });
+const NONE = billListItem({ id: "bill-none", contact: "Lantau Printers", status: "submitted" });
 
 const SLIP_FILE = {
   name: "slip.pdf",
@@ -50,9 +53,11 @@ const link = (id: string, name: string) => ({
   },
 });
 
-/** Payments for the two rows: one has a saved slip, the other gains one when uploaded to. */
+/** Payments for the rows: one has a saved slip, one a payment that gains a slip when uploaded
+ *  to, one no payment at all. Returns the payments created (there should never be any). */
 async function stubPayments(page: Page) {
   let uploaded = false;
+  const created: string[] = [];
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({
       status,
@@ -74,13 +79,18 @@ async function stubPayments(page: Page) {
       });
     }
 
-    const pending = payment({ id: "pay-up", bill_id: "bill-up", payment_status: "pending" });
-    if (path.endsWith("/payments") && method === "POST") return json(route, pending, 201);
+    if (path.endsWith("/payments") && method === "POST") {
+      created.push(path);
+      return json(route, {}, 500);
+    }
+    if (path.includes("/bills/bill-none/")) {
+      if (path.endsWith("/attachments")) return json(route, []);
+      return json(route, { paid_total: "0.00", payments: [] });
+    }
+
+    const paid = payment({ id: "pay-up", bill_id: "bill-up", payment_status: "completed" });
     if (path.endsWith("/payments") && method === "GET") {
-      return json(route, {
-        paid_total: "0.00",
-        payments: uploaded ? [{ ...pending, payment_status: "completed" }] : [],
-      });
+      return json(route, { paid_total: "1500.00", payments: [paid] });
     }
     if (path.endsWith("/attachments") && method === "POST") {
       uploaded = true;
@@ -88,19 +98,20 @@ async function stubPayments(page: Page) {
     }
     if (path.endsWith("/attachments"))
       return json(route, uploaded ? [link("att-up", SLIP_FILE.name)] : []);
-    if (method === "PUT") return json(route, { ...pending, payment_status: "completed" });
     return json(route, {});
   });
+  return created;
 }
 
-async function openList(page: Page) {
+async function openList(page: Page, bills = [UPLOAD, SLIP]) {
   await stubFlaskHub(page);
-  await stubApi(page, { bills: [UPLOAD, SLIP] });
-  await stubPayments(page);
+  await stubApi(page, { bills });
+  const created = await stubPayments(page);
   await handoff(page, creds(), pagesOf(creds()).list);
   await expect(
     page.getByRole("button", { name: /View bank slip — 1 file uploaded/ }).first(),
   ).toBeVisible();
+  return created;
 }
 
 async function uploadFromRow(page: Page) {
@@ -121,7 +132,7 @@ for (const width of [360, 768, 1440]) {
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
-    await openList(page);
+    const created = await openList(page);
 
     const dialog = await uploadFromRow(page);
 
@@ -129,9 +140,28 @@ for (const width of [360, 768, 1440]) {
     await expect(
       page.getByRole("button", { name: /View bank slip — 1 file uploaded/ }),
     ).toHaveCount(2);
+    expect(created).toEqual([]);
     await expectNoSideScroll(page, width);
   });
 }
+
+test("a request with no payment yet asks for the payment first, and creates none", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 900 });
+  const created = await openList(page, [NONE, SLIP]);
+
+  const dialog = await uploadFromRow(page);
+
+  await expect(
+    dialog.getByText(
+      "This request has no payment yet. Record the payment first, then attach its bank slip.",
+    ),
+  ).toBeVisible();
+  await expect(dialog).toBeVisible();
+  expect(created).toEqual([]);
+  await expectNoSideScroll(page, 360);
+});
 
 test("the Bankslip column ends on one right edge, Upload or file count", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

@@ -332,6 +332,24 @@ describe("uploading the invoice after the request exists", () => {
     vi.restoreAllMocks();
   });
 
+  // 2026-11-03 walk: a new request's line was saved with the account's code and no name.
+  it("sends the account's name on the line as well as its code", async () => {
+    const { posted } = serve({ submit: () => answer(201, SENT) });
+    show();
+    await fillForConfirm(file("invoice.pdf", "application/pdf"));
+
+    await userEvent.click(confirm());
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(REQUEST_PAGE));
+    const sent = posted.find(
+      (p) => p.path.endsWith("/bills/submit/") || p.path.endsWith("/bills/"),
+    );
+    expect((sent?.body as { line_items: unknown[] }).line_items[0]).toMatchObject({
+      account_code: "429",
+      account_name: "General Expenses",
+    });
+  });
+
   it("posts the file to the new request's attachments and opens it, with no warning", async () => {
     const { posted } = serve({ submit: () => answer(201, SENT) });
     show();

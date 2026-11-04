@@ -451,6 +451,55 @@ describe("the actions its status allows", () => {
     });
   });
 
+  // 2026-11-03 walk: a deleted draft stayed on screen, because the reload after the delete
+  // failed (the draft is gone) and that failure was ignored.
+  it("goes back to the list once a draft is deleted", async () => {
+    let deleted = false;
+    const { calls } = serve({
+      detail: bill({
+        id: BILL_ID,
+        status: "draft",
+        reference: "PR-0001",
+        attachments: [billAttachment()],
+      }),
+      billAnswer: () =>
+        deleted
+          ? answer(404, { detail: "Bill not found" })
+          : answer(
+              200,
+              bill({
+                id: BILL_ID,
+                status: "draft",
+                reference: "PR-0001",
+                attachments: [billAttachment()],
+              }),
+            ),
+    });
+    const served = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) => {
+      if (init?.method === "DELETE") {
+        await served(input, init); // recorded in calls
+        deleted = true;
+        return answer(200, { message: "Bill deleted" });
+      }
+      return served(input, init);
+    });
+    router.replace.mockClear();
+    show();
+    await loaded();
+
+    await userEvent.click(screen.getByRole("button", { name: "More payment actions" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
+    await userEvent.click(screen.getAllByRole("button", { name: "Delete Payment" }).at(-1)!);
+
+    await waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith(
+        "/entity/360812e1/olive-and-vine/payment-request",
+      ),
+    );
+    expect(calls.some((c) => c.method === "DELETE")).toBe(true);
+  });
+
   it("opens the payment dialog on Record Payment", async () => {
     serve();
     show();

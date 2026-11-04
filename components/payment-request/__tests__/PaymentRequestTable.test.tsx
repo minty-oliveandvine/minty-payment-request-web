@@ -56,7 +56,7 @@ const ROWS: PaymentRequestRow[] = [
     contactTitle: "Cancelled Order Inc",
     contactCaption: "Voided",
     status: "Voided",
-    unpaidAmount: "HK$ 800.00",
+    unpaidAmount: "HK$ 0.00", // nothing is owed on a voided request (API, 2026-11-03)
   }),
 ];
 

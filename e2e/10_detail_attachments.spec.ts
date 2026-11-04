@@ -145,6 +145,8 @@ test("the draft this spec created is deleted, so the shop is left as it was foun
   await confirm.getByRole("button", { name: /Delete Payment/ }).click();
 
   await expect(confirm).toBeHidden({ timeout: 20_000 });
+  // 2026-11-03 walk: the deleted draft stayed on screen; there is nothing left to show, so the list
+  await expect(page).toHaveURL(new RegExp(`${pagesOf(creds()).list}$`));
 });
 
 test("a bank slip can be put on a payment, and read back", async ({ page }) => {

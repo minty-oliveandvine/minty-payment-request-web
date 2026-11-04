@@ -407,20 +407,63 @@ describe("which payment the slip lands on", () => {
     expect(attachmentPosts(calls)[0].path).toContain("/payments/p-ours/attachments");
   });
 
-  it("is a NEW pending payment when the request has none, then settled once the file is on", async () => {
+  // 2026-11-03: a slip chosen before any payment used to create a HKD 0.00 payment with no date
+  // to hold it, beside the real one recorded afterwards. It never creates a payment now.
+  it("hands the slips back to the Record Payment dialog when the request has no payment yet", async () => {
     const { calls } = serve({ payments: [] });
-    show({ inlineUploadBillContext: { billId: BILL_ID, currencyCode: "HKD" } });
+    const onStageForNextPayment = vi.fn();
+    show({
+      inlineUploadBillContext: { billId: BILL_ID, currencyCode: "HKD" },
+      onStageForNextPayment,
+    });
+    await userEvent.upload(filePicker(), [slip("a.pdf"), slip("b.pdf")]);
+
+    await userEvent.click(uploadButton());
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onStageForNextPayment.mock.calls[0][0].map((f: File) => f.name)).toEqual([
+      "a.pdf",
+      "b.pdf",
+    ]);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("asks for the payment first when nothing can take the slips, and creates none", async () => {
+    const { calls } = serve({ payments: [] });
+    show({ inlineUploadBillContext: { billId: BILL_ID } });
+    await userEvent.upload(filePicker(), slip());
+
+    await userEvent.click(uploadButton());
+
+    expect(
+      await within(dialog()).findByText(
+        "This request has no payment yet. Record the payment first, then attach its bank slip.",
+      ),
+    ).toBeInTheDocument();
+    expect(calls).toHaveLength(0);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("is the real payment, not an old HKD 0.00 slip holder beside it", async () => {
+    const { calls } = serve({
+      payments: [
+        payment({ id: "p-real", bill_id: BILL_ID, payment_status: "completed", amount: "500.00" }),
+        payment({
+          id: "p-holder",
+          bill_id: BILL_ID,
+          payment_status: "completed",
+          amount: "0.00",
+          payment_date: null,
+        }),
+      ],
+    });
+    show({ inlineUploadBillContext: { billId: BILL_ID } });
     await userEvent.upload(filePicker(), slip());
 
     await userEvent.click(uploadButton());
 
     await waitFor(() => expect(attachmentPosts(calls)).toHaveLength(1));
-    const created = calls.find((c) => c.method === "POST" && c.path.endsWith("/payments"));
-    expect(created?.body).toMatchObject({ payment_status: "pending", currency_code: "HKD" });
-    expect(attachmentPosts(calls)[0].path).toContain("/payments/payment-new/attachments");
-    // The slip is what the payment was waiting for, so it is completed afterwards.
-    const finalised = calls.find((c) => c.method === "PUT");
-    expect(finalised?.body).toMatchObject({ payment_status: "completed" });
+    expect(attachmentPosts(calls)[0].path).toContain("/payments/p-real/attachments");
   });
 
   it("leaves a settled payment settled rather than updating it again", async () => {
@@ -479,7 +522,9 @@ describe("which payment the slip lands on", () => {
   it("still closes when the refresh after a saved upload fails, and says why in the console", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      const { calls } = serve({ payments: [] });
+      const { calls } = serve({
+        payments: [payment({ id: "p-done", bill_id: BILL_ID, payment_status: "completed" })],
+      });
       show({
         inlineUploadBillContext: { billId: BILL_ID },
         onInlineUploadSuccess: async () => {
@@ -492,7 +537,7 @@ describe("which payment the slip lands on", () => {
 
       await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
       expect(consoleError).toHaveBeenCalled();
-      // The slip is saved: the payment it created is not rolled back.
+      // The slip is saved: nothing is undone.
       expect(calls.some((c) => c.method === "DELETE")).toBe(false);
     } finally {
       consoleError.mockRestore();
@@ -516,9 +561,9 @@ describe("an upload that failed", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("takes back the payment it had to create, so no empty payment is left behind", async () => {
+  it("leaves the payment it was attaching to alone", async () => {
     const { calls } = serve({
-      payments: [],
+      payments: [payment({ id: "p-done", bill_id: BILL_ID, payment_status: "completed" })],
       upload: () => answer(500, { detail: "boom" }),
     });
     show({ inlineUploadBillContext: { billId: BILL_ID } });
@@ -526,10 +571,7 @@ describe("an upload that failed", () => {
 
     await userEvent.click(uploadButton());
 
-    await waitFor(() =>
-      expect(
-        calls.some((c) => c.method === "DELETE" && c.path.includes("/payments/payment-new")),
-      ).toBe(true),
-    );
+    await waitFor(() => expect(attachmentPosts(calls)).toHaveLength(1));
+    expect(calls.some((c) => c.method === "DELETE")).toBe(false);
   });
 });

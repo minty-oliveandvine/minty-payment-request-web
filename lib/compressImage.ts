@@ -4,6 +4,11 @@ export async function compressImage(file: File): Promise<File> {
     return file;
   }
 
+  // A PNG stays a PNG (its transparency and its name with it) and a JPEG a JPEG; any other image
+  // becomes a JPEG. 2026-11-03: receipt.png used to reach the bill as receipt.jpg.
+  const keepType = file.type === "image/png" || file.type === "image/jpeg";
+  const outType = keepType ? file.type : "image/jpeg";
+
   return new Promise((resolve, reject) => {
     const img = new Image();
 
@@ -28,9 +33,11 @@ export async function compressImage(file: File): Promise<File> {
         return;
       }
 
-      // White background (important when converting PNG with transparency)
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, width, height);
+      // White background behind anything transparent that becomes a JPEG
+      if (outType === "image/jpeg") {
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, width, height);
+      }
 
       ctx.drawImage(img, 0, 0, width, height);
 
@@ -43,17 +50,17 @@ export async function compressImage(file: File): Promise<File> {
             return;
           }
 
-          const filename = file.name.replace(/\.[^.]+$/, ".jpg");
+          const filename = keepType ? file.name : file.name.replace(/\.[^.]+$/, ".jpg");
 
           resolve(
             new File([blob], filename, {
-              type: "image/jpeg",
+              type: outType,
               lastModified: Date.now(),
             }),
           );
         },
-        "image/jpeg",
-        0.8, // Quality: 0.0 - 1.0
+        outType,
+        0.8, // Quality: 0.0 - 1.0 (JPEG only; a PNG ignores it)
       );
     };
 

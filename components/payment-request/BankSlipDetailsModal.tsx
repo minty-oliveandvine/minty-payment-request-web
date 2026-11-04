@@ -4,11 +4,8 @@ import { createPortal } from "react-dom";
 import type { ChangeEvent } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
-import { useEntityCurrency } from "@/lib/entityCurrency";
 import {
   ApiError,
-  createPayment,
-  deletePayment,
   deletePaymentAttachment,
   fetchPaymentAttachmentPreview,
   fetchPayments,
@@ -77,6 +74,9 @@ export type BankSlipDetailsModalProps = {
   details: BankSlipDetails;
   inlineUploadBillContext?: { billId: string; currencyCode?: string };
   onInlineUploadSuccess?: () => void | Promise<void>;
+  /** The Record Payment dialog: keeps slips chosen before the bill has a payment, for the
+   *  payment it adds next. Without it the upload asks for the payment first. */
+  onStageForNextPayment?: (files: File[]) => void;
   onRemoveFile?: (fileId: string) => void;
   allowRemoveFiles?: boolean;
   onBankSlipFileDeleted?: () => void;
@@ -100,7 +100,11 @@ function pickExistingPaymentIdForBankSlipUpload(
   payments: PaymentItem[],
   billId: string,
 ): string | null {
-  const forBill = payments.filter((p) => p.bill_id === billId);
+  const allForBill = payments.filter((p) => p.bill_id === billId);
+  // A HKD 0.00 row is an old slip holder (made by this upload before 2026-11-03): a slip goes on
+  // the real payment beside it, and on a holder only when the bill has nothing else.
+  const real = allForBill.filter((p) => parseFloat(p.amount || "0") > 0);
+  const forBill = real.length > 0 ? real : allForBill;
   if (forBill.length === 0) return null;
 
   const byDateDesc = (a: PaymentItem, b: PaymentItem) => {
@@ -474,6 +478,7 @@ export function BankSlipDetailsModal({
   details,
   inlineUploadBillContext,
   onInlineUploadSuccess,
+  onStageForNextPayment,
   onRemoveFile,
   allowRemoveFiles = true,
   onBankSlipFileDeleted,
@@ -496,8 +501,6 @@ export function BankSlipDetailsModal({
   const detailsFileIdsSigRef = useRef<string | null>(null);
 
   const inlineBillId = inlineUploadBillContext?.billId;
-  // Always the entity's selected currency (entities.currency_id -> iso_code).
-  const inlineCurrency = useEntityCurrency();
 
   const stagedPreviewFile = selectedStagedId
     ? (stagedUploads.find((x) => x.id === selectedStagedId)?.file ?? null)
@@ -636,34 +639,34 @@ export function BankSlipDetailsModal({
     setUploadError(null);
     if (uploading) return;
     setUploading(true);
-    let createdPaymentId: string | null = null;
     let uploaded = false;
     try {
       const { payments } = await fetchPayments(inlineBillId);
-      const existingPaymentId = pickExistingPaymentIdForBankSlipUpload(payments, inlineBillId);
-      const existingPayment = existingPaymentId
-        ? (payments.find((p) => p.id === existingPaymentId) ?? null)
-        : null;
-      const existingStatus = (existingPayment?.payment_status ?? "").trim().toLowerCase();
-
-      let paymentId: string;
-      if (existingPaymentId) {
-        paymentId = existingPaymentId;
-      } else {
-        const payment = await createPayment(inlineBillId, {
-          currency_code: inlineCurrency,
-          payment_status: "pending",
-        });
-        paymentId = payment.id;
-        createdPaymentId = payment.id;
+      const paymentId = pickExistingPaymentIdForBankSlipUpload(payments, inlineBillId);
+      // No payment yet: never make one to hold the slip (that was the HKD 0.00 payment with no
+      // date). The Record Payment dialog keeps the files for the payment it adds; anywhere else
+      // the payment comes first.
+      if (!paymentId) {
+        if (onStageForNextPayment) {
+          onStageForNextPayment(stagedUploads.map(({ file }) => file));
+          setStagedUploads([]);
+          setSelectedStagedId(null);
+          onClose();
+        } else {
+          setUploadError(
+            "This request has no payment yet. Record the payment first, then attach its bank slip.",
+          );
+        }
+        return;
       }
+      const existingPayment = payments.find((p) => p.id === paymentId) ?? null;
+      const existingStatus = (existingPayment?.payment_status ?? "").trim().toLowerCase();
 
       for (const { file } of stagedUploads) {
         await uploadPaymentAttachment(inlineBillId, paymentId, file, "bank_slip");
       }
 
-      const shouldFinalize = createdPaymentId != null || existingStatus === "pending";
-      if (shouldFinalize) {
+      if (existingStatus === "pending") {
         await updatePayment(inlineBillId, paymentId, { payment_status: "completed" });
       }
 
@@ -671,16 +674,6 @@ export function BankSlipDetailsModal({
       setSelectedStagedId(null);
       uploaded = true;
     } catch (e) {
-      if (createdPaymentId) {
-        try {
-          await deletePayment(inlineBillId, createdPaymentId);
-        } catch (rollbackErr) {
-          console.error(
-            "Could not remove the payment left by a failed bank slip upload:",
-            rollbackErr,
-          );
-        }
-      }
       setUploadError(
         e instanceof ApiError
           ? e.message

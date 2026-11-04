@@ -308,6 +308,72 @@ describe("paying part of it", () => {
 
     await waitFor(() => expect(amountField()).toHaveValue(""));
   });
+
+  // 2026-11-03 walk: a slip chosen before the payment used to land on a HKD 0.00 payment of its
+  // own. It waits in the dialog now and goes onto the payment Add Payment creates.
+  it("puts a slip chosen before the payment onto the payment it adds", async () => {
+    const { posted } = serve({
+      create: () => answer(201, payment({ id: "p-new", bill_id: BILL_ID })),
+    });
+    show();
+    await loadedPayments();
+    await userEvent.click(within(dialog()).getByRole("button", { name: /bank slip/i }));
+    const slipDialog = () => screen.getAllByRole("dialog").at(-1)!;
+    await userEvent.upload(
+      within(slipDialog()).getByLabelText("Choose bank slips to attach"),
+      new File(["%PDF-1.4"], "slip.pdf", { type: "application/pdf" }),
+    );
+    await userEvent.click(within(slipDialog()).getByRole("button", { name: /^Upload/ }));
+    expect(await within(dialog()).findByText(/slip\.pdf/)).toBeInTheDocument();
+    expect(posted).toHaveLength(0);
+
+    await userEvent.click(partialPay());
+    await userEvent.type(amountField(), "1500");
+    await userEvent.click(addPayment());
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            String(input).includes("/payments/p-new/attachments") && init?.method === "POST",
+        ),
+      ).toBe(true),
+    );
+    expect(posted).toHaveLength(1);
+    expect(posted[0].body).toMatchObject({ amount: "1500.00" });
+  });
+
+  // 2026-11-03 walk: attaching a bank slip re-renders the page, which hands the dialog a new
+  // onPaymentSaved; that used to reset the form to Full Pay and the whole amount.
+  it("survives the page re-rendering with new callbacks", async () => {
+    const { posted } = serve();
+    const view = show({ onPaymentSaved: () => onPaymentSaved() });
+    await loadedPayments();
+    await userEvent.click(partialPay());
+    await userEvent.type(amountField(), "1500");
+
+    view.rerender(
+      <ToastProvider>
+        <RecordPaymentModal
+          open
+          onClose={onClose}
+          billId={BILL_ID}
+          billStatus="submitted"
+          invoiceAmount={6000}
+          contactTitle="Young Bros Transport"
+          description="Corporate stationery"
+          onPaymentSaved={() => onPaymentSaved()}
+        />
+      </ToastProvider>,
+    );
+    await loadedPayments();
+
+    // Full Pay would have refilled the field with what is left (6,000.00)
+    expect(amountField()).toHaveValue("1,500");
+    await userEvent.click(addPayment());
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0].body).toMatchObject({ amount: "1500.00" });
+  });
 });
 
 describe("a payment that would not save", () => {

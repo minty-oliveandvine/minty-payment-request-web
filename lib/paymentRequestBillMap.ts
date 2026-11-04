@@ -45,7 +45,8 @@ export function supplierNeedsPick(
   );
 }
 
-function parseAccountField(raw: string): { account_code: string; account_name: string } {
+/** "429 - General Expenses" -> code and name (a bare code is both). */
+export function parseAccountField(raw: string): { account_code: string; account_name: string } {
   const s = raw.trim();
   const idx = s.indexOf(" - ");
   if (idx === -1) return { account_code: s, account_name: s };
@@ -85,7 +86,9 @@ export function buildBillUpdatePayload(
     const ua = amount ?? toAmountString(line0.unit_amount ?? "", decimals) ?? "0.00";
     payload.line_items = [
       {
-        description: line0.description,
+        // The request is this one line, so it says what the request says: the line is what
+        // reaches Xero (2026-11-03: an edited description went to Xero with the old words).
+        description: draft.description,
         quantity: Number(line0.quantity),
         unit_amount: ua,
         line_amount: ua,
