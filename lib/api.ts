@@ -6,7 +6,6 @@ import {
   redirectToLogin,
   refreshToken,
 } from "./auth";
-import { compressImage } from "./compressImage";
 import { API_BASE } from "./apiBase";
 
 //  ── Error ────────────────────────────────────────────────────────────
@@ -687,14 +686,21 @@ export async function uploadBillAttachments(
   const form = new FormData();
 
   for (const file of files) {
-    const optimized = await compressImage(file);
-    form.append("files", optimized);
+    form.append("files", file);
   }
 
   return apiFetch<BillAttachment[]>(`/bills/${billId}/attachments`, {
     method: "POST",
     body: form,
   });
+}
+
+/**
+ * The invoice reader (`POST /bills/extract/`): the model's suggestions for the new-bill form, as
+ * `{suggestions, reason}` (lib/invoiceReader.ts). Multipart field `invoice`; nothing is written.
+ */
+export function extractInvoice(form: FormData, signal: AbortSignal): Promise<unknown> {
+  return apiFetch<unknown>("/bills/extract/", { method: "POST", body: form, signal });
 }
 
 export function deleteBillAttachment(billId: string, attachmentId: string): Promise<void> {
@@ -794,10 +800,8 @@ export async function uploadPaymentAttachment(
   file: File,
   attachmentRole: string = "bank_slip",
 ): Promise<PaymentAttachment> {
-  const optimized = await compressImage(file);
-
   const form = new FormData();
-  form.append("file", optimized);
+  form.append("file", file);
 
   const qs = new URLSearchParams();
   qs.set("attachment_role", attachmentRole);

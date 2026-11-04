@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import { createPortal } from "react-dom";
 import { ApiError, createEntityBillContact, type EntityBillContact } from "@/lib/api";
 import { useToast } from "@/components/Toast";
+import { SUPPLIER_ADDED } from "@/lib/formMessages";
 
 /** The API's cap (Bill.contact_name holds 100), checked as the name is typed. */
 const NEW_SUPPLIER_NAME_MAX = 100;
@@ -123,7 +124,7 @@ export function BillContactPicker({
         contact: created.name,
       });
       setOpen(false);
-      showToast("Supplier created successfully!", "success");
+      showToast(SUPPLIER_ADDED, "success");
     } catch (e) {
       setCreateError(
         e instanceof ApiError

@@ -183,7 +183,9 @@ test("a spreadsheet is not offered, and is refused if forced past the picker", a
   });
 
   // The refusal names the file, so "is it staged?" is a question for the list, not the text.
-  await expect(dialog.getByText(/I can't open this one/)).toBeVisible();
+  await expect(
+    dialog.getByText(/^I can't open .+\. Choose a PDF, JPEG, PNG or HTML file\.$/),
+  ).toBeVisible();
   await expect(dialog.getByText(/Excel/)).toHaveCount(0);
   await expect(stagedRow(page, "books.xlsx")).toHaveCount(0);
 });
@@ -223,14 +225,41 @@ test("the upload says it is mandatory, and red-lines only after a failed Confirm
 
   await dialog.getByRole("button", { name: /^Confirm/ }).click();
 
-  await expect(dialog.getByText("We'll need at least one attachment.")).toBeVisible();
+  await expect(
+    dialog.locator("p", {
+      hasText: "The invoice is still missing. Attach at least one file to continue.",
+    }),
+  ).toBeVisible();
   await expect(input).toHaveAttribute("aria-invalid", "true");
   const after = await zone.evaluate((el) => getComputedStyle(el).borderColor);
   expect(after).not.toBe(before);
 
   // and it clears itself the moment a file arrives
   await input.setInputFiles(JPG);
-  await expect(dialog.getByText("We'll need at least one attachment.")).toHaveCount(0);
+  await expect(
+    dialog.locator("p", {
+      hasText: "The invoice is still missing. Attach at least one file to continue.",
+    }),
+  ).toHaveCount(0);
   await expect(input).not.toHaveAttribute("aria-invalid", "true");
   expect(await zone.evaluate((el) => getComputedStyle(el).borderColor)).toBe(before);
+});
+
+// 2026-11-04 (found in QA at 1917x915): the dialog's full-screen wrapper hid only the x overflow,
+// which made it scroll on y; a wheel that reached the end of the form's own scroll then scrolled
+// the wrapper, the backdrop moved up with it, and the page showed through, undimmed, below it.
+test("scrolling the dialog never uncovers the page below the backdrop", async ({ page }) => {
+  await page.setViewportSize({ width: 1917, height: 915 });
+  const dialog = await openAddDialog(page);
+  await page.mouse.move(950, 500);
+  for (let i = 0; i < 4; i++) await page.mouse.wheel(0, 600);
+  await page.mouse.move(200, 700);
+  await page.mouse.wheel(0, 1200);
+  const covered = await page.evaluate(() => {
+    const wrapper = document.querySelector('[role="dialog"]')!.parentElement!;
+    const at = document.elementFromPoint(20, window.innerHeight - 5);
+    return { inside: !!at && wrapper.contains(at), scrolled: wrapper.scrollTop };
+  });
+  expect(covered).toEqual({ inside: true, scrolled: 0 });
+  await expect(dialog).toBeVisible();
 });

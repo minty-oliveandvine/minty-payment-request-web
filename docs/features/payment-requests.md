@@ -55,13 +55,46 @@ is shorter - the API refuses the same, since `Bill.contact_name` holds 100), the
 `#pr-due-date`, native date inputs behind a formatted overlay — `DateTextField.tsx`), and
 the attachments drop zone (`input[aria-label="Choose files to attach"]`; pdf, jpg, png,
 html — **no spreadsheets since 2026-10-09**, so every accepted type is one the browser can
-draw; images shrunk client-side — `lib/compressImage.ts`: a PNG stays a PNG and a JPEG a
-JPEG, under their own names (2026-11-03; a PNG used to arrive as `.jpg`), other images become
-JPEG). The allowlist is the shared
+draw; every file is uploaded exactly as chosen - no shrinking and no conversion, here or in
+the API (owner, 2026-11-04; `lib/compressImage.ts` is gone)). The allowlist is the shared
 `ATTACHMENT_ACCEPT` / `isAllowedAttachment` from `lib/fileAttachmentPreview.ts`, so this
 modal, the upload-invoice modal and the bank-slip modal agree by construction. The server
 (`attachment_service.py`) still accepts Excel — it is shared with bank slips and with Xero
 re-publish of bills that already hold one — so narrowing it is a separate decision.
+
+**Refusals (2026-11-04).** Messages follow Part 11 (the issue, then the action), one wording for
+the new-bill dialog, the bill and draft edit forms and the upload dialogs (`lib/formMessages.ts`),
+e.g. "The amount is still empty. Add the amount to continue.", "scan.pdf is over 10 MB. Choose a
+file up to 10 MB.". A refused Confirm with two or more problems shows `@minty/shared/ui`'s
+`ErrorSummary` (`look="classic"`) at the top of the form: it takes focus and links to each field,
+in the form's order. One problem moves focus to its field. A required field's label carries a
+screen-reader-only "(required)" beside the red `*` (`components/RequiredMark.tsx`). Save as Draft
+is never blocked.
+
+**The invoice reader** (owner, 2026-11-04; `lib/invoiceReader.ts` on `@minty/shared/reader`,
+the rules shared with Petty Cash's receipt reader; the API side is minty-payment-request-api's
+`docs/features/invoice-reader.md`). Staging a PDF, JPEG or PNG sends the newest one to
+`POST /bills/extract/` (an HTML file is not read). While it reads, "Minty is reading the invoice
+details." shows under the drop zone and the form stays usable.
+
+- **Filling:** a suggestion fills the supplier (by its Xero id from the company's list), the
+  invoice and due dates, the amount (in the company currency's places), the description and the
+  account (by code, from the select's options) - only an **empty** field, or one still at its
+  **untouched default** (today's invoice date, the company's default account). Re-picking a
+  default counts as touching it. A filled field gets the teal ring and "Suggested from the
+  invoice." ("... Check it before you submit." for the medium band) with Clear; Clear puts a
+  default back. Editing a field makes it the person's. A field holding the person's value keeps
+  it, and the invoice's different reading is offered in a grey note with "Use the value from the
+  invoice"; the low band only offers. An amount in another currency than the company's is only
+  offered. A supplier name that matches nobody goes into the supplier box as typed text, so the
+  picker's "+ Add ... as a new supplier" offers it. The bill number is never read. A filled field
+  is never left red. One polite live region says what was filled or offered.
+- **Cancelled by:** another readable file (its predecessor's suggestions go; typed values stay),
+  removing the file that was read, closing or reopening the dialog, Save as Draft and Confirm.
+- **When it can't read:** one quiet line, "I couldn't read this invoice. Enter the details
+  yourself." (`role="status"`). Switched off (`disabled`/`not_configured`) is silent and the
+  reader stays off for the tab's session (`sessionStorage` `minty.prw.invoice-reader`).
+- Tests: `components/__tests__/PaymentRequestModal.reader.test.tsx`.
 
 A staged file previews in place, and its top-right **View full** control opens the
 full-screen viewer over the dialog.

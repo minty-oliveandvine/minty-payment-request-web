@@ -26,13 +26,7 @@ import {
 } from "@/lib/api";
 import type { ThemedSelectOption } from "@/components/ThemedSelect";
 import { useEntityCurrency, useEntityCurrencyDecimals } from "@/lib/entityCurrency";
-import {
-  MAX_AMOUNT_INT_DIGITS,
-  formatAmount,
-  formatMoney,
-  isWithinAmountLimits,
-  parseAmount,
-} from "@minty/shared/money";
+import { formatAmount, formatMoney, isWithinAmountLimits, parseAmount } from "@minty/shared/money";
 import { billStatusToDisplayLabel } from "@/lib/billStatusDisplay";
 import {
   billHasRemainingCountablePayments,
@@ -81,6 +75,15 @@ import { useCompanyPages } from "@/lib/useCompanyPages";
 import { isVoidStatus } from "@/lib/companyPages";
 import { joinNames, uploadEachAttachment } from "@/lib/uploadAttachments";
 import { forgetRequest, rememberRequest, useRequestId } from "@/lib/useRequestId";
+import {
+  ACCOUNT_EMPTY,
+  AMOUNT_EMPTY,
+  AMOUNT_TOO_LONG,
+  AMOUNT_ZERO,
+  DUE_DATE_EMPTY,
+  INVOICE_DATE_EMPTY,
+  SUPPLIER_EMPTY,
+} from "@/lib/formMessages";
 export type PaymentRequestDetailBodyProps = {
   /** Called after the bill is refreshed from the server so the header status badge can update. */
   onBillUpdated?: () => void;
@@ -95,16 +98,18 @@ function validateDetailRequiredForSubmit(
   savedContact: string,
 ): DetailSubmitFieldErrors | null {
   const errors: DetailSubmitFieldErrors = {};
-  if (!d.accountCode.trim()) errors.accountCode = "We'll need an account code here.";
-  if (!d.contact.trim()) errors.contact = "We'll need a supplier here.";
+  if (!d.accountCode.trim()) errors.accountCode = ACCOUNT_EMPTY;
+  if (!d.contact.trim()) errors.contact = SUPPLIER_EMPTY;
   else if (supplierNeedsPick(d, savedContact)) errors.contact = PICK_SUPPLIER_MESSAGE;
-  if (!d.invoiceDate.trim()) errors.invoiceDate = "We'll need an invoice date here.";
-  if (!d.dueDate.trim()) errors.dueDate = "We'll need a due date here.";
+  if (!d.invoiceDate.trim()) errors.invoiceDate = INVOICE_DATE_EMPTY;
+  if (!d.dueDate.trim()) errors.dueDate = DUE_DATE_EMPTY;
   const amt = parseAmount(d.amount);
-  if (amt === null || amt <= 0) {
-    errors.amount = "That amount doesn't look quite right.";
+  if (amt === null) {
+    errors.amount = AMOUNT_EMPTY;
+  } else if (amt <= 0) {
+    errors.amount = AMOUNT_ZERO;
   } else if (!isWithinAmountLimits(d.amount ?? "")) {
-    errors.amount = `That's a few too many digits - up to ${MAX_AMOUNT_INT_DIGITS} before the decimal point.`;
+    errors.amount = AMOUNT_TOO_LONG;
   }
   return Object.keys(errors).length ? errors : null;
 }

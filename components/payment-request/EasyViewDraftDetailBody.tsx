@@ -35,6 +35,14 @@ import {
 } from "./EasyViewDraftDetailedInformation";
 import type { PaymentRequestDetailedInfoData } from "./PaymentRequestDetailedInfo";
 import type { PaymentRequestRow } from "./PaymentRequestTable";
+import {
+  ACCOUNT_EMPTY,
+  AMOUNT_EMPTY,
+  AMOUNT_ZERO,
+  DUE_DATE_EMPTY,
+  INVOICE_DATE_EMPTY,
+  SUPPLIER_EMPTY,
+} from "@/lib/formMessages";
 
 type FieldErrors = Partial<
   Record<"invoiceDate" | "dueDate" | "amount" | "contact" | "accountCode", string>
@@ -45,14 +53,16 @@ function validateDraftDetail(
   savedContact: string,
 ): FieldErrors | null {
   const errors: FieldErrors = {};
-  if (!d.accountCode.trim()) errors.accountCode = "We'll need an account code here.";
-  if (!d.contact.trim()) errors.contact = "We'll need a supplier here.";
+  if (!d.accountCode.trim()) errors.accountCode = ACCOUNT_EMPTY;
+  if (!d.contact.trim()) errors.contact = SUPPLIER_EMPTY;
   else if (supplierNeedsPick(d, savedContact)) errors.contact = PICK_SUPPLIER_MESSAGE;
-  if (!d.invoiceDate.trim()) errors.invoiceDate = "We'll need an invoice date here.";
-  if (!d.dueDate.trim()) errors.dueDate = "We'll need a due date here.";
+  if (!d.invoiceDate.trim()) errors.invoiceDate = INVOICE_DATE_EMPTY;
+  if (!d.dueDate.trim()) errors.dueDate = DUE_DATE_EMPTY;
   const amt = Number.parseFloat((d.amount ?? "").replace(/,/g, ""));
-  if (!(d.amount ?? "").trim() || !Number.isFinite(amt) || amt <= 0) {
-    errors.amount = "That amount doesn't look quite right.";
+  if (!(d.amount ?? "").trim()) {
+    errors.amount = AMOUNT_EMPTY;
+  } else if (!Number.isFinite(amt) || amt <= 0) {
+    errors.amount = AMOUNT_ZERO;
   }
   return Object.keys(errors).length ? errors : null;
 }

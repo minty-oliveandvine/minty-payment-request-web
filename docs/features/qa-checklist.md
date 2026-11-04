@@ -77,8 +77,14 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
 - [ ] **Confirm** validates amount, supplier, account code, both dates, and at least one
       attachment — each missing field shows its own inline alert (`role="alert"`), not one
       generic error.
-- [ ] Attachments accept pdf, jpg, png, html, xls(x); an added image is visibly compressed
-      before upload.
+- [ ] A Confirm refused for two or more fields shows a summary at the top that takes focus and
+      links to each field; one refused field takes the focus itself. Messages read "The <field> is
+      still empty. <Action> to continue." A screen reader hears "<Label> (required)".
+- [ ] Attaching a PDF/JPEG/PNG reads it: empty fields (and today's date / the default account,
+      untouched) fill as "Suggested from the invoice." with Clear; nothing typed is overwritten;
+      a failed read says "I couldn't read this invoice. Enter the details yourself."
+- [ ] Attachments accept pdf, jpg, png, html, xls(x); an added image is uploaded
+      exactly as chosen (same size and type when opened again).
 - [ ] Confirm uploads attachments only after the bill itself exists, then opens the new
       request's detail page.
 - [ ] Block `/attachments` in devtools: Confirm still opens the request with a warning toast

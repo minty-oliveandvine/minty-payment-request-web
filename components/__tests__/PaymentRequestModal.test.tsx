@@ -195,7 +195,11 @@ describe("what it refuses", () => {
 
     await userEvent.click(confirm());
 
-    expect(await screen.findByText("We'll need an amount here.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("The amount is still empty. Add the amount to continue.", {
+        selector: "p",
+      }),
+    ).toBeInTheDocument();
     expect(posted).toHaveLength(0);
   });
 
@@ -205,7 +209,11 @@ describe("what it refuses", () => {
 
     await userEvent.click(confirm());
 
-    expect(await screen.findByText("We'll need a supplier here.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("The supplier is still empty. Choose a supplier to continue.", {
+        selector: "p",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("asks for an account code", async () => {
@@ -214,7 +222,11 @@ describe("what it refuses", () => {
 
     await userEvent.click(confirm());
 
-    expect(await screen.findByText("We'll need an account code here.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("The account is still empty. Choose the Xero account to continue.", {
+        selector: "p",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("asks for a due date", async () => {
@@ -223,7 +235,11 @@ describe("what it refuses", () => {
 
     await userEvent.click(confirm());
 
-    expect(await screen.findByText("We'll need a due date here.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("The due date is still empty. Add the due date to continue.", {
+        selector: "p",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("refuses an amount that is not one", async () => {
@@ -233,7 +249,11 @@ describe("what it refuses", () => {
 
     await userEvent.click(confirm());
 
-    expect(await screen.findByText("That amount doesn't look quite right.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("The amount is zero. Add an amount above 0 to continue.", {
+        selector: "p",
+      }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -259,7 +279,11 @@ describe("saving a draft", () => {
     await userEvent.click(saveDraft());
 
     await waitFor(() => expect(posted.length).toBeGreaterThan(0));
-    expect(screen.queryByText("We'll need a supplier here.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("The supplier is still empty. Choose a supplier to continue.", {
+        selector: "p",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the API's own sentence when the draft is refused", async () => {
@@ -604,7 +628,10 @@ describe("the attachments", () => {
 
     await userEvent.click(confirm());
 
-    const message = await screen.findByText("We'll need at least one attachment.");
+    const message = await screen.findByText(
+      "The invoice is still missing. Attach at least one file to continue.",
+      { selector: "p" },
+    );
     expect(filePicker()).toHaveAttribute("aria-describedby", message.id);
     expect(message.id).toBeTruthy();
   });
@@ -641,8 +668,12 @@ describe("the attachments", () => {
     // Drag-drop bypasses `accept`, so this is the path the error copy is actually for.
     drop(input, file("books.xlsx", "application/vnd.ms-excel"));
 
-    const refusal = await screen.findByText(/I can't open this one/);
-    expect(refusal).toHaveTextContent("try PDF, JPEG, PNG, or HTML");
+    const refusal = await screen.findByText(
+      /^I can't open .+\. Choose a PDF, JPEG, PNG or HTML file\.$/,
+    );
+    expect(refusal).toHaveTextContent(
+      "I can't open books.xlsx. Choose a PDF, JPEG, PNG or HTML file.",
+    );
     expect(refusal).not.toHaveTextContent("Excel");
     expect(screen.queryByText("books.xlsx")).toBeNull();
   });
@@ -696,5 +727,91 @@ describe("previewing a staged file", () => {
     // Refused at the gate - the point is that no download link appears anywhere.
     expect(screen.queryAllByRole("link")).toHaveLength(0);
     expect(document.querySelector("a[download]")).toBeNull();
+  });
+});
+
+// The rules in CLAUDE.md: two or more problems on a refused Confirm show a summary at the top that
+// takes focus and links to each field; one problem moves focus to that field; a required field's
+// label also says "(required)" to a screen reader; Save as Draft is never blocked (2026-11-04).
+describe("the error summary", () => {
+  it("two or more problems: a summary at the top takes focus and links to each field", async () => {
+    serve();
+    show();
+
+    await userEvent.click(confirm());
+
+    const box = await waitFor(() => {
+      const found = within(dialog())
+        .getAllByRole("alert")
+        .find((el) => /details need a look/.test(el.textContent ?? ""));
+      expect(found).toBeDefined();
+      return found!;
+    });
+    expect(box).toHaveFocus();
+    expect(box).toHaveClass("bg-red-50");
+    const links = within(box)
+      .getAllByRole("link")
+      .map((a) => a.textContent);
+    expect(links).toEqual([
+      "The invoice is still missing. Attach at least one file to continue.",
+      "The due date is still empty. Add the due date to continue.",
+      "The amount is still empty. Add the amount to continue.",
+      "The supplier is still empty. Choose a supplier to continue.",
+      "The account is still empty. Choose the Xero account to continue.",
+    ]);
+    await userEvent.click(within(box).getByRole("link", { name: /amount is still empty/ }));
+    expect(document.getElementById("pr-amount")).toHaveFocus();
+  });
+
+  it("one problem: no summary, and focus goes to that field", async () => {
+    serve();
+    show();
+    const due = document.getElementById("pr-due-date") as HTMLInputElement;
+    fireEvent.change(due, { target: { value: "2026-12-01" } });
+    await userEvent.type(within(dialog()).getByPlaceholderText("0.00"), "120");
+    await userEvent.click(document.getElementById("pr-account")!);
+    await userEvent.click(await screen.findByRole("option", { name: "429 - General Expenses" }));
+    await attach(file("receipt.png", "image/png"));
+    await userEvent.click(confirm());
+
+    expect(
+      await screen.findByText("The supplier is still empty. Choose a supplier to continue.", {
+        selector: "p",
+      }),
+    ).toBeInTheDocument();
+    expect(within(dialog()).queryByText(/details need a look/)).toBeNull();
+    await waitFor(() => expect(document.getElementById("pr-contact")).toHaveFocus());
+  });
+
+  it("a required field's label says so to a screen reader, and its control is aria-required", () => {
+    serve();
+    show();
+    for (const [id, name] of [
+      ["pr-invoice-date", "Invoice Date (required)"],
+      ["pr-due-date", "Due Date (required)"],
+      ["pr-amount", "Amount (required)"],
+    ]) {
+      const label = document.querySelector(`label[for="${id}"]`) as HTMLElement;
+      expect(
+        label.textContent
+          ?.replace(/\s*\*\s*/, " ")
+          .replace(/\s+/g, " ")
+          .trim(),
+      ).toBe(name);
+      expect(within(label).getByText("(required)")).toHaveClass("sr-only");
+    }
+    expect(document.querySelector('label[for="pr-description"]')!.textContent).not.toMatch(
+      /required/,
+    );
+  });
+
+  it("Save as Draft is never blocked by missing fields", async () => {
+    const { posted } = serve();
+    show();
+
+    await userEvent.click(saveDraft());
+
+    await waitFor(() => expect(posted.some((p) => p.path.endsWith("/bills/draft/"))).toBe(true));
+    expect(within(dialog()).queryByText(/details need a look/)).toBeNull();
   });
 });

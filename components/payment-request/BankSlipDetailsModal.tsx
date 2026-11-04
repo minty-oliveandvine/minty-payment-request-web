@@ -27,6 +27,7 @@ import {
   ViewFullButton,
 } from "./AttachmentFullScreenViewer";
 import { AttachmentDeleteConfirmModal } from "./AttachmentDeleteConfirmModal";
+import { filesNotOpenable, filesTooBig } from "@/lib/formMessages";
 
 export type BankSlipFileRef = { id: string; name: string };
 
@@ -83,7 +84,7 @@ export type BankSlipDetailsModalProps = {
 };
 
 const overlayClass =
-  "fixed inset-0 z-[300] flex items-center justify-center overflow-x-hidden overscroll-x-none p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4 md:p-6";
+  "fixed inset-0 z-[300] flex items-center justify-center overflow-clip overscroll-none p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4 md:p-6";
 
 const shellClass =
   "relative z-[1] flex max-h-[min(100dvh-1rem,760px)] w-full min-w-0 max-w-[520px] flex-col rounded-xl bg-white shadow-xl ring-1 ring-black/5 sm:max-h-[min(92dvh,760px)] sm:rounded-2xl";
@@ -598,17 +599,13 @@ export function BankSlipDetailsModal({
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
     const oversized = Array.from(list).filter((file) => file.size > MAX_FILE_SIZE);
     if (oversized.length > 0) {
-      setUploadError(
-        `${oversized.length > 1 ? "These are" : "This one's"} a bit too big - 10MB is the max: ${oversized.map((f) => f.name).join(", ")}`,
-      );
+      setUploadError(filesTooBig(oversized.map((f) => f.name)));
       e.target.value = "";
       return;
     }
     const disallowed = Array.from(list).filter((file) => !isAllowedAttachment(file));
     if (disallowed.length > 0) {
-      setUploadError(
-        `I can't open ${disallowed.length > 1 ? "these" : "this one"} - try PDF, JPEG, PNG, or HTML: ${disallowed.map((f) => f.name).join(", ")}`,
-      );
+      setUploadError(filesNotOpenable(disallowed.map((f) => f.name)));
       e.target.value = "";
       return;
     }

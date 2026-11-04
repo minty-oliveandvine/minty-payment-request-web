@@ -29,6 +29,7 @@ import { BillContactPicker } from "@/components/BillContactPicker";
 import {
   ApiError,
   dedupeEntityBillContactsForPicker,
+  extractInvoice,
   fetchEntityBillAccounts,
   fetchEntityBillContacts,
   fetchSuggestedBillReference,
@@ -46,9 +47,51 @@ import {
   toAmountString,
 } from "@minty/shared/money";
 import { useAmountInput } from "@minty/shared/amountInput";
+import { ErrorSummary } from "@minty/shared/ui";
+import {
+  cleared,
+  ReaderNote,
+  ReadFailedLine,
+  ReadingNotice,
+  SuggestedLine,
+  SUGGESTED_RING,
+  useDocumentReader,
+  usedNote,
+  withoutSuggestions,
+} from "@minty/shared/reader";
+import {
+  CLEAR_LABEL,
+  edited,
+  INVOICE_LATCH,
+  invoiceSpec,
+  invoiceState,
+  READ_FAILED,
+  READING_DETAIL,
+  READING_TITLE,
+  showedAnything,
+  suggestedText,
+  USE_LABEL,
+  withInvoiceSuggestions,
+  type InvoiceField,
+  type InvoiceState,
+  type InvoiceSuggestions,
+  type InvoiceValues,
+} from "@/lib/invoiceReader";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 import { joinNames, uploadEachAttachment } from "@/lib/uploadAttachments";
 import { useToast } from "@/components/Toast";
+import {
+  ACCOUNT_EMPTY,
+  AMOUNT_EMPTY,
+  AMOUNT_TOO_LONG,
+  AMOUNT_ZERO,
+  ATTACHMENT_MISSING,
+  DUE_DATE_EMPTY,
+  INVOICE_DATE_EMPTY,
+  SUPPLIER_EMPTY,
+  filesNotOpenable,
+  filesTooBig,
+} from "@/lib/formMessages";
 
 export type PaymentRequestModalProps = {
   open: boolean;
@@ -59,6 +102,11 @@ export type PaymentRequestModalProps = {
 };
 
 type UploadedEntry = { id: string; file: File };
+
+/** What the invoice reader can read: the model takes PDF, JPEG and PNG (the form takes HTML too). */
+const READABLE = /\.(pdf|jpe?g|png)$/i;
+const isReadable = (file: File) =>
+  /^(application\/pdf|image\/jpe?g|image\/png)$/i.test(file.type) || READABLE.test(file.name);
 
 /** Material Symbols icon + color for uploaded file row (Google Material Icons naming). */
 function getUploadedFileIconInfo(filename: string): { icon: string; iconClass: string } {
@@ -86,6 +134,28 @@ function getUploadedFileIconInfo(filename: string): { icon: string; iconClass: s
 type ValidatedField =
   "billNo" | "amount" | "contact" | "accountCode" | "invoiceDate" | "dueDate" | "attachments";
 
+/** Each validated field's control, in the order the form shows them (the summary's order). */
+const FIELD_ID: Record<ValidatedField, string> = {
+  attachments: "pr-attachments",
+  billNo: "pr-bill-no",
+  invoiceDate: "pr-invoice-date",
+  dueDate: "pr-due-date",
+  amount: "pr-amount",
+  contact: "pr-contact",
+  accountCode: "pr-account",
+};
+const SUMMARY_ORDER = Object.keys(FIELD_ID) as ValidatedField[];
+
+/** A reader field's validation key, so a field the reader fills is never left red. */
+const ERROR_KEY: Record<InvoiceField, ValidatedField | null> = {
+  supplier: "contact",
+  invoiceDate: "invoiceDate",
+  dueDate: "dueDate",
+  amount: "amount",
+  description: null,
+  account: "accountCode",
+};
+
 /**
  * Live validation error for the amount field, or null when it's acceptable.
  * Tied to the current value so the message clears itself as soon as the amount
@@ -93,7 +163,7 @@ type ValidatedField =
  */
 function amountLimitError(raw: string): string | null {
   if (amountIntegerDigits(cleanAmountString(raw)) > MAX_AMOUNT_INT_DIGITS) {
-    return `That's a few too many digits - up to ${MAX_AMOUNT_INT_DIGITS} before the decimal point.`;
+    return AMOUNT_TOO_LONG;
   }
   return null;
 }
@@ -120,26 +190,26 @@ function validatePaymentRequestForm(values: {
 }): Partial<Record<ValidatedField, string>> {
   const e: Partial<Record<ValidatedField, string>> = {};
   if (isBlankAmount(values.amount)) {
-    e.amount = "We'll need an amount here.";
+    e.amount = AMOUNT_EMPTY;
   } else if (amountIntegerDigits(cleanAmountString(values.amount)) > MAX_AMOUNT_INT_DIGITS) {
-    e.amount = `That's a few too many digits - up to ${MAX_AMOUNT_INT_DIGITS} before the decimal point.`;
+    e.amount = AMOUNT_TOO_LONG;
   } else if (!isPositiveAmount(values.amount)) {
-    e.amount = "That amount doesn't look quite right.";
+    e.amount = AMOUNT_ZERO;
   }
   if (!values.contact.trim()) {
-    e.contact = "We'll need a supplier here.";
+    e.contact = SUPPLIER_EMPTY;
   }
   if (!values.accountCode.trim()) {
-    e.accountCode = "We'll need an account code here.";
+    e.accountCode = ACCOUNT_EMPTY;
   }
   if (!values.invoiceDate.trim()) {
-    e.invoiceDate = "We'll need an invoice date here.";
+    e.invoiceDate = INVOICE_DATE_EMPTY;
   }
   if (!values.dueDate.trim()) {
-    e.dueDate = "We'll need a due date here.";
+    e.dueDate = DUE_DATE_EMPTY;
   }
   if (values.attachmentCount < 1) {
-    e.attachments = "We'll need at least one attachment.";
+    e.attachments = ATTACHMENT_MISSING;
   }
   return e;
 }
@@ -200,7 +270,19 @@ export function PaymentRequestModal({
   const [accountCode, setAccountCode] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [dueDate, setDueDate] = useState("");
+  // The invoice reader (lib/invoiceReader.ts): its marks, notes and touched fields. The values stay
+  // in their own states above; the reader's rules run on a snapshot of them.
+  const [readerAux, setReaderAux] = useState<InvoiceState>(() => invoiceState());
+  const [defaultAccount, setDefaultAccount] = useState("");
+  const [openedOn, setOpenedOn] = useState("");
+  const [readFileId, setReadFileId] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<ValidatedField, string>>>({});
+  /** Bumped on each refused Confirm, so the summary takes focus again (@minty/shared/ui ErrorSummary). */
+  const [summaryAttempt, setSummaryAttempt] = useState(0);
+  const summaryItems = SUMMARY_ORDER.filter((key) => fieldErrors[key]).map((key) => ({
+    fieldId: FIELD_ID[key],
+    message: fieldErrors[key] as string,
+  }));
   /** Non-field server message (e.g. other 422 validation). */
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
@@ -228,6 +310,7 @@ export function PaymentRequestModal({
         const defaultAcct = accounts.find((a) => a.is_default && a.is_active);
         if (defaultAcct) {
           const defaultVal = `${defaultAcct.account_code} - ${defaultAcct.account_name}`;
+          setDefaultAccount(defaultVal);
           setAccountCode((prev) => prev || defaultVal);
         }
       })
@@ -260,6 +343,108 @@ export function PaymentRequestModal({
     });
   };
 
+  const readerValues: InvoiceValues = {
+    contact,
+    contactInput,
+    invoiceDate,
+    dueDate,
+    amount,
+    description,
+    accountCode,
+  };
+  const readerDefaults = { invoiceDate: openedOn, accountCode: defaultAccount };
+
+  // The form's latest state, for the answer that arrives seconds after the read started.
+  const latest = useRef({
+    aux: readerAux,
+    values: readerValues,
+    defaults: readerDefaults,
+    contactsMap,
+    accountOptions,
+    decimals: currency.decimals,
+  });
+  useEffect(() => {
+    latest.current = {
+      aux: readerAux,
+      values: readerValues,
+      defaults: readerDefaults,
+      contactsMap,
+      accountOptions,
+      decimals: currency.decimals,
+    };
+  });
+
+  /** The reader's next state: its values go into the fields, the rest into `readerAux`. */
+  const applyReader = (next: InvoiceState) => {
+    const v = next.values;
+    setContact(v.contact);
+    setContactInput(v.contactInput);
+    setInvoiceDate(v.invoiceDate);
+    setDueDate(v.dueDate);
+    setAmount(v.amount);
+    setDescription(v.description);
+    setAccountCode(v.accountCode);
+    setReaderAux(next);
+    latest.current = { ...latest.current, aux: next, values: v };
+    // A field holding a suggestion is never red.
+    for (const field of Object.keys(next.marks) as InvoiceField[]) {
+      const key = ERROR_KEY[field];
+      if (key) clearFieldError(key);
+    }
+  };
+  const readerNow = (): InvoiceState => ({ ...latest.current.aux, values: latest.current.values });
+
+  const reader = useDocumentReader<InvoiceSuggestions>({
+    field: "invoice",
+    latch: INVOICE_LATCH,
+    post: extractInvoice,
+    onSuggestions: (suggestions) => {
+      const l = latest.current;
+      const next = withInvoiceSuggestions(readerNow(), suggestions, {
+        contacts: l.contactsMap,
+        accountOptions: l.accountOptions.map((o) => o.value),
+        decimals: l.decimals,
+        defaults: l.defaults,
+      });
+      applyReader(next);
+      return showedAnything(next);
+    },
+  });
+  const { cancel: cancelRead } = reader;
+
+  /** The person changed a reader field: it is theirs now (the field's own setter still runs). */
+  const readerEdit = (field: InvoiceField, patch: Partial<InvoiceValues>) => {
+    const next = edited(readerNow(), field, patch, latest.current.defaults);
+    setReaderAux(next);
+    latest.current = { ...latest.current, aux: next, values: next.values };
+  };
+  const dropSuggestions = () =>
+    applyReader(withoutSuggestions(readerNow(), invoiceSpec(latest.current.defaults)));
+  const clearSuggestion = (field: InvoiceField) =>
+    applyReader(cleared(readerNow(), field, invoiceSpec(latest.current.defaults)));
+  const takeSuggestion = (field: InvoiceField) => applyReader(usedNote(readerNow(), field));
+
+  /** Under a reader field: the suggested line with Clear, or the note offering the invoice's reading. */
+  const readerExtras = (field: InvoiceField) => {
+    const band = readerAux.marks[field];
+    if (band)
+      return (
+        <SuggestedLine
+          id={`pr-${field}-suggested`}
+          text={suggestedText(band)}
+          clearLabel={CLEAR_LABEL}
+          onClear={() => clearSuggestion(field)}
+        />
+      );
+    const note = readerAux.notes[field];
+    return note ? (
+      <ReaderNote text={note.text} action={USE_LABEL} onAction={() => takeSuggestion(field)} />
+    ) : null;
+  };
+  const ring = (field: InvoiceField) => (readerAux.marks[field] ? ` ${SUGGESTED_RING}` : "");
+  const describedBy = (field: InvoiceField) =>
+    readerAux.marks[field] ? `pr-${field}-suggested` : undefined;
+
   // Commas as the person types, places padded on blur (@minty/shared/amountInput). The 12-digit
   // error shows only while it applies and clears the moment the amount is valid again.
   const amountInput = useAmountInput({
@@ -267,6 +452,7 @@ export function PaymentRequestModal({
     decimals: currency.decimals,
     onValue: (value) => {
       setAmount(value);
+      readerEdit("amount", { amount: value });
       const err = amountLimitError(value);
       if (err) {
         setFieldErrors((prev) => ({ ...prev, amount: err }));
@@ -301,8 +487,10 @@ export function PaymentRequestModal({
     if (!open) {
       setPreviewFileId(null);
       setViewerOpen(false);
+      // The modal returns null when closed but stays mounted: a read in flight goes here.
+      cancelRead();
     }
-  }, [open]);
+  }, [open, cancelRead]);
 
   // Two levels, not three: when the full-screen viewer is up it swallows Escape itself in the
   // capture phase (AttachmentFullScreenViewer), so this handler never sees the keystroke that
@@ -329,8 +517,12 @@ export function PaymentRequestModal({
     setContact("");
     setContactInput("");
     setAccountCode("");
-    setInvoiceDate(todayLocalISODate());
+    const today = todayLocalISODate();
+    setInvoiceDate(today);
+    setOpenedOn(today);
     setDueDate("");
+    setReaderAux(invoiceState());
+    setReadFileId(null);
     setBillNo("");
     setDescription("");
     setUploadedFiles([]);
@@ -363,7 +555,7 @@ export function PaymentRequestModal({
     if (oversized.length > 0) {
       setFieldErrors((prev) => ({
         ...prev,
-        attachments: `${oversized.length > 1 ? "These are" : "This one's"} a bit too big - 10MB is the max: ${oversized.map((f) => f.name).join(", ")}`,
+        attachments: filesTooBig(oversized.map((f) => f.name)),
       }));
       e.target.value = "";
       return;
@@ -372,13 +564,12 @@ export function PaymentRequestModal({
     if (disallowed.length > 0) {
       setFieldErrors((prev) => ({
         ...prev,
-        attachments: `I can't open ${disallowed.length > 1 ? "these" : "this one"} - try PDF, JPEG, PNG, or HTML: ${disallowed.map((f) => f.name).join(", ")}`,
+        attachments: filesNotOpenable(disallowed.map((f) => f.name)),
       }));
       e.target.value = "";
       return;
     }
-    // Images are shrunk at upload time (compressImage: PNG and JPEG keep their type, others become
-    // JPEG); stage the raw file here.
+    // Staged and uploaded exactly as chosen: no shrinking, no conversion (owner, 2026-11-04).
     const added: UploadedEntry[] = Array.from(list).map((file) => ({
       id:
         typeof crypto !== "undefined" && crypto.randomUUID
@@ -391,10 +582,22 @@ export function PaymentRequestModal({
     setPreviewFileId(added[added.length - 1]?.id ?? null);
     clearFieldError("attachments");
     e.target.value = "";
+    // The newest readable file is read; the previous one's suggestions go (what was typed stays).
+    const toRead = [...added].reverse().find((x) => isReadable(x.file));
+    if (toRead) {
+      dropSuggestions();
+      setReadFileId(toRead.id);
+      void reader.read(toRead.file);
+    }
   };
 
   const removeFile = (entryId: string) => {
     setUploadedFiles((prev) => prev.filter((x) => x.id !== entryId));
+    if (entryId === readFileId) {
+      cancelRead();
+      dropSuggestions();
+      setReadFileId(null);
+    }
   };
 
   const refetchEntityBillContacts = async (ensureMerged?: EntityBillContact) => {
@@ -419,6 +622,7 @@ export function PaymentRequestModal({
 
   const handleSaveDraft = async () => {
     if (draftSubmitting || currencyBlocked) return;
+    cancelRead();
     setFieldErrors({});
     setFormError(null);
     setDraftSubmitting(true);
@@ -502,6 +706,7 @@ export function PaymentRequestModal({
 
   const handleConfirm = async () => {
     if (currencyBlocked) return;
+    cancelRead();
     const next = validatePaymentRequestForm({
       amount,
       contact,
@@ -512,6 +717,11 @@ export function PaymentRequestModal({
     });
     if (Object.keys(next).length > 0) {
       setFieldErrors(next);
+      // Two or more: the summary takes focus. One: its field does.
+      setSummaryAttempt((n) => n + 1);
+      const refused = SUMMARY_ORDER.filter((key) => next[key]);
+      if (refused.length === 1)
+        setTimeout(() => document.getElementById(FIELD_ID[refused[0]])?.focus(), 0);
       return;
     }
     setFieldErrors({});
@@ -591,7 +801,7 @@ export function PaymentRequestModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[300] flex items-center justify-center overflow-x-hidden overscroll-x-none p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4 md:p-6"
+      className="fixed inset-0 z-[300] flex items-center justify-center overflow-clip overscroll-none p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-4 md:p-6"
       role="presentation"
     >
       <button
@@ -629,6 +839,7 @@ export function PaymentRequestModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-6">
           <div className="flex flex-col gap-6">
+            <ErrorSummary look="classic" items={summaryItems} attempt={summaryAttempt} />
             <div className="min-w-0">
               {previewFile && previewObjectUrl ? (
                 <PaymentRequestInlinePreview
@@ -712,6 +923,7 @@ export function PaymentRequestModal({
             <div className="relative">
               <input
                 ref={fileInputRef}
+                id="pr-attachments"
                 type="file"
                 className="absolute inset-0 z-20 h-full min-h-[156px] w-full cursor-pointer opacity-0 sm:min-h-[176px]"
                 multiple
@@ -749,6 +961,15 @@ export function PaymentRequestModal({
                 {fieldErrors.attachments}
               </p>
             ) : null}
+
+            {reader.reading ? (
+              <ReadingNotice title={READING_TITLE} detail={READING_DETAIL} />
+            ) : reader.failed ? (
+              <ReadFailedLine text={READ_FAILED} />
+            ) : null}
+            <div role="status" aria-live="polite" className="sr-only">
+              {readerAux.announcement}
+            </div>
 
             {formError ? (
               <div
@@ -807,6 +1028,7 @@ export function PaymentRequestModal({
                     value={invoiceDate ?? ""}
                     onChange={(iso) => {
                       setInvoiceDate(iso);
+                      readerEdit("invoiceDate", { invoiceDate: iso });
                       clearFieldError("invoiceDate");
                     }}
                     invalid={!!fieldErrors.invoiceDate}
@@ -815,7 +1037,8 @@ export function PaymentRequestModal({
                       "relative z-[1] box-border h-11 min-h-[44px] w-full rounded-2xl border bg-white py-0 pl-3 pr-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 [color-scheme:light] sm:min-h-11 sm:text-sm " +
                       (fieldErrors.invoiceDate
                         ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
-                        : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
+                        : "border-gray-300 focus:border-secondary focus:ring-secondary/25") +
+                      ring("invoiceDate")
                     }
                     calendarButtonClassName="hidden"
                   />
@@ -824,6 +1047,7 @@ export function PaymentRequestModal({
                       {fieldErrors.invoiceDate}
                     </p>
                   ) : null}
+                  {readerExtras("invoiceDate")}
                 </div>
                 <div>
                   <FieldLabel htmlFor="pr-due-date" required>
@@ -835,6 +1059,7 @@ export function PaymentRequestModal({
                     value={dueDate ?? ""}
                     onChange={(iso) => {
                       setDueDate(iso);
+                      readerEdit("dueDate", { dueDate: iso });
                       clearFieldError("dueDate");
                     }}
                     invalid={!!fieldErrors.dueDate}
@@ -843,7 +1068,8 @@ export function PaymentRequestModal({
                       "relative z-[1] box-border h-11 min-h-[44px] w-full rounded-2xl border bg-white py-0 pl-3 pr-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 [color-scheme:light] sm:min-h-11 sm:text-sm " +
                       (fieldErrors.dueDate
                         ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
-                        : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
+                        : "border-gray-300 focus:border-secondary focus:ring-secondary/25") +
+                      ring("dueDate")
                     }
                     calendarButtonClassName="hidden"
                   />
@@ -852,6 +1078,7 @@ export function PaymentRequestModal({
                       {fieldErrors.dueDate}
                     </p>
                   ) : null}
+                  {readerExtras("dueDate")}
                 </div>
               </div>
 
@@ -883,14 +1110,17 @@ export function PaymentRequestModal({
                     {...amountInput}
                     placeholder="0.00"
                     aria-invalid={!!fieldErrors.amount}
+                    aria-describedby={describedBy("amount")}
                     className={
                       "box-border h-11 min-h-[44px] min-w-0 flex-1 rounded-l-none rounded-r-2xl border border-l-0 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:text-sm " +
                       (fieldErrors.amount
                         ? "border-red-500 focus:border-red-500 focus:ring-red-200/50"
-                        : "border-gray-300 focus:border-secondary focus:ring-secondary/25")
+                        : "border-gray-300 focus:border-secondary focus:ring-secondary/25") +
+                      ring("amount")
                     }
                   />
                 </div>
+                {readerExtras("amount")}
                 {fieldErrors.amount ? (
                   <p className="mt-1 text-xs text-red-600" role="alert">
                     {fieldErrors.amount}
@@ -927,10 +1157,18 @@ export function PaymentRequestModal({
                   id="pr-description"
                   type="text"
                   value={description ?? ""}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    readerEdit("description", { description: e.target.value });
+                  }}
                   placeholder="Description (optional)"
-                  className="box-border h-11 min-h-[44px] w-full rounded-2xl border border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm"
+                  aria-describedby={describedBy("description")}
+                  className={
+                    "box-border h-11 min-h-[44px] w-full rounded-2xl border border-gray-300 bg-white px-3 text-base text-black placeholder:text-gray-700 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 sm:min-h-11 sm:text-sm" +
+                    ring("description")
+                  }
                 />
+                {readerExtras("description")}
               </div>
 
               <div>
@@ -946,6 +1184,7 @@ export function PaymentRequestModal({
                   onChange={({ xero_contact_id, contact: nm }) => {
                     setContact(xero_contact_id);
                     setContactInput(nm);
+                    readerEdit("supplier", { contact: xero_contact_id, contactInput: nm });
                     clearFieldError("contact");
                   }}
                   refetchContacts={refetchEntityBillContacts}
@@ -956,6 +1195,7 @@ export function PaymentRequestModal({
                     {fieldErrors.contact}
                   </p>
                 ) : null}
+                {readerExtras("supplier")}
               </div>
 
               <div>
@@ -968,12 +1208,13 @@ export function PaymentRequestModal({
                   value={accountCode ?? ""}
                   onChange={(v) => {
                     setAccountCode(v);
+                    readerEdit("account", { accountCode: v });
                     clearFieldError("accountCode");
                   }}
                   options={accountOptions}
                   placeholder="Select an account code"
                   error={!!fieldErrors.accountCode}
-                  triggerClassName="!rounded-2xl"
+                  triggerClassName={"!rounded-2xl" + ring("account")}
                   plainChevron
                   searchable
                 />
@@ -982,6 +1223,7 @@ export function PaymentRequestModal({
                     {fieldErrors.accountCode}
                   </p>
                 ) : null}
+                {readerExtras("account")}
               </div>
             </div>
           </div>

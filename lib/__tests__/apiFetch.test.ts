@@ -18,6 +18,7 @@ import {
   fetchBills,
   fetchEntityCurrency,
   uploadBillAttachments,
+  uploadPaymentAttachment,
 } from "@/lib/api";
 import { getAuth, setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -89,7 +90,6 @@ describe("the request", () => {
   it("does NOT set a content type for a FormData body - the browser must set the boundary", async () => {
     fetchMock.mockResolvedValueOnce(answer(201, []));
 
-    // A PDF, so compressImage hands it back untouched and no canvas is needed.
     await uploadBillAttachments("bill-1", [
       new File(["%PDF-1.4"], "invoice.pdf", { type: "application/pdf" }),
     ]);
@@ -98,6 +98,18 @@ describe("the request", () => {
     expect(url).toBe(`${V1}/bills/bill-1/attachments`);
     expect(init?.body).toBeInstanceOf(FormData);
     expect(new Headers(init?.headers).has("Content-Type")).toBe(false);
+  });
+
+  it("sends an image exactly as chosen - no shrinking, no conversion (owner, 2026-11-04)", async () => {
+    const png = new File(["\x89PNG-receipt"], "receipt.png", { type: "image/png" });
+    const slip = new File(["\xff\xd8\xff-slip"], "slip.jpg", { type: "image/jpeg" });
+    fetchMock.mockResolvedValueOnce(answer(201, [])).mockResolvedValueOnce(answer(201, {}));
+
+    await uploadBillAttachments("bill-1", [png]);
+    await uploadPaymentAttachment("bill-1", "pay-1", slip);
+
+    expect((fetchMock.mock.calls[0][1]?.body as FormData).get("files")).toBe(png);
+    expect((fetchMock.mock.calls[1][1]?.body as FormData).get("file")).toBe(slip);
   });
 
   it("builds the list query from the parameters it was given, and omits the rest", async () => {
