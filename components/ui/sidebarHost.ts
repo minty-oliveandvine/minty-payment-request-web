@@ -145,7 +145,7 @@ export const HOUSE_FALLBACK = "Something went wrong on my end. Mind trying again
 const SESSION_ENDED = "Your session has ended. Signing you back in…";
 
 export type HubRequest = {
-  method?: "GET" | "PATCH";
+  method?: "GET" | "PATCH" | "POST";
   json?: unknown;
   query?: Record<string, string | number | undefined>;
   signal?: AbortSignal;
@@ -247,11 +247,13 @@ export function currentToken(): string {
  */
 async function loadViewer(): Promise<Viewer | null> {
   const body = await mintyFetch<{
-    user?: { name?: unknown; initials?: unknown };
+    user?: { name?: unknown; initials?: unknown; email?: unknown };
   }>("/api/me/profile", { onUnauthorized: "reject" });
   const user = body?.user;
   if (typeof user?.name !== "string" || typeof user.initials !== "string") return null;
-  return { name: user.name, initials: user.initials };
+  // the email is the Talk to Minty chat's one-tap answer (@minty/shared v0.14)
+  const email = typeof user.email === "string" && user.email ? user.email : undefined;
+  return { name: user.name, initials: user.initials, email };
 }
 
 export const sidebarHost: SidebarHost = {

@@ -113,3 +113,12 @@ the header follows; a refusal shown in the card; a failed subscriptions read sho
 error and Try again re-reads; Logout clears the cookies and leaves for Minty's `/logout`.
 `e2e/07_settings_leave.spec.ts`: Logout over unsaved Payment Request Settings asks first, and Go Back
 logs nobody out.
+
+## The Minty cat (`@minty/shared/contact`, v0.14)
+
+The cat at the bottom right of every signed-in page (owner, 2026-11-05):
+`components/ui/ContactLauncher.tsx`, mounted beside the scroll root in `app/layout.tsx`. Its
+pop-up's "Talk to Minty" opens a scripted chat (topic, message, Send) that posts to Flask's
+`POST /api/me/contact` through `mintyFetch`; Flask mails `CONTACT_EMAIL` with the person as
+Reply-To. Tested in `components/ui/__tests__/ContactLauncher.test.tsx`; `/contact/minty-cat.webp`
+is in `public/` (`packagedAssets.test.ts`).

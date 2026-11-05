@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
+import { ContactLauncher } from "@/components/ui/ContactLauncher";
 import { SidebarProvider } from "@/components/ui/Sidebar";
 import { ProfilePanel } from "@/features/profile";
 import { SubscriptionsOverviewCard } from "@/features/subscription";
@@ -45,6 +46,8 @@ export default function RootLayout({
             <div id="app-scroll-root" className="min-h-dvh min-h-screen w-full min-w-0 max-w-full">
               {children}
             </div>
+            {/* The Minty cat at the bottom right (drawn only for someone signed in). */}
+            <ContactLauncher />
           </SidebarProvider>
         </ToastProvider>
       </body>
