@@ -318,13 +318,15 @@ test.describe("the sidebar", () => {
     await page.route(`${PAYMENT_REQUEST_API_URL}/api/v1/auth/logout`, (route) =>
       route.fulfill({ status: 204, headers: CORS }),
     );
-    await page.route(`${PETTY_CASH_URL}/logout`, (route) =>
-      route.fulfill({
+    const methods: string[] = [];
+    await page.route(`${PETTY_CASH_URL}/logout`, (route) => {
+      methods.push(route.request().method());
+      return route.fulfill({
         status: 200,
         contentType: "text/html",
         body: "<title>Minty logout stub</title>",
-      }),
-    );
+      });
+    });
     await handoff(page, creds, "/");
 
     await page.getByRole("banner").getByRole("button", { name: "Open navigation menu" }).click();
@@ -334,6 +336,7 @@ test.describe("the sidebar", () => {
       .click();
 
     await expect(page).toHaveURL(`${PETTY_CASH_URL}/logout`);
+    expect(methods).toEqual(["POST"]); // Minty's /logout answers a GET with 405
     const cookies = await page.context().cookies();
     expect(cookies.find((c) => c.name === "billing_token")?.value ?? "").toBe("");
   });

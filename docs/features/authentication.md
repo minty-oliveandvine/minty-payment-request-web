@@ -31,7 +31,9 @@ The cookies are readable by script on purpose (the app itself attaches the token
 are cleared client-side on logout and by `POST /api/auth/logout` on the backend. **Logout** (the
 sidebar's menu and My Profile — [sidebar.md](sidebar.md)) ends the session everywhere since
 2026-09-30: after those two it leaves for Minty's `/logout`, where it used to land on Minty's
-entity list with Minty still signed in.
+entity list with Minty still signed in. It leaves by a top-level form POST (`postNavigate`,
+`lib/mintyUrls.ts`): `/logout` answers a GET with 405 and checks the POST's `Origin`, which a
+`strict-origin` referrer meta keeps (this app's `Referrer-Policy: same-origin` would send `null`).
 
 ## Addresses: `/entity/<shortid>/<name>/...` (2026-10-05)
 

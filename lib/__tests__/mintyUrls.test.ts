@@ -4,13 +4,13 @@
 // Flask on 5001 for the Xero callback while lib/env.ts defaults to 8010, and Vitest loads the
 // .env files, so a hardcoded port would pass on one machine and fail on another.
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
 import { cookieCompanyPages } from "@/lib/useCompanyPages";
 import { env } from "@/lib/env";
-import { MINTY_MODULE_URL, buildMintyEnterUrl } from "@/lib/mintyUrls";
+import { MINTY_MODULE_URL, buildMintyEnterUrl, postNavigate } from "@/lib/mintyUrls";
 
 const TOKEN = unsignedToken();
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
@@ -70,5 +70,30 @@ describe("cookieCompanyPages", () => {
     expect(cookieCompanyPages()).toBeNull();
     setAuth(TOKEN, "", "");
     expect(cookieCompanyPages()).toBeNull();
+  });
+});
+
+// Minty's /logout takes a POST only (a GET answers 405), from a front end's Origin: a top-level
+// form POST, never fetch and never location.
+describe("postNavigate", () => {
+  it("submits a hidden, empty POST form to the address, with a referrer policy that keeps Origin", () => {
+    const submitted: HTMLFormElement[] = [];
+    vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(function (
+      this: HTMLFormElement,
+    ) {
+      submitted.push(this);
+    });
+
+    postNavigate(`${MINTY_MODULE_URL}/logout`);
+
+    expect(submitted).toHaveLength(1);
+    const [form] = submitted;
+    expect(form.getAttribute("method")).toBe("POST");
+    expect(form.getAttribute("action")).toBe(`${MINTY_MODULE_URL}/logout`);
+    expect(form.hidden).toBe(true);
+    expect(form.elements).toHaveLength(0);
+    expect(form.isConnected).toBe(true);
+    const meta = document.head.querySelector('meta[name="referrer"]');
+    expect(meta?.getAttribute("content")).toBe("strict-origin");
   });
 });

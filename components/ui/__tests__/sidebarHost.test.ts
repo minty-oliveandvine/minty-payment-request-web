@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tokenExpiringIn, unsignedToken } from "@/lib/__fixtures__/tokens";
 import { ApiError } from "@/lib/api";
 import { getAuth, setAuth } from "@/lib/auth";
+import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
 import { env } from "@/lib/env";
 import {
   HOUSE_FALLBACK,
@@ -19,6 +20,7 @@ import {
   currentToken,
   entityId,
   links,
+  logOut,
   mintyFetch,
   moduleAccess,
 } from "@/components/ui/sidebarHost";
@@ -271,5 +273,44 @@ describe("billingApiFetch", () => {
       `${env.SUBSCRIPTION_API_URL}/api/me/subscriptions`,
     );
     expect(String(fetchMock.mock.calls[0][0])).not.toContain(env.PAYMENT_REQUEST_API_URL);
+  });
+});
+
+// Logout: this app's own POST /api/v1/auth/logout (presence) first, then a top-level form POST to
+// Minty's /logout - it answers a GET with 405, so never a `location` change.
+describe("logOut", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+    setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("drops the presence, the cookies and the view choice, then POSTs to Minty's /logout", async () => {
+    const order: string[] = [];
+    fetchMock.mockImplementationOnce(async (url) => {
+      order.push(`fetch ${String(url)}`);
+      return answer(200, {});
+    });
+    const submit = vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(function (
+      this: HTMLFormElement,
+    ) {
+      order.push(`${this.getAttribute("method")} ${this.getAttribute("action")}`);
+    });
+    localStorage.setItem("payment-request-easy-view", "easy");
+    const leaving = vi.fn();
+
+    await logOut(leaving);
+
+    expect(leaving).toHaveBeenCalledTimes(1);
+    expect(order).toEqual([
+      `fetch ${env.PAYMENT_REQUEST_API_URL}/api/v1/auth/logout`,
+      `POST ${MINTY_MODULE_URL}/logout`,
+    ]);
+    expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(getAuth()).toBeNull();
+    expect(localStorage.getItem("payment-request-easy-view")).toBeNull();
   });
 });

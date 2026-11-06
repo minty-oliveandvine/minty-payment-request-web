@@ -23,7 +23,7 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       while the tab sits open; a 401 that survives a refresh sends the person back to Minty via
       `/entity/<id>/enter`.
 - [ ] Logout (sidebar menu and My Profile) ends the session everywhere: cookies cleared,
-      `POST /api/auth/logout` called, then landing on Minty's own `/logout` — not back on this
+      `POST /api/auth/logout` called, then a form POST to Minty's own `/logout` — not back on this
       app's or Minty's entity list still signed in.
 
 ## Company address resolution ([authentication.md](authentication.md#addresses))

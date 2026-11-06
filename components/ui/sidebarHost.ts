@@ -26,7 +26,7 @@ import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import { env } from "@/lib/env";
 import { clearAuth, getAuth, isTokenExpiringSoon, redirectToLogin, refreshToken } from "@/lib/auth";
 import { getModuleClaims } from "@/lib/moduleClaims";
-import { buildMintyEnterUrl, MINTY_MODULE_URL } from "@/lib/mintyUrls";
+import { buildMintyEnterUrl, MINTY_MODULE_URL, postNavigate } from "@/lib/mintyUrls";
 import { cookieCompanyPages } from "@/lib/useCompanyPages";
 
 /** minty-subscription-api - the Subscriptions Overview's read (`SUBSCRIPTION_API_URL`, lib/env.ts). */
@@ -109,8 +109,8 @@ export function lockScroll(): () => void {
 
 /**
  * Log out - the menu's Logout and My Profile's Log Out: drop this app's sign-in presence and its
- * cookies, forget the view choice, then end the session at Minty (its `/logout` signs the person
- * out and lands on its sign-in page), so no app is left signed in behind the one that said
+ * cookies, forget the view choice, then end the session at Minty (a form POST to its `/logout` -
+ * a GET answers 405 - signs the person out and lands on its sign-in page), so no app is left signed in behind the one that said
  * goodbye. minty-web's `lib/logout.ts`, with this app's own steps first.
  *
  * While Payment Settings has unsaved ticks it asks first ("Leave without saving?",
@@ -135,7 +135,7 @@ async function endSession(): Promise<void> {
   } catch {
     /* private mode / unavailable */
   }
-  window.location.href = `${MINTY_MODULE_URL}/logout`;
+  postNavigate(`${MINTY_MODULE_URL}/logout`);
 }
 
 // --- the two backends the copies read ----------------------------------------------------------
