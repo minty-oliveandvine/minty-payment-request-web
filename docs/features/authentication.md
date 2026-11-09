@@ -9,8 +9,13 @@ is `minty-accounts-api/docs/features/authentication.md`; minty-payment-request-a
 
 ## Arriving: `/landing`
 
-Minty links **Payments** to `/landing?token=<jwt>&entity_id=&entity_name=&next=&from=`
-(`app/landing/page.tsx`). The page stores the token, the entity id and name in cookies
+Minty links **Payments** to `/landing?code=<one-time code>&entity_id=&entity_name=&next=`
+(`app/landing/page.tsx`, the shared `@minty/shared/landing` hook since v0.16). **Gap 4
+(2026-11-09):** the page swaps the code for the token at accounts-api's `POST
+/api/handoff/redeem` (once, 2 minutes, from this origin only); a used or lapsed code says so, with
+a Continue back into Minty's `/entity`. A legacy `?token=` is still taken until accounts-api stops
+sending it. The way back (`lib/mintyUrls.ts::buildMintyEnterUrl`, `/entity/<id>/enter?next=`)
+carries no token. The page stores the token, the entity id and name in cookies
 (`lib/auth.ts`: `billing_token`, `billing_entity_id`, `billing_entity_name`, `SameSite=Lax`,
 `Secure` on https, **8 hours**) and forwards to `next` (Flask sends the company's list or its
 Payment Request Settings - see Addresses below; `/`, the company's list, when there is none; a path on this

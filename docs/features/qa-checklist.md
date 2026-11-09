@@ -9,9 +9,12 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
 
 ## Handoff and auth ([authentication.md](authentication.md))
 
-- [ ] Arriving at `/landing?token=<jwt>&entity_id=&entity_name=&next=` stores the token and
-      entity cookies (`billing_token`, `billing_entity_id`, `billing_entity_name`) and forwards
-      to `next`.
+- [ ] Arriving at `/landing?code=<one-time code>&entity_id=&entity_name=&next=` swaps the code,
+      stores the token and entity cookies (`billing_token`, `billing_entity_id`,
+      `billing_entity_name`) and forwards to `next`; opening the same address again says the link
+      was used, with Continue (gap 4).
+- [ ] No address the app builds carries a token (Select Entity, Manage subscriptions, Petty Cash
+      links: `/entity/<id>/enter?next=` only).
 - [ ] No token on any page other than `/landing` → sent back into Minty's `/entity`.
 - [ ] `next` pointing off-site (`//host`, a backslash, a control character) is refused by
       `safeNext.ts` — confirm it lands on the default page, not the attempted address.

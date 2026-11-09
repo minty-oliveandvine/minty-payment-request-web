@@ -165,7 +165,7 @@ test.describe("the sidebar", () => {
     await expect(card.getByRole("link", { name: "Manage Subscription" })).toHaveAttribute(
       "href",
       new RegExp(
-        `^${ACCOUNTS_API_URL}/entity/${creds.entityId}/enter\\?token=.+&next=${encodeURIComponent("/handoff/minty-web?next=%2Fsubscription").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+        `^${ACCOUNTS_API_URL}/entity/${creds.entityId}/enter\\?next=${encodeURIComponent("/handoff/minty-web?next=%2Fsubscription").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
       ),
     );
 
@@ -186,7 +186,8 @@ test.describe("the sidebar", () => {
     await page.getByRole("banner").getByRole("button", { name: "Open navigation menu" }).click();
     const nav = page.getByRole("navigation", { name: "Main navigation" });
     await expect(nav).toBeVisible();
-    const enter = `${ACCOUNTS_API_URL}/entity/${creds.entityId}/enter?token=`;
+    // gap 4: the way back carries no token - /enter works on the accounts-api session
+    const enter = `${ACCOUNTS_API_URL}/entity/${creds.entityId}/enter?next=`;
 
     await expect(nav.getByRole("link", { name: "Settings", exact: true })).toHaveAttribute(
       "href",
@@ -199,17 +200,12 @@ test.describe("the sidebar", () => {
     const select = await nav
       .getByRole("link", { name: "Select Entity", exact: true })
       .getAttribute("href");
-    expect(
-      select?.startsWith(enter) && select.endsWith(`&next=${encodeURIComponent("/entity")}`),
-    ).toBe(true);
+    expect(select === `${enter}${encodeURIComponent("/entity")}`).toBe(true);
     const reports = await nav
       .getByRole("link", { name: "Reports", exact: true })
       .getAttribute("href");
     expect(
-      reports?.startsWith(enter) &&
-        reports.endsWith(
-          `&next=${encodeURIComponent(`/entity/${creds.entityId}/petty-cash/reports`)}`,
-        ),
+      reports === `${enter}${encodeURIComponent(`/entity/${creds.entityId}/petty-cash/reports`)}`,
     ).toBe(true);
     await expect(nav.getByRole("group", { name: "Petty Cash" })).toBeVisible();
     await expect(nav.getByRole("group", { name: "Payment Request" })).toBeVisible();

@@ -6,13 +6,16 @@ export const MINTY_MODULE_URL = resolveMintyModuleUrl();
 export { resolveMintyModuleUrl };
 
 /**
- * Minty entry URL with optional `next` path (path on the Minty app, e.g. `/entity/…/settings`).
+ * Minty entry URL with optional `next` path (path on the Minty app, e.g. `/entity/…/settings`):
+ * accounts-api's `/entity/<id>/enter` goes on to `next` on the person's accounts-api session, or
+ * signs them in first (gap 4, 2026-11-09: it carries no token - it used to be `?token=`). With no
+ * company held, Minty's `/entity`.
  */
 export function buildMintyEnterUrl(nextPath?: string): string {
-  const auth = getAuth();
-  if (auth?.entityId && auth?.token) {
-    const base = `${MINTY_MODULE_URL}/entity/${encodeURIComponent(auth.entityId)}/enter?token=${encodeURIComponent(auth.token)}`;
-    return nextPath ? `${base}&next=${encodeURIComponent(nextPath)}` : base;
+  const entityId = getAuth()?.entityId;
+  if (entityId) {
+    const base = `${MINTY_MODULE_URL}/entity/${encodeURIComponent(entityId)}/enter`;
+    return nextPath ? `${base}?next=${encodeURIComponent(nextPath)}` : base;
   }
   return `${MINTY_MODULE_URL}/entity`;
 }

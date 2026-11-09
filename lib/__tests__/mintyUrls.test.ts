@@ -24,13 +24,13 @@ describe("MINTY_MODULE_URL", () => {
 });
 
 describe("buildMintyEnterUrl", () => {
-  it("enters through the company, carrying the token, so a lapsed Flask session is remade", () => {
+  it("enters through the company on the accounts-api session, never carrying the token", () => {
     setAuth(TOKEN, ENTITY_ID, ENTITY_NAME);
 
     const url = new URL(buildMintyEnterUrl());
 
     expect(url.origin + url.pathname).toBe(`${env.ACCOUNTS_API_URL}/entity/${ENTITY_ID}/enter`);
-    expect(url.searchParams.get("token")).toBe(TOKEN);
+    expect(url.searchParams.has("token")).toBe(false); // gap 4: the session carries it
     expect(url.searchParams.has("next")).toBe(false);
   });
 
