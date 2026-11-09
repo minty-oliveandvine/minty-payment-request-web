@@ -2,9 +2,10 @@
 //
 // WHY THIS MINTS ITS OWN TOKEN
 //
-// In production a person clicks "Payments" in Minty; Flask mints a 30-minute HS256 JWT
-// (blueprints/entity/routes/modules.py::_generate_module_token) and sends the browser to
-// /landing?token=... here, which stores it in the `billing_token` cookie. A test cannot go
+// In production a person clicks "Payments" in Minty; accounts-api mints a 30-minute HS256 JWT
+// (hub/handoffs.py::module_token) and sends the browser to /landing?code=... here - a one-time
+// code (gap 4), which the landing swaps for the token and stores in the `billing_token` cookie
+// (`codeFor` below answers that swap). A test cannot go
 // through Minty's login (email OTP), but it holds the same SECRET_KEY, so it mints the same
 // token. Nothing is bypassed: minty-payment-request-api verifies signature, expiry and claims exactly
 // as it does Flask's, and the page reads the module claims out of it.
@@ -140,13 +141,13 @@ export async function handoff(
   overrides: Record<string, unknown> = {},
 ): Promise<void> {
   const token = mintModuleToken(creds, overrides);
-  const qs = new URLSearchParams({
-    next,
-    entity_id: creds.entityId,
-    entity_name: creds.entityName,
-    token,
-  });
-  await page.goto(`/landing?${qs.toString()}`);
+  await page.goto(
+    await landingAddress(page, token, {
+      next,
+      entity_id: creds.entityId,
+      entity_name: creds.entityName,
+    }),
+  );
   await page.waitForURL((u) => !u.pathname.startsWith("/landing"), { timeout: 15_000 });
   await page.waitForLoadState("networkidle");
 }
@@ -356,4 +357,50 @@ export async function expectNoSideScroll(page: Page, width: number): Promise<voi
   if (scrollWidth > width) {
     throw new Error(`the page is ${scrollWidth}px wide at a ${width}px viewport`);
   }
+}
+
+/**
+ * Gap 4 (2026-11-09): accounts-api hands an app a one-time code, which the landing swaps for the
+ * token at `POST /api/handoff/redeem`. Here the test is accounts-api: a fresh code for `token`,
+ * answered once by its own route (with CORS and its preflight, as accounts-api does). Each code
+ * brings its own handler, so a test's `page.unrouteAll()` between landings is harmless; a code a
+ * handler does not own falls back to the next one, and in the end to the real accounts-api (the
+ * stack e2e's own hand-offs).
+ */
+let codeCount = 0;
+
+export async function codeFor(page: Page, token: string): Promise<string> {
+  codeCount += 1;
+  const code = `e2e-${codeCount}-${Date.now().toString(36)}`;
+  let spent = false;
+  await page.route(`${ACCOUNTS_API_URL}/api/handoff/redeem`, (route) => {
+    const request = route.request();
+    const headers = {
+      "Access-Control-Allow-Origin": request.headers()["origin"] ?? "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      Vary: "Origin",
+    };
+    if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+    const asked = (request.postDataJSON() as { code?: unknown } | null)?.code;
+    if (asked !== code || spent) return route.fallback();
+    spent = true;
+    return route.fulfill({
+      status: 200,
+      headers,
+      contentType: "application/json",
+      body: JSON.stringify({ token }),
+    });
+  });
+  return code;
+}
+
+/** `/landing?…&code=` for `token` - the address accounts-api sends people to, with no token in it. */
+export async function landingAddress(
+  page: Page,
+  token: string,
+  params: Record<string, string>,
+): Promise<string> {
+  const qs = new URLSearchParams({ ...params, code: await codeFor(page, token) });
+  return `/landing?${qs.toString()}`;
 }

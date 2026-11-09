@@ -13,8 +13,7 @@ Minty links **Payments** to `/landing?code=<one-time code>&entity_id=&entity_nam
 (`app/landing/page.tsx`, the shared `@minty/shared/landing` hook since v0.16). **Gap 4
 (2026-11-09):** the page swaps the code for the token at accounts-api's `POST
 /api/handoff/redeem` (once, 2 minutes, from this origin only); a used or lapsed code says so, with
-a Continue back into Minty's `/entity`. A legacy `?token=` is still taken until accounts-api stops
-sending it. The way back (`lib/mintyUrls.ts::buildMintyEnterUrl`, `/entity/<id>/enter?next=`)
+a Continue back into Minty's `/entity`. A `?token=` in the address is never stored. The way back (`lib/mintyUrls.ts::buildMintyEnterUrl`, `/entity/<id>/enter?next=`)
 carries no token. The page stores the token, the entity id and name in cookies
 (`lib/auth.ts`: `billing_token`, `billing_entity_id`, `billing_entity_name`, `SameSite=Lax`,
 `Secure` on https, **8 hours**) and forwards to `next` (Flask sends the company's list or its

@@ -11,6 +11,7 @@
 import { expect, test } from "@playwright/test";
 
 import {
+  landingAddress,
   mintModuleToken,
   pagesOf,
   requireNextOnly,
@@ -27,15 +28,13 @@ test.beforeEach(async ({ page }) => {
 
 /** Arrive at /landing with `next` spelled however the test means, and report where we ended up. */
 async function landOn(page: import("@playwright/test").Page, next: string): Promise<string> {
-  const token = mintModuleToken(creds());
-  const qs = new URLSearchParams({
+  const landing = await landingAddress(page, mintModuleToken(creds()), {
     entity_id: creds().entityId,
     entity_name: creds().entityName,
-    token,
   });
   // `next` is appended raw: URLSearchParams would encode the control characters away, and the
   // point is what the browser does with them unencoded.
-  await page.goto(`/landing?${qs.toString()}&next=${next}`);
+  await page.goto(`${landing}&next=${next}`);
   await page.waitForURL((u) => !u.pathname.startsWith("/landing"), { timeout: 15_000 });
   return page.url();
 }
