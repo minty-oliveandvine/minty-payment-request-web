@@ -4,7 +4,7 @@ Nobody signs in here. Minty (Flask) authenticates the person, mints a short-live
 sends the browser to this app; everything after that is carrying that token to
 minty-payment-request-api, and — for the subscription notice and the sidebar — straight to
 minty-subscription-api and Minty. The system-wide picture
-is `Minty/docs/features/authentication.md`; minty-payment-request-api's verification is
+is `minty-accounts-api/docs/features/authentication.md`; minty-payment-request-api's verification is
 `minty-payment-request-api/docs/features/authentication.md`.
 
 ## Arriving: `/landing`
@@ -37,7 +37,7 @@ entity list with Minty still signed in. It leaves by a top-level form POST (`pos
 
 ## Addresses: `/entity/<shortid>/<name>/...` (2026-10-05)
 
-The pages live under the company's address, Flask's scheme (`Minty/docs/features/authentication.md`
+The pages live under the company's address, Flask's scheme (`minty-accounts-api/docs/features/authentication.md`
 §3.2), built by `lib/companyPages.ts` from `lib/companyRef.ts` (a COPY of minty-web's):
 
 | Page                     | Address                                                                            |
