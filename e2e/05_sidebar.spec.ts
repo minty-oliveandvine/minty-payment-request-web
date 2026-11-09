@@ -6,7 +6,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import {
   PAYMENT_REQUEST_API_URL,
-  PETTY_CASH_URL,
+  ACCOUNTS_API_URL,
   handoff,
   pagesOf,
   requireCredentials,
@@ -92,7 +92,7 @@ async function stubReads(
   subscriptions: { status: number; body: unknown } = { status: 200, body: SUBSCRIPTIONS },
 ): Promise<Stubs> {
   const stubs: Stubs = { profile: profileOf(creds), patches: [] };
-  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, async (route: Route) => {
+  await page.route(`${ACCOUNTS_API_URL}/api/me/profile**`, async (route: Route) => {
     const request = route.request();
     if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
     if (request.method() === "PATCH") {
@@ -165,7 +165,7 @@ test.describe("the sidebar", () => {
     await expect(card.getByRole("link", { name: "Manage Subscription" })).toHaveAttribute(
       "href",
       new RegExp(
-        `^${PETTY_CASH_URL}/entity/${creds.entityId}/enter\\?token=.+&next=${encodeURIComponent("/handoff/minty-web?next=%2Fsubscription").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+        `^${ACCOUNTS_API_URL}/entity/${creds.entityId}/enter\\?token=.+&next=${encodeURIComponent("/handoff/minty-web?next=%2Fsubscription").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
       ),
     );
 
@@ -186,7 +186,7 @@ test.describe("the sidebar", () => {
     await page.getByRole("banner").getByRole("button", { name: "Open navigation menu" }).click();
     const nav = page.getByRole("navigation", { name: "Main navigation" });
     await expect(nav).toBeVisible();
-    const enter = `${PETTY_CASH_URL}/entity/${creds.entityId}/enter?token=`;
+    const enter = `${ACCOUNTS_API_URL}/entity/${creds.entityId}/enter?token=`;
 
     await expect(nav.getByRole("link", { name: "Settings", exact: true })).toHaveAttribute(
       "href",
@@ -319,7 +319,7 @@ test.describe("the sidebar", () => {
       route.fulfill({ status: 204, headers: CORS }),
     );
     const methods: string[] = [];
-    await page.route(`${PETTY_CASH_URL}/logout`, (route) => {
+    await page.route(`${ACCOUNTS_API_URL}/logout`, (route) => {
       methods.push(route.request().method());
       return route.fulfill({
         status: 200,
@@ -335,7 +335,7 @@ test.describe("the sidebar", () => {
       .getByRole("button", { name: "Logout", exact: true })
       .click();
 
-    await expect(page).toHaveURL(`${PETTY_CASH_URL}/logout`);
+    await expect(page).toHaveURL(`${ACCOUNTS_API_URL}/logout`);
     expect(methods).toEqual(["POST"]); // Minty's /logout answers a GET with 405
     const cookies = await page.context().cookies();
     expect(cookies.find((c) => c.name === "billing_token")?.value ?? "").toBe("");

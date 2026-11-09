@@ -70,7 +70,7 @@ const nextConfig: NextConfig = {
    * lib/env.ts. MAINTENANCE_SHOW_NEW_LINK is the maintenance page's optional footer flag.
    */
   env: {
-    PETTY_CASH_URL: process.env.PETTY_CASH_URL ?? "",
+    ACCOUNTS_API_URL: process.env.ACCOUNTS_API_URL ?? "",
     PAYMENT_REQUEST_API_URL: process.env.PAYMENT_REQUEST_API_URL ?? "",
     SUBSCRIPTION_API_URL: process.env.SUBSCRIPTION_API_URL ?? "",
     MAINTENANCE_SHOW_NEW_LINK: process.env.MAINTENANCE_SHOW_NEW_LINK ?? "",

@@ -20,7 +20,7 @@ import { env } from "@/lib/env";
 
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
 const ENTITY_NAME = "Olive & Vine";
-const INTEGRATION_HREF = `${env.PETTY_CASH_URL}/entity/${ENTITY_ID}/settings/integration`;
+const INTEGRATION_HREF = `${env.ACCOUNTS_API_URL}/entity/${ENTITY_ID}/settings/integration`;
 const V1 = `${env.PAYMENT_REQUEST_API_URL}/api/v1`;
 
 const fetchMock = vi.fn<typeof fetch>();

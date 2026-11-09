@@ -119,7 +119,7 @@ describe("a member of a company without the module", () => {
     const check = await screen.findByRole("link", { name: /Check subscription settings/ });
     const url = new URL(check.getAttribute("href")!);
 
-    expect(url.origin).toBe(env.PETTY_CASH_URL);
+    expect(url.origin).toBe(env.ACCOUNTS_API_URL);
     expect(url.pathname).toBe(`/entity/${ENTITY_ID}/enter`);
     expect(url.searchParams.get("next")).toBe(`/entity/${ENTITY_ID}/settings/modules`);
   });
@@ -128,7 +128,7 @@ describe("a member of a company without the module", () => {
     gate();
 
     const back = await screen.findByRole("link", { name: /Back to Entity List/ });
-    expect(back.getAttribute("href")).toBe(`${env.PETTY_CASH_URL}/entity`);
+    expect(back.getAttribute("href")).toBe(`${env.ACCOUNTS_API_URL}/entity`);
   });
 });
 

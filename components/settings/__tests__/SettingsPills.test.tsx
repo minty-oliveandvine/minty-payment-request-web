@@ -34,7 +34,7 @@ const answer = (status: number, body: unknown) =>
 
 const pills = (activeTab: SettingsTabId = "bill") =>
   render(
-    <SettingsPills activeTab={activeTab} entityId={ENTITY_ID} module1Url={env.PETTY_CASH_URL} />,
+    <SettingsPills activeTab={activeTab} entityId={ENTITY_ID} module1Url={env.ACCOUNTS_API_URL} />,
   );
 
 const names = () => screen.getAllByRole("link").map((a) => a.textContent?.trim());
@@ -77,8 +77,8 @@ describe("the tab list", () => {
 
 describe("integrationTabUrl", () => {
   it("is Flask's Entity & Integration page, where Xero is connected", () => {
-    expect(integrationTabUrl(env.PETTY_CASH_URL, ENTITY_ID)).toBe(
-      `${env.PETTY_CASH_URL}/entity/${ENTITY_ID}/settings/integration`,
+    expect(integrationTabUrl(env.ACCOUNTS_API_URL, ENTITY_ID)).toBe(
+      `${env.ACCOUNTS_API_URL}/entity/${ENTITY_ID}/settings/integration`,
     );
   });
 
@@ -138,7 +138,7 @@ describe("the pills on screen", () => {
 
     const link = await screen.findByRole("link", { name });
     expect(link.getAttribute("href")).toBe(
-      `${env.PETTY_CASH_URL}/entity/${ENTITY_ID}/settings/${page}`,
+      `${env.ACCOUNTS_API_URL}/entity/${ENTITY_ID}/settings/${page}`,
     );
   });
 
@@ -152,7 +152,7 @@ describe("the pills on screen", () => {
       "href",
     )!;
     const url = new URL(href);
-    expect(url.origin + url.pathname).toBe(`${env.PETTY_CASH_URL}/handoff/petty-cash-web`);
+    expect(url.origin + url.pathname).toBe(`${env.ACCOUNTS_API_URL}/handoff/petty-cash-web`);
     expect(url.searchParams.get("entity_id")).toBe(ENTITY_ID);
     expect(url.searchParams.get("next")).toBe(
       "/entity/360812e1/olive-and-vine/settings/petty-cash",
@@ -176,7 +176,7 @@ describe("the pills on screen", () => {
     await waitFor(() => expect(names()).toHaveLength(5));
     for (const name of ["Users", "Entity & Integration", "Petty Cash Settings", "Modules"]) {
       const href = screen.getByRole("link", { name }).getAttribute("href")!;
-      expect(href.startsWith(env.PETTY_CASH_URL)).toBe(true);
+      expect(href.startsWith(env.ACCOUNTS_API_URL)).toBe(true);
     }
   });
 });

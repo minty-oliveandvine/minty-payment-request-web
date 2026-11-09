@@ -126,7 +126,7 @@ describe("the menu's items", () => {
     const nav = within(screen.getByRole("navigation", { name: "Main navigation" }));
     for (const name of ["Dashboard", "Reports"]) {
       const href = nav.getByRole("link", { name }).getAttribute("href")!;
-      expect(href.startsWith(env.PETTY_CASH_URL)).toBe(true);
+      expect(href.startsWith(env.ACCOUNTS_API_URL)).toBe(true);
       expect(href).toContain("/enter");
     }
   });

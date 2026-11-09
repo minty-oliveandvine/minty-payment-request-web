@@ -90,7 +90,7 @@ test("the handoff stores the session the way the app expects it", async ({ page,
 });
 
 // These two assert that the browser LEFT this app, not where it arrived. Minty's own origin is
-// whatever the NEXT SERVER resolved (`PETTY_CASH_URL`, lib/env.ts) and Flask may redirect again
+// whatever the NEXT SERVER resolved (`ACCOUNTS_API_URL`, lib/env.ts) and Flask may redirect again
 // from there, so naming a port here would be testing the local setup rather than the app.
 const APP_HOST = new URL(process.env.E2E_BASE_URL || "http://localhost:3020").host;
 

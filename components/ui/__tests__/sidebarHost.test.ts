@@ -69,7 +69,7 @@ describe("links", () => {
       links.pettyCashDashboard(),
       links.pettyCashReports(ENTITY_ID),
     ]) {
-      expect(href.startsWith(env.PETTY_CASH_URL)).toBe(true);
+      expect(href.startsWith(env.ACCOUNTS_API_URL)).toBe(true);
     }
   });
 
@@ -93,7 +93,7 @@ describe("links", () => {
   it("send Subscriptions straight to the handoff when no company is in the cookie", () => {
     setAuth(TOKEN, "", "");
     expect(links.subscriptions()).toBe(
-      `${env.PETTY_CASH_URL}/handoff/minty-web?next=%2Fsubscription`,
+      `${env.ACCOUNTS_API_URL}/handoff/minty-web?next=%2Fsubscription`,
     );
   });
 
@@ -157,7 +157,7 @@ describe("mintyFetch", () => {
     return mintyFetch("/api/me/profile").then((body) => {
       expect(body).toEqual({ user: { name: "Olive Vine" } });
       const [url, init] = fetchMock.mock.calls[0];
-      expect(url).toBe(`${env.PETTY_CASH_URL}/api/me/profile`);
+      expect(url).toBe(`${env.ACCOUNTS_API_URL}/api/me/profile`);
       const headers = new Headers(init?.headers);
       expect(headers.get("Authorization")).toBe(`Bearer ${TOKEN}`);
       expect(headers.has("X-Entity-Id")).toBe(false);
@@ -169,12 +169,12 @@ describe("mintyFetch", () => {
     fetchMock.mockResolvedValueOnce(answer(200, {}));
     await mintyFetch("/api/me/profile", { query: { entity: ENTITY_ID } });
     expect(String(fetchMock.mock.calls[0][0])).toBe(
-      `${env.PETTY_CASH_URL}/api/me/profile?entity=${ENTITY_ID}`,
+      `${env.ACCOUNTS_API_URL}/api/me/profile?entity=${ENTITY_ID}`,
     );
 
     fetchMock.mockResolvedValueOnce(answer(200, {}));
     await mintyFetch("/api/me/profile", { query: { entity: undefined } });
-    expect(String(fetchMock.mock.calls[1][0])).toBe(`${env.PETTY_CASH_URL}/api/me/profile`);
+    expect(String(fetchMock.mock.calls[1][0])).toBe(`${env.ACCOUNTS_API_URL}/api/me/profile`);
   });
 
   it("sends a PATCH as JSON", async () => {

@@ -151,7 +151,7 @@ describe("the payer", () => {
     const action = screen.getByRole("link", { name: "Go to subscription settings" });
     const url = new URL(action.getAttribute("href")!);
 
-    expect(url.origin).toBe(env.PETTY_CASH_URL);
+    expect(url.origin).toBe(env.ACCOUNTS_API_URL);
     expect(url.pathname).toBe(`/entity/${ENTITY_ID}/enter`);
     expect(url.searchParams.get("next")).toBe("/entity/e1/settings/modules");
   });

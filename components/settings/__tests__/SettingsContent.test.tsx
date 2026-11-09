@@ -129,7 +129,7 @@ describe("the company id the panel is built from", () => {
     const link = await screen.findByRole("link", { name: "Entity & Integration" });
     await waitFor(() =>
       expect(link.getAttribute("href")).toBe(
-        `${env.PETTY_CASH_URL}/entity/${ENTITY_ID}/settings/integration`,
+        `${env.ACCOUNTS_API_URL}/entity/${ENTITY_ID}/settings/integration`,
       ),
     );
   });
@@ -142,7 +142,7 @@ describe("the company id the panel is built from", () => {
     const users = await screen.findByRole("link", { name: "Users" });
     await waitFor(() =>
       expect(users.getAttribute("href")).toBe(
-        `${env.PETTY_CASH_URL}/entity/${ENTITY_ID}/settings/users`,
+        `${env.ACCOUNTS_API_URL}/entity/${ENTITY_ID}/settings/users`,
       ),
     );
   });

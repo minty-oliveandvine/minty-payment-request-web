@@ -11,7 +11,7 @@
 import { expect, test, type Dialog, type Page, type Route } from "@playwright/test";
 import {
   PAYMENT_REQUEST_API_URL,
-  PETTY_CASH_URL,
+  ACCOUNTS_API_URL,
   cors,
   handoff,
   pagesOf,
@@ -101,7 +101,7 @@ async function arrive(page: Page): Promise<Run> {
     });
   });
   // Flask's pages (the pills' and the menu's destinations) - its API calls still reach Flask
-  await page.route(`${PETTY_CASH_URL}/**`, (route: Route) =>
+  await page.route(`${ACCOUNTS_API_URL}/**`, (route: Route) =>
     route.request().resourceType() === "document"
       ? route.fulfill({
           status: 200,
@@ -110,7 +110,7 @@ async function arrive(page: Page): Promise<Run> {
         })
       : route.fallback(),
   );
-  await page.route(`${PETTY_CASH_URL}/logout**`, (route: Route) => {
+  await page.route(`${ACCOUNTS_API_URL}/logout**`, (route: Route) => {
     run.logouts.push(route.request().url());
     return route.fulfill({
       status: 200,
@@ -214,7 +214,7 @@ test.describe("payment settings: leave without saving", () => {
     await dialog.getByRole("button", { name: "Discard changes" }).click();
 
     // the pill links the full id; Flask (stubbed here) then shows `<shortid>/<name>` (2026-10-05)
-    await expect(page).toHaveURL(`${PETTY_CASH_URL}/entity/${run.creds.entityId}/settings/users`);
+    await expect(page).toHaveURL(`${ACCOUNTS_API_URL}/entity/${run.creds.entityId}/settings/users`);
     expect(run.prompts).toEqual([]);
   });
 

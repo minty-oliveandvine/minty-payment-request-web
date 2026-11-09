@@ -85,7 +85,7 @@ export async function reachable(url: string): Promise<boolean> {
 
 export const PAYMENT_REQUEST_API_URL =
   process.env.E2E_PAYMENT_REQUEST_API_URL || "http://localhost:8020";
-export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || "http://localhost:8000";
+export const ACCOUNTS_API_URL = process.env.E2E_ACCOUNTS_API_URL || "http://localhost:8002";
 
 export async function requireStack(): Promise<void> {
   test.skip(
@@ -313,7 +313,7 @@ export async function stubFlaskHub(
   page: Page,
   overrides: Record<string, unknown> = {},
 ): Promise<void> {
-  await page.route(`${PETTY_CASH_URL}/api/me/**`, (route: Route) =>
+  await page.route(`${ACCOUNTS_API_URL}/api/me/**`, (route: Route) =>
     route.request().method() === "OPTIONS"
       ? route.fulfill({ status: 204, headers: cors(route) })
       : route.fulfill({

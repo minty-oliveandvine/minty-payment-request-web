@@ -3,11 +3,11 @@
  * so any module - including ``lib/auth.ts`` and ``middleware.ts`` - can consume it without
  * creating circular imports.
  *
- * One variable, one URL: ``PETTY_CASH_URL`` (default http://localhost:8000), read in
+ * One variable, one URL: ``ACCOUNTS_API_URL`` (default http://localhost:8002), read in
  * ``lib/env.ts``. No deployment-environment switch.
  */
 import { env } from "./env";
 
 export function resolveMintyModuleUrl(): string {
-  return env.PETTY_CASH_URL;
+  return env.ACCOUNTS_API_URL;
 }

@@ -9,10 +9,10 @@ afterEach(() => vi.unstubAllEnvs());
 describe("local defaults", () => {
   it("Flask on 8000 and subscription-api on 8001 when nothing is set", async () => {
     vi.resetModules();
-    vi.stubEnv("PETTY_CASH_URL", "");
+    vi.stubEnv("ACCOUNTS_API_URL", "");
     vi.stubEnv("SUBSCRIPTION_API_URL", "");
     const { env } = await import("@/lib/env");
-    expect(env.PETTY_CASH_URL).toBe("http://localhost:8000");
+    expect(env.ACCOUNTS_API_URL).toBe("http://localhost:8002");
     expect(env.SUBSCRIPTION_API_URL).toBe("http://localhost:8001");
   });
 });

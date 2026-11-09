@@ -4,22 +4,22 @@
 // Flask's login-gated `/handoff/minty-web`, with the original query string. The forward comes
 // BEFORE the cookie check, so a link opened with no billing cookie goes there too.
 //
-// Only Next has to answer: the specs read the redirect, they do not follow it. E2E_PETTY_CASH_URL must
-// be the Minty origin the Next server resolves (lib/mintyEnv.ts; both default to :8000).
+// Only Next has to answer: the specs read the redirect, they do not follow it. E2E_ACCOUNTS_API_URL must
+// be the Minty origin the Next server resolves (lib/mintyEnv.ts; both default to :8002).
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { PETTY_CASH_URL, reachable } from "./helpers";
+import { ACCOUNTS_API_URL, reachable } from "./helpers";
 
 const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3020";
 
 const handoff = (next: string) =>
-  `${PETTY_CASH_URL}/handoff/minty-web?${new URLSearchParams({ next }).toString()}`;
+  `${ACCOUNTS_API_URL}/handoff/minty-web?${new URLSearchParams({ next }).toString()}`;
 
 /** Old address -> where it must go now. */
 const FORWARDS: Array<[string, string]> = [
-  ["/profile", `${PETTY_CASH_URL}/profile`],
-  ["/profile?entity_id=abc-123", `${PETTY_CASH_URL}/profile?entity_id=abc-123`],
+  ["/profile", `${ACCOUNTS_API_URL}/profile`],
+  ["/profile?entity_id=abc-123", `${ACCOUNTS_API_URL}/profile?entity_id=abc-123`],
   // an old link's from=bills is dropped (2026-10-05)
-  ["/profile?entity_id=abc-123&from=bills", `${PETTY_CASH_URL}/profile?entity_id=abc-123`],
+  ["/profile?entity_id=abc-123&from=bills", `${ACCOUNTS_API_URL}/profile?entity_id=abc-123`],
   ["/profile/subscriptions", handoff("/subscription/subscriptions")],
   ["/profile/subscriptions?q=acme&page=2", handoff("/subscription/subscriptions?q=acme&page=2")],
   ["/profile/subscriptions/incoming", handoff("/subscription/subscriptions/incoming")],
@@ -33,7 +33,7 @@ const FORWARDS: Array<[string, string]> = [
   ],
   ["/profile/billing", handoff("/subscription/billing")],
   ["/profile/invoices", handoff("/subscription/billing")],
-  ["/profile/no-such-page?entity_id=abc-123", `${PETTY_CASH_URL}/profile?entity_id=abc-123`],
+  ["/profile/no-such-page?entity_id=abc-123", `${ACCOUNTS_API_URL}/profile?entity_id=abc-123`],
 ];
 
 async function locationOf(

@@ -1,7 +1,7 @@
 // Where this app sends the browser when it leaves (lib/mintyUrls.ts + lib/useCompanyPages.ts).
 //
-// Every URL is asserted against `env.PETTY_CASH_URL`, never a literal port: .env.local puts
-// Flask on 5001 for the Xero callback while lib/env.ts defaults to 8010, and Vitest loads the
+// Every URL is asserted against `env.ACCOUNTS_API_URL`, never a literal port: .env.local puts
+// Flask on 5001 for the Xero callback while lib/env.ts defaults to 8002, and Vitest loads the
 // .env files, so a hardcoded port would pass on one machine and fail on another.
 
 import { describe, expect, it, vi } from "vitest";
@@ -18,7 +18,7 @@ const ENTITY_NAME = "Olive & Vine";
 
 describe("MINTY_MODULE_URL", () => {
   it("is the one Petty Cash origin lib/env.ts resolved, with no trailing slash", () => {
-    expect(MINTY_MODULE_URL).toBe(env.PETTY_CASH_URL);
+    expect(MINTY_MODULE_URL).toBe(env.ACCOUNTS_API_URL);
     expect(MINTY_MODULE_URL.endsWith("/")).toBe(false);
   });
 });
@@ -29,7 +29,7 @@ describe("buildMintyEnterUrl", () => {
 
     const url = new URL(buildMintyEnterUrl());
 
-    expect(url.origin + url.pathname).toBe(`${env.PETTY_CASH_URL}/entity/${ENTITY_ID}/enter`);
+    expect(url.origin + url.pathname).toBe(`${env.ACCOUNTS_API_URL}/entity/${ENTITY_ID}/enter`);
     expect(url.searchParams.get("token")).toBe(TOKEN);
     expect(url.searchParams.has("next")).toBe(false);
   });
@@ -43,13 +43,13 @@ describe("buildMintyEnterUrl", () => {
   });
 
   it("falls back to Minty's entity list with no session", () => {
-    expect(buildMintyEnterUrl()).toBe(`${env.PETTY_CASH_URL}/entity`);
-    expect(buildMintyEnterUrl("/anywhere")).toBe(`${env.PETTY_CASH_URL}/entity`);
+    expect(buildMintyEnterUrl()).toBe(`${env.ACCOUNTS_API_URL}/entity`);
+    expect(buildMintyEnterUrl("/anywhere")).toBe(`${env.ACCOUNTS_API_URL}/entity`);
   });
 
   it("falls back when there is a token but no company", () => {
     setAuth(TOKEN, "", "");
-    expect(buildMintyEnterUrl()).toBe(`${env.PETTY_CASH_URL}/entity`);
+    expect(buildMintyEnterUrl()).toBe(`${env.ACCOUNTS_API_URL}/entity`);
   });
 });
 

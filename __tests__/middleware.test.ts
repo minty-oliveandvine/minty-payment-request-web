@@ -15,7 +15,7 @@ import { AUTH_COOKIE_NAME, ENTITY_ID_COOKIE_NAME, ENTITY_NAME_COOKIE_NAME } from
 import { env } from "@/lib/env";
 import { config, middleware } from "@/middleware";
 
-const MINTY = env.PETTY_CASH_URL;
+const MINTY = env.ACCOUNTS_API_URL;
 const APP = "http://localhost:3020";
 
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
