@@ -300,3 +300,14 @@ for (const width of [360, 768, 1440]) {
     await expectNoSideScroll(page, width);
   });
 }
+
+// The table view scrolls sideways inside its own box. A header's screen-reader label (sr-only,
+// absolute) once escaped that box and made the whole page 9px wider at 1280 (2026-11-09).
+for (const width of [1280, 1440]) {
+  test(`the table view is no wider than the screen at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openList(page);
+    await expect(page.getByRole("table")).toBeVisible();
+    await expectNoSideScroll(page, width);
+  });
+}

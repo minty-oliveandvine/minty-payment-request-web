@@ -104,6 +104,9 @@ async function stubPayments(page: Page) {
 }
 
 async function openList(page: Page, bills = [UPLOAD, SLIP]) {
+  // A desktop opens in Easy view, which draws nothing for a row with no slips (no Upload): this
+  // file is about the table's Upload, so this browser has switched Easy view off.
+  await page.addInitScript(() => localStorage.setItem("payment-request-easy-view", "0"));
   await stubFlaskHub(page);
   await stubApi(page, { bills });
   const created = await stubPayments(page);

@@ -1025,7 +1025,9 @@ export function PaymentRequestTable({
         )}
       </div>
       <div className="hidden rounded-lg border border-gray-200 lg:block">
-        <div className="overflow-x-auto touch-auto [-webkit-overflow-scrolling:touch]">
+        {/* `relative`: an absolute child with no positioned cell (a header's sr-only label) is
+            clipped here too, instead of widening the page (9px at 1280). */}
+        <div className="relative overflow-x-auto touch-auto [-webkit-overflow-scrolling:touch]">
           <table className="min-w-[82rem] w-full border-collapse text-left">
             <thead>
               <tr>
