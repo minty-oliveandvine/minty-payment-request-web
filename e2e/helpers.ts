@@ -86,7 +86,7 @@ export async function reachable(url: string): Promise<boolean> {
 
 export const PAYMENT_REQUEST_API_URL =
   process.env.E2E_PAYMENT_REQUEST_API_URL || "http://localhost:8020";
-export const ACCOUNTS_API_URL = process.env.E2E_ACCOUNTS_API_URL || "http://localhost:8002";
+export const ACCOUNTS_API_URL = process.env.E2E_ACCOUNTS_API_URL || "http://localhost:8000";
 
 export async function requireStack(): Promise<void> {
   test.skip(

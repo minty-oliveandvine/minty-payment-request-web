@@ -18,7 +18,7 @@ function url(raw: string | undefined, fallback: string): string {
 
 export const env = {
   /** Petty Cash (Minty, Flask) - login, `/enter`, the re-handoff to minty-web, the profile. */
-  ACCOUNTS_API_URL: url(process.env.ACCOUNTS_API_URL, "http://localhost:8002"),
+  ACCOUNTS_API_URL: url(process.env.ACCOUNTS_API_URL, "http://localhost:8000"),
   /** minty-payment-request-api - every `/api/v1` call this app makes. */
   PAYMENT_REQUEST_API_URL: url(process.env.PAYMENT_REQUEST_API_URL, "http://localhost:8020"),
   /**

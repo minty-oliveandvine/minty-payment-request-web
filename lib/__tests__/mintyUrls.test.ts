@@ -1,7 +1,7 @@
 // Where this app sends the browser when it leaves (lib/mintyUrls.ts + lib/useCompanyPages.ts).
 //
 // Every URL is asserted against `env.ACCOUNTS_API_URL`, never a literal port: .env.local puts
-// Flask on 5001 for the Xero callback while lib/env.ts defaults to 8002, and Vitest loads the
+// Flask on 5001 for the Xero callback while lib/env.ts defaults to 8000, and Vitest loads the
 // .env files, so a hardcoded port would pass on one machine and fail on another.
 
 import { describe, expect, it, vi } from "vitest";

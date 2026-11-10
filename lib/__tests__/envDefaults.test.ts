@@ -12,7 +12,7 @@ describe("local defaults", () => {
     vi.stubEnv("ACCOUNTS_API_URL", "");
     vi.stubEnv("SUBSCRIPTION_API_URL", "");
     const { env } = await import("@/lib/env");
-    expect(env.ACCOUNTS_API_URL).toBe("http://localhost:8002");
+    expect(env.ACCOUNTS_API_URL).toBe("http://localhost:8000");
     expect(env.SUBSCRIPTION_API_URL).toBe("http://localhost:8001");
   });
 });

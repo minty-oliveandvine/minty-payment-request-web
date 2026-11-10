@@ -120,7 +120,7 @@ with this app's token (`components/ui/sidebarHost.ts`; [sidebar.md](sidebar.md))
 ## Configuration
 
 `PAYMENT_REQUEST_API_URL` (minty-payment-request-api, default `http://localhost:8020`),
-`ACCOUNTS_API_URL` (minty-accounts-api, default `http://localhost:8002` — one variable, no environment-name
+`ACCOUNTS_API_URL` (minty-accounts-api, default `http://localhost:8000` — one variable, no environment-name
 switch), `SUBSCRIPTION_API_URL` (minty-subscription-api, default `http://localhost:8000`); all
 read in `lib/env.ts` and inlined at build time (`next.config.ts` `env`). `ACCOUNTS_API_URL` was
 named `PETTY_CASH_URL` until 2026-11-06.

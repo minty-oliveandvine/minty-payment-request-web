@@ -5,7 +5,7 @@
 // BEFORE the cookie check, so a link opened with no billing cookie goes there too.
 //
 // Only Next has to answer: the specs read the redirect, they do not follow it. E2E_ACCOUNTS_API_URL must
-// be the Minty origin the Next server resolves (lib/mintyEnv.ts; both default to :8002).
+// be the Minty origin the Next server resolves (lib/mintyEnv.ts; both default to :8000).
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { ACCOUNTS_API_URL, reachable } from "./helpers";
 
