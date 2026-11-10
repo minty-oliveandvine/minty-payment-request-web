@@ -95,6 +95,12 @@ A failed read of the codes says so ("I couldn't load your account codes. Mind re
 page?", logged on the console) instead of "No account codes yet" (fixed 2026-10-01; it was
 swallowed).
 
+### A company keeping its books in Minty (Xero optional, 2026-11-10)
+
+`GET /api/auth/xero-status` also answers `minty_only`. Such a company's codes are its own expense
+accounts (onboarding's Accounting Setup writes them), so the card reads and saves them as if live,
+with no Xero. Tested in `components/settings/__tests__/AccountCodeSettings.test.tsx`.
+
 ### Without a live Xero connection (2026-10-06)
 
 The codes are the company's Xero chart, so the card first asks `GET /api/auth/xero-status`

@@ -31,17 +31,19 @@ const answer = (status: number, body: unknown) =>
 /** Answers by path, so a test says what the stack holds rather than counting calls in order. */
 function serve({
   connected = true,
+  mintyOnly = false,
   accounts = entityBillAccounts(),
   save = () => answer(200, {}),
 }: {
   connected?: boolean;
+  mintyOnly?: boolean;
   accounts?: ReturnType<typeof entityBillAccounts>;
   save?: (id: string) => Response;
 } = {}) {
   const saved: { id: string; is_active: boolean }[] = [];
   fetchMock.mockImplementation(async (input, init) => {
     const url = String(input);
-    if (url.includes("/auth/xero-status")) return answer(200, { connected });
+    if (url.includes("/auth/xero-status")) return answer(200, { connected, minty_only: mintyOnly });
     if (url.includes("/auth/entitlements")) return answer(200, { billing_enabled: true });
     if (url.includes("/profile/me")) return answer(200, { member_entity_ids: [ENTITY_ID] });
     if (url.includes("/entity-bill-accounts/") && init?.method === "PUT") {
@@ -107,6 +109,17 @@ describe("without a live Xero connection", () => {
     await screen.findByText(/Xero isn't connected/);
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Save Changes/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("a company keeping its books in Minty (Xero optional)", () => {
+  it("shows its own codes, though Xero is not connected", async () => {
+    serve({ connected: false, mintyOnly: true });
+
+    show();
+
+    const list = await screen.findByRole("list", { name: "Account codes" });
+    expect(within(list).getAllByRole("checkbox")).toHaveLength(ACCOUNTS.length + 1); // + select all
   });
 });
 

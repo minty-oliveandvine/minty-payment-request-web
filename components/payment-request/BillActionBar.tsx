@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { BillDraftSubmitButton } from "./BillDraftSubmitButton";
+import { useMintyOnly } from "@/lib/useMintyOnly";
 
 const ROW_MENU_MIN_WIDTH_PX = 160;
 
@@ -53,6 +54,8 @@ export function BillActionBar({
   isDraftBill = false,
   voidButtonTrailing = false,
 }: BillActionBarProps) {
+  // A company keeping its books in Minty has nothing to publish (Xero optional, 2026-11-10).
+  const mintyOnly = useMintyOnly();
   const removeMenuLabel = isDraftBill ? "Delete" : "Void";
   const removePrimaryLabel = isDraftBill ? "Delete Payment" : "Void Payment";
   const isPublished = publishStatus === "published";
@@ -106,7 +109,7 @@ export function BillActionBar({
             className="fixed z-[400] rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
             style={{ top: pos.top, left: pos.left, minWidth: ROW_MENU_MIN_WIDTH_PX }}
           >
-            {overflowShowPublish || overflowShowRepublish ? (
+            {(overflowShowPublish || overflowShowRepublish) && !mintyOnly ? (
               <button
                 type="button"
                 role="menuitem"
@@ -212,7 +215,7 @@ export function BillActionBar({
           </button>
           {overflowMenu}
         </>
-      ) : (
+      ) : mintyOnly ? null : (
         <button
           type="button"
           onClick={isPublished || publishDisabled ? undefined : onPublishToXero}

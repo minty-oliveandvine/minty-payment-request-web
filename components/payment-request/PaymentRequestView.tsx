@@ -47,6 +47,7 @@ import { getAuth } from "@/lib/auth";
 import { compareRows, type SortKey } from "@/lib/paymentRequestRowSort";
 import { rowMatchesSearch, type SearchMode } from "@/lib/paymentRequestSearch";
 import { useUserRole } from "@/lib/useUserRole";
+import { useMintyOnly } from "@/lib/useMintyOnly";
 import { useToast } from "@/components/Toast";
 import { useCompanyPages } from "@/lib/useCompanyPages";
 
@@ -153,6 +154,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
   const router = useRouter();
   const pages = useCompanyPages();
   const { isElevated, isViewOnly, isReadOnly } = useUserRole();
+  const mintyOnly = useMintyOnly(); // nothing to publish (Xero optional, 2026-11-10)
   const entityCurrency = useEntityCurrency();
   const [currentEntityId, setCurrentEntityId] = useState<string>("");
 
@@ -870,7 +872,7 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
         }}
         selectionContainsPaid={selectionContainsPaid}
         canVoidPaid={isElevated}
-        canPublish={isElevated}
+        canPublish={isElevated && !mintyOnly}
       />
       {showReadOnlyBanner ? (
         <div

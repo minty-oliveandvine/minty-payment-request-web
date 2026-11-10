@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import {
   ApiError,
   fetchEntityBillAccounts,
-  fetchXeroStatus,
+  fetchConnection,
   updateEntityBillAccount,
 } from "@/lib/api";
 import { useLeaveGuard } from "@minty/shared/leaveGuard";
@@ -43,9 +43,11 @@ export function AccountCodeSettings({ integrationHref }: { integrationHref: stri
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetchXeroStatus()
-      .then((connected) => {
+    fetchConnection()
+      .then(({ connected: live, mintyOnly }) => {
         if (cancelled) return;
+        // a company keeping its books in Minty (Xero optional, 2026-11-10): its codes are its own
+        const connected = live || mintyOnly;
         setXeroConnected(connected);
         if (!connected) return;
         return fetchEntityBillAccounts({ includeInactive: true }).then((accounts) => {

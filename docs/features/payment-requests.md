@@ -208,6 +208,16 @@ is fresh.
 Return / un-return / void go through the same action bar with the backend's transitions;
 `lib/billStatusRollback.ts` keeps the optimistic status honest when a call fails.
 
+## No Publish for a company keeping its books in Minty (Xero optional, 2026-11-10)
+
+`lib/useMintyOnly.ts` asks `GET /api/auth/xero-status` once per company (`minty_only`). For such a
+company `BillActionBar` draws no Publish to Xero (neither the button nor the overflow menu's Publish /
+Republish) and the list toolbar offers none (`canPublish`); the API refuses one anyway (422 with its
+sentence). Its suppliers may be Minty's own, named by their row id - the picker, the bill and its edit
+take that id as they take a Xero one. Tested in
+`components/payment-request/__tests__/BillActionBarMintyOnly.test.tsx`; checked in a browser at
+360/768/1440 against the local stack (a bill with a Minty supplier and code, no Publish anywhere).
+
 ## Previewing a file: full screen, never a new tab
 
 **The rule (the user's, 2026-10-09): a file always opens a full-screen preview in-app. It

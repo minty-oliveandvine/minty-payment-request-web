@@ -966,8 +966,16 @@ export async function logoutSession(): Promise<void> {
  * is not. A failed read rejects - it is not "not connected".
  */
 export async function fetchXeroStatus(): Promise<boolean> {
-  const data = await apiFetch<{ connected: boolean }>("/auth/xero-status");
-  return data.connected;
+  return (await fetchConnection()).connected;
+}
+
+/**
+ * The connection and who keeps the books: `mintyOnly` when the company keeps its books in Minty
+ * with no Xero (Xero optional, 2026-11-10) - nothing to publish, and its bill codes are its own.
+ */
+export async function fetchConnection(): Promise<{ connected: boolean; mintyOnly: boolean }> {
+  const data = await apiFetch<{ connected: boolean; minty_only?: boolean }>("/auth/xero-status");
+  return { connected: data.connected, mintyOnly: !!data.minty_only };
 }
 
 export function fetchCurrencies(): Promise<CurrencyInfo[]> {
