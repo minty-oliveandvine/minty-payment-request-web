@@ -44,11 +44,11 @@ entity list with Minty still signed in. It leaves by a top-level form POST (`pos
 The pages live under the company's address, Flask's scheme (`minty-accounts-api/docs/features/authentication.md`
 §3.2), built by `lib/companyPages.ts` from `lib/companyRef.ts` (a COPY of minty-web's):
 
-| Page                     | Address                                                                            |
-| ------------------------ | ---------------------------------------------------------------------------------- |
-| The list                 | `/entity/<shortid>/<name>/payment-request`                                         |
-| One payment request      | `/entity/<shortid>/<name>/payment-request/<Payment No.>` - the id when it has none |
-| Payment Request Settings | `/entity/<shortid>/<name>/settings/payment-request`                                |
+| Page                   | Address                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| The list               | `/entity/<shortid>/<name>/payment-request`                                         |
+| One payment request    | `/entity/<shortid>/<name>/payment-request/<Payment No.>` - the id when it has none |
+| Payment Settings (old) | `/entity/<shortid>/<name>/settings/payment-request` - a redirect to the hub's tab  |
 
 The company is still the cookie's - every API call sends its id - so `middleware.ts` checks the
 address against the cookie before a page renders:

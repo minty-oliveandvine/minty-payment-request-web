@@ -20,6 +20,27 @@ export function buildMintyEnterUrl(nextPath?: string): string {
   return `${MINTY_MODULE_URL}/entity`;
 }
 
+/** The hub's settings tabs this app links to, by accounts-api's name for each address. */
+export type HubSettingsTab = "general" | "integration" | "payment-request";
+
+/**
+ * A company's settings tab in the hub (minty-web), where every company setting lives since
+ * 2026-11-10 (owner): accounts-api's company address for it, whose gated hand-off mints the hub's
+ * token and opens the tab - `general` (name, country, currency), `integration` (Xero) and
+ * `payment-request` (the old name of the hub's Payment Settings tab). `company` is the id, or with
+ * `readable` the address's own `<shortid>/<name>` (the old settings page knows only that).
+ */
+export function hubSettingsUrl(
+  company: string,
+  tab: HubSettingsTab,
+  { readable = false }: { readable?: boolean } = {},
+): string {
+  const at = readable
+    ? company.split("/").map(encodeURIComponent).join("/")
+    : encodeURIComponent(company);
+  return `${MINTY_MODULE_URL}/entity/${at}/settings/${tab}`;
+}
+
 /**
  * Leave by a top-level form POST (no body) - Minty's `/logout` answers a GET with 405 and takes a
  * POST only from a front end's `Origin`. Never `fetch` (the session cookie and the 302 belong to

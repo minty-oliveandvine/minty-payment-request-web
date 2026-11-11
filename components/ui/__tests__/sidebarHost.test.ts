@@ -97,12 +97,15 @@ describe("links", () => {
     );
   });
 
-  it("keep Payment Requests and Settings inside this app", () => {
+  it("keep Payment Requests inside this app; Settings is the hub's Payment Settings tab", () => {
     expect(links.bills()).toBe("/entity/360812e1/olive-and-vine/payment-request");
-    expect(links.settings()).toBe("/entity/360812e1/olive-and-vine/settings/payment-request");
+    // through accounts-api's company address, whose hand-off opens the hub's tab (2026-11-10)
+    expect(links.settings()).toBe(
+      `${env.ACCOUNTS_API_URL}/entity/${ENTITY_ID}/settings/payment-request`,
+    );
   });
 
-  it("fall back to / for this app's own pages when the cookie names no company", () => {
+  it("fall back to / when the cookie names no company", () => {
     // The middleware then sends `/` wherever it should go.
     setAuth(TOKEN, "", "");
     expect(links.bills()).toBe("/");
@@ -113,12 +116,9 @@ describe("links", () => {
 // Takes the path since 2026-10-12, instead of reading window.location itself: the packaged
 // sidebar feeds it from this app's router (sidebarHost.usePathname), so it is a pure function.
 describe("currentOf", () => {
-  it("is 'settings' only on this app's settings page - the one menu item that is ours", () => {
-    expect(currentOf("/entity/360812e1/olive-and-vine/settings/payment-request")).toBe("settings");
-  });
-
-  it("is null on every other page", () => {
+  it("is null on every page: no menu item is this app's own since Settings moved (2026-11-10)", () => {
     for (const path of [
+      "/entity/360812e1/olive-and-vine/settings/payment-request",
       "/entity/360812e1/olive-and-vine/payment-request",
       "/entity/360812e1/olive-and-vine/payment-request/PR-0001",
       "/landing",

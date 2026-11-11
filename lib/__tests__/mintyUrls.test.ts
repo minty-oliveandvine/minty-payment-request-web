@@ -10,7 +10,12 @@ import { unsignedToken } from "@/lib/__fixtures__/tokens";
 import { setAuth } from "@/lib/auth";
 import { cookieCompanyPages } from "@/lib/useCompanyPages";
 import { env } from "@/lib/env";
-import { MINTY_MODULE_URL, buildMintyEnterUrl, postNavigate } from "@/lib/mintyUrls";
+import {
+  MINTY_MODULE_URL,
+  buildMintyEnterUrl,
+  hubSettingsUrl,
+  postNavigate,
+} from "@/lib/mintyUrls";
 
 const TOKEN = unsignedToken();
 const ENTITY_ID = "360812e1-9f3a-4c21-8e5b-1a2b3c4d5e6f";
@@ -95,5 +100,24 @@ describe("postNavigate", () => {
     expect(form.isConnected).toBe(true);
     const meta = document.head.querySelector('meta[name="referrer"]');
     expect(meta?.getAttribute("content")).toBe("strict-origin");
+  });
+});
+
+// Every company setting lives in the hub (minty-web) since 2026-11-10 (owner): this app reaches a
+// tab through accounts-api's company address for it, whose gated hand-off opens the hub's tab.
+describe("hubSettingsUrl", () => {
+  it("is accounts-api's company address for the tab", () => {
+    expect(hubSettingsUrl("360812e1-9f94-46a3-aa31-347e21afde8e", "general")).toBe(
+      `${MINTY_MODULE_URL}/entity/360812e1-9f94-46a3-aa31-347e21afde8e/settings/general`,
+    );
+    expect(hubSettingsUrl("a/b", "payment-request")).toBe(
+      `${MINTY_MODULE_URL}/entity/a%2Fb/settings/payment-request`,
+    );
+  });
+
+  it("takes the readable address too (the old page's shortid and name)", () => {
+    expect(hubSettingsUrl("360812e1/olive-and-vine", "payment-request", { readable: true })).toBe(
+      `${MINTY_MODULE_URL}/entity/360812e1/olive-and-vine/settings/payment-request`,
+    );
   });
 });

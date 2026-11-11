@@ -6,9 +6,8 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import { getEntityIdSnapshot } from "@/lib/auth";
 import { useEntityCurrencyState } from "@/lib/entityCurrency";
-import { MINTY_MODULE_URL } from "@/lib/mintyUrls";
+import { hubSettingsUrl } from "@/lib/mintyUrls";
 import { useClientValue } from "@/lib/useClientValue";
-import { integrationTabUrl } from "@/components/settings/SettingsPills";
 import {
   formatFileSize,
   isAllowedAttachment,
@@ -1130,10 +1129,10 @@ export function PaymentRequestModal({
                   <p className="mt-1 text-xs text-red-600" role="alert">
                     Your company has no currency set. Choose one in{" "}
                     <a
-                      href={integrationTabUrl(MINTY_MODULE_URL, entityId)}
+                      href={hubSettingsUrl(entityId, "general")}
                       className="font-medium underline underline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
                     >
-                      Entity &amp; Integration settings
+                      Settings, under General
                     </a>
                     .
                   </p>

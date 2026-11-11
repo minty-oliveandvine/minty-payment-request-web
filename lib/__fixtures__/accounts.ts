@@ -1,7 +1,8 @@
 /**
  * The company's Xero chart, as Payment Settings ticks it.
  *
- * The three codes below are lifted verbatim from e2e/07_settings_leave.spec.ts so a tick means
+ * The three codes below were lifted verbatim from the old e2e/07_settings_leave.spec.ts (Payment
+ * Settings is minty-web's since 2026-11-10; its spec there uses the same three) so a tick means
  * the same thing in the browser suite and in the unit tests: two active, one not, which is what
  * makes "untick everything" and "Select all" worth asserting at all.
  *

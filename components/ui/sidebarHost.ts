@@ -26,7 +26,12 @@ import { pushAppScrollLock } from "@/lib/appScrollRoot";
 import { env } from "@/lib/env";
 import { clearAuth, getAuth, isTokenExpiringSoon, redirectToLogin, refreshToken } from "@/lib/auth";
 import { getModuleClaims } from "@/lib/moduleClaims";
-import { buildMintyEnterUrl, MINTY_MODULE_URL, postNavigate } from "@/lib/mintyUrls";
+import {
+  buildMintyEnterUrl,
+  hubSettingsUrl,
+  MINTY_MODULE_URL,
+  postNavigate,
+} from "@/lib/mintyUrls";
 import { cookieCompanyPages } from "@/lib/useCompanyPages";
 
 /** minty-subscription-api - the Subscriptions Overview's read (`SUBSCRIPTION_API_URL`, lib/env.ts). */
@@ -34,9 +39,6 @@ const SUBSCRIPTION_API_URL = env.SUBSCRIPTION_API_URL;
 
 /** minty-web's pages the menu leads to - reached through Flask's login-gated re-handoff. */
 const MINTY_WEB_SUBSCRIPTIONS = "/subscription";
-
-/** This app's settings page (app/entity/[ref]/[slug]/settings/payment-request). */
-const SETTINGS_PAGE = /^\/entity\/[^/]+\/[^/]+\/settings\/payment-request\/?$/;
 
 /** The home page's view choice (app/page.tsx) - this app's Logout always forgot it. */
 const EASY_VIEW_STORAGE_KEY = "payment-request-easy-view";
@@ -82,24 +84,27 @@ export const links = {
   bills: () => cookieCompanyPages()?.list ?? "/",
   /**
    * THIS app's settings (the user's call, 2026-09-30: Settings opens the settings of the app it
-   * is pressed in) - the page this app's old drawer opened. minty-web's menu keeps its own.
+   * is pressed in) - the hub's Payment Settings tab since 2026-11-10 (owner), through accounts-api.
    */
-  settings: () => cookieCompanyPages()?.settings ?? "/",
+  settings: () => {
+    const id = getAuth()?.entityId;
+    return id ? hubSettingsUrl(id, "payment-request") : "/";
+  },
 };
 
 /**
- * Which menu item is the page being shown. Settings is the only one that is this app's own page -
- * the entity list, subscriptions and the profile are all minty-web's, so a person is never ON
- * them here, and this app never reports "profile" (which is why the menu's person block always
- * switches the sidebar's view rather than just closing).
+ * Which menu item is the page being shown: none. Every one is minty-web's page - Settings too, since
+ * Payment Settings moved into the hub (2026-11-10) - so a person is never ON one here, and this app
+ * never reports "profile" (which is why the menu's person block always switches the sidebar's view
+ * rather than just closing).
  *
  * Takes the path rather than reading `window.location` itself, so it is a pure function the
  * packaged sidebar can feed from the app's router.
  */
 export function currentOf(
-  pathname: string,
+  _pathname: string,
 ): "profile" | "entities" | "subscriptions" | "settings" | null {
-  return SETTINGS_PAGE.test(pathname) ? "settings" : null;
+  return null;
 }
 
 /** Hold the page still while the sidebar is open; the returned function lets it go. */

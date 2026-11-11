@@ -488,9 +488,10 @@ describe("the company's currency", () => {
 
     expect(await screen.findByText(/Your company has no currency set/)).toBeInTheDocument();
     expect(within(dialog()).getByLabelText("Currency")).toHaveTextContent("—");
-    expect(screen.getByRole("link", { name: "Entity & Integration settings" })).toHaveAttribute(
+    // the currency is set on the hub's General tab (2026-11-10), through accounts-api
+    expect(screen.getByRole("link", { name: "Settings, under General" })).toHaveAttribute(
       "href",
-      expect.stringContaining(`/entity/${ENTITY_ID}/settings/integration`),
+      expect.stringContaining(`/entity/${ENTITY_ID}/settings/general`),
     );
     expect(confirm()).toBeDisabled();
     expect(saveDraft()).toBeDisabled();

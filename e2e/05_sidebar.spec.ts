@@ -176,7 +176,7 @@ test.describe("the sidebar", () => {
     await expect(badge).toBeFocused();
   });
 
-  test("the menu leads where this app's should - Settings to this app's own settings", async ({
+  test("the menu leads where this app's should - Settings to the hub's Payment Settings", async ({
     page,
   }) => {
     const creds = requireCredentials();
@@ -189,9 +189,10 @@ test.describe("the sidebar", () => {
     // gap 4: the way back carries no token - /enter works on the accounts-api session
     const enter = `${ACCOUNTS_API_URL}/entity/${creds.entityId}/enter?next=`;
 
+    // the hub's Payment Settings tab since 2026-11-10, through accounts-api's company address
     await expect(nav.getByRole("link", { name: "Settings", exact: true })).toHaveAttribute(
       "href",
-      pagesOf(creds).settings,
+      `${ACCOUNTS_API_URL}/entity/${creds.entityId}/settings/payment-request`,
     );
     await expect(nav.getByRole("link", { name: "Bills", exact: true })).toHaveAttribute(
       "href",

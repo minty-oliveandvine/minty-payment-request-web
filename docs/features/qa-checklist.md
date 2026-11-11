@@ -56,7 +56,8 @@ live account-code state and Publish writes a real Xero invoice when `E2E_XERO=1`
       list.
 - [ ] Every amount displays in the entity's own currency, never a bill's stored currency code.
 - [ ] Add Payment Request for a company with no currency: the box shows "—", the message under
-      Amount links to Entity & Integration, and Confirm / Save as Draft are disabled.
+      Amount links to the hub's General tab ("Settings, under General"), and Confirm / Save as
+      Draft are disabled.
 - [ ] Block `/payments` in devtools: the Bank Slip cell shows **Retry**, never **Upload**;
       unblock and press Retry → the real count appears.
 - [ ] Bulk-deleting drafts from the table removes exactly the selected rows.
@@ -176,73 +177,14 @@ pettycashv3.bill_audit WHERE bill_id = '<id>' ORDER BY created_at DESC;` — if 
       `paid`/`partially_paid` based on the SUM of completed payments — there is no stored
       `paid_amount`/`outstanding` column on `bill` itself, so don't look for one.
 
-## Payment Request Settings — account codes ([settings.md](settings.md))
+## Payment Settings ([settings.md](settings.md))
 
-- [ ] The picker offers the entity's seeded Xero account codes with their default/order intact.
-- [ ] With nothing changed, Save is disabled; ticking then un-ticking back to the saved state
-      disables it again.
-- [ ] Unticking every code greys Save and shows "Pick at least one account code." as plain text
-      under it (not a tooltip).
-- [ ] The save order is enforced: codes turning ON are sent before codes turning OFF, so the
-      entity is never briefly left with zero active codes mid-save.
-- [ ] Trying to untick an entity's last remaining active code is refused server-side with 409
-      "Keep at least one account code ticked." and the toast shows that exact sentence.
-- [ ] A save where some rows succeed and some fail (`Promise.allSettled`) updates the saved
-      baseline only for the rows that actually went through, and the toast says some changes
-      didn't save.
-- [ ] With no live Xero connection, the card shows only "Xero isn't connected. Connect it in
-      Entity & Integration to set these up." — no search box, no codes, no Save control, and no
-      attempt to read the codes (confirm no chart re-sync call fires to Minty in this state).
-- [ ] A failed codes read (Xero connected) shows "I couldn't load your account codes. Mind
-      refreshing the page?" — never "No account codes yet" for an actual read failure.
-- [ ] The four other settings pills (Users, Entity & Integration, Petty Cash Settings, Modules)
-      are plain links out to Minty/minty-web, not functionality duplicated here.
-- [ ] **DB:** `SELECT account_type, is_active, is_default, sort_order FROM
-pettycashv3.entity_bill_account_xero WHERE entity_id = '<id>';` — a save updates only
-      the rows that changed (`is_active`/`is_default`/`sort_order`); this table is entirely
-      separate from Petty Cash's `account_info.status` — never touched from this screen.
-      Unticking the last active code in any of the 8 `account_type`s is refused 409
-      server-side before anything is written.
-- [ ] **DB:** deleting a code (not just unticking it) is a **soft delete** —
-      `is_deleted = true` on the same row, never removed outright; confirm a "deleted" code
-      doesn't reappear in the picker but the row itself is still there if you query for it.
+Payment Settings is minty-web's tab since 2026-11-10 - its checklist (account codes, the leave guard
+and the browser-Back sentinel) is minty-web's now (`docs/features/payment-settings.md`). Here:
 
-## Sharp edge: "Leave without saving?" and the browser-Back sentinel ([settings.md](settings.md))
-
-**This is the trickiest piece of UI in the repo — test it deliberately, not just in passing.**
-While Payment Request Settings has unsaved ticks, every way off the page is meant to ask first,
-including the ones browsers normally let through silently:
-
-- [ ] Clicking a plain settings-pill link (e.g. to a Minty page) with unsaved ticks shows
-      "Leave without saving?" before navigating anywhere.
-- [ ] **Discard changes** restores the saved tick-set, then completes the _original_ navigation
-      the person tried (soft route change vs. full page load vs. drawer close — each by its own
-      mechanism).
-- [ ] **Go Back**, Escape, and clicking the backdrop all just close the dialog — the ticks are
-      untouched and the person is still on the page.
-- [ ] Escape with the sidebar drawer also open closes only the leave-dialog, not the drawer.
-- [ ] A successful save clears the dirty flag (nothing asks on the next navigation); a failed
-      save leaves it dirty (still asks).
-- [ ] Reloading the tab, typing a new address in the bar, or closing the tab while dirty
-      triggers the browser's native `beforeunload` prompt instead of the custom dialog.
-- [ ] Logout from the sidebar or My Profile while dirty asks the custom dialog first; Go Back
-      leaves the person on the page, still signed in — Logout must not fire before a decision.
-- [ ] **Browser Back** while dirty shows the custom dialog (not a silent navigation away) —
-      confirm specifically, since this used to leave without asking before 2026-10-01.
-- [ ] After Back's dialog: Go Back/Escape re-arm the same guard (Back must ask again if tried a
-      second time); Discard changes goes back exactly one page, and a subsequent Back from that
-      next page does **not** bounce back onto Settings.
-- [ ] After an actual save, browser Back leaves without asking at all (the guard is gone).
-- [ ] A multi-entry jump (long-press the Back button's history menu, or equivalent) while dirty
-      is also caught and asks — not just a single-step Back.
-- [ ] In a browser without the Navigation API, confirm the documented fallback: a multi-entry
-      jump leaves without asking (a known, accepted gap — not a regression to chase).
-- [ ] Links that must NOT trigger the dialog at all: links inside the dialog itself, anything
-      with `data-sidebar-open`, `download` links, links with a non-`_self` target, `#`/
-      `javascript:` hrefs, and in-page fragment links — click each and confirm none of them
-      pop the dialog.
-- [ ] Re-clicking the exact same Settings link while already on Settings (e.g. the sidebar's
-      Settings item) still asks and reloads the page on Discard.
+- [ ] `/entity/<shortid>/<name>/settings/payment-request` (and `/settings?tab=...`) goes on to
+      accounts-api's same path and lands on the hub's Payment Settings tab, signed in.
+- [ ] The sidebar's Settings goes to the hub's Payment Settings tab; no menu item is marked current.
 
 ## Sidebar and My Profile ([sidebar.md](sidebar.md))
 

@@ -131,13 +131,13 @@ describe("the menu's items", () => {
     }
   });
 
-  it("keep Settings inside this app - Settings opens the settings of the app it is pressed in", async () => {
+  it("Settings opens this app's settings - the hub's Payment Settings tab since 2026-11-10", async () => {
     show();
     await openMenu();
 
-    expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe(
-      "/entity/360812e1/olive-and-vine/settings/payment-request",
-    );
+    const href = screen.getByRole("link", { name: "Settings" }).getAttribute("href")!;
+    expect(href.startsWith(env.ACCOUNTS_API_URL)).toBe(true);
+    expect(href).toMatch(/\/entity\/[^/]+\/settings\/payment-request$/);
   });
 
   it("group the two modules separately", async () => {

@@ -105,17 +105,6 @@ test("the request opens, and offers nothing to change", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Edit" })).toBeDisabled();
 });
 
-test("Payment Settings opens, and its ticks cannot be changed", async ({ page }) => {
-  await handoff(page, creds(), pagesOf(creds()).settings, VIEW_ONLY);
-
-  await expect(page.getByRole("heading", { name: "Payment Account Code" })).toBeVisible();
-  await expect(page.getByText(BANNER)).toBeVisible();
-  await expect(page.getByRole("button", { name: /Save Changes/ })).toBeDisabled();
-  for (const tick of await page.getByRole("checkbox", { name: /^Include / }).all()) {
-    await expect(tick).toBeDisabled();
-  }
-});
-
 for (const width of [360, 768, 1440]) {
   test(`the read-only banner fits the screen at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });

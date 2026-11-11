@@ -34,7 +34,7 @@ this page is what the person sees and where each piece of the screen lives.
   send `"1234"`, an HKD one's `"1234.50"` (`toAmountString(amount, decimals)` in the create
   dialog, `buildBillUpdatePayload` and Record Payment).
 - The Add Payment Request dialog uses `useEntityCurrencyState()`: with no currency set it says
-  so under Amount (linking to Entity & Integration settings) and disables Confirm and Save as
+  so under Amount (linking to the hub's General tab, "Settings, under General") and disables Confirm and Save as
   Draft; a failed read says so with **Try again**. Neither shows as an empty box.
 - **Bank slip counts** load per visible row (`lib/bankSlipEnrichment.ts`). An unknown count is
   never shown as zero: while loading the row shows "…", and a failed lookup is logged and shows
