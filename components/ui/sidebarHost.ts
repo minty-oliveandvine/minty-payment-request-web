@@ -252,13 +252,25 @@ export function currentToken(): string {
  */
 async function loadViewer(): Promise<Viewer | null> {
   const body = await mintyFetch<{
-    user?: { name?: unknown; initials?: unknown; email?: unknown };
+    user?: {
+      name?: unknown;
+      initials?: unknown;
+      email?: unknown;
+      can_view_subscriptions?: unknown;
+    };
   }>("/api/me/profile", { onUnauthorized: "reject" });
   const user = body?.user;
   if (typeof user?.name !== "string" || typeof user.initials !== "string") return null;
   // the email is the Talk to Minty chat's one-tap answer (@minty/shared v0.14)
   const email = typeof user.email === "string" && user.email ? user.email : undefined;
-  return { name: user.name, initials: user.initials, email };
+  // whether the menu offers Manage subscriptions: admins, accountants and subscribers
+  // (accounts-api, @minty/shared v0.19; owner 2026-11-12)
+  return {
+    name: user.name,
+    initials: user.initials,
+    email,
+    can_view_subscriptions: user.can_view_subscriptions === true,
+  };
 }
 
 export const sidebarHost: SidebarHost = {
