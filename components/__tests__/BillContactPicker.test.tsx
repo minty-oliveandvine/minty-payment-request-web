@@ -284,3 +284,36 @@ describe("the picker", () => {
     expect(field()).toHaveAttribute("aria-invalid", "true");
   });
 });
+
+describe("the picker tells the person they can type to add (owner, 2026-11-12)", () => {
+  const NOTE = "Type a supplier name to add a new supplier";
+
+  it("shows the note above the suppliers as soon as the list opens", async () => {
+    show();
+    await userEvent.click(field());
+    const list = screen.getByRole("listbox");
+    expect(within(list).getByText(NOTE)).toBeInTheDocument();
+    // a note, never a choice
+    expect(options().map((o) => o.textContent)).not.toContain(NOTE);
+  });
+
+  it("a typed name replaces the note with the add row", async () => {
+    show({ contactName: "Kee Wah" });
+    await userEvent.click(field());
+    expect(screen.queryByText(NOTE)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Add Kee Wah as a new supplier" }),
+    ).toBeInTheDocument();
+  });
+
+  it("a disabled picker shows no note", () => {
+    show({ disabled: true });
+    expect(screen.queryByText(NOTE)).not.toBeInTheDocument();
+  });
+
+  it("opens with the note even before the company has any supplier", async () => {
+    show({ contacts: [] });
+    await userEvent.click(field());
+    expect(within(screen.getByRole("listbox")).getByText(NOTE)).toBeInTheDocument();
+  });
+});

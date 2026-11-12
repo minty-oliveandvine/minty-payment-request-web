@@ -44,7 +44,7 @@ this page is what the person sees and where each piece of the screen lives.
 ## Add Payment (`components/PaymentRequestModal.tsx`)
 
 The dialog (`role="dialog"`, _Add Payment Request_): amount, description, the **supplier**
-(a searchable input over the entity's synced contacts — `BillContactPicker.tsx`; "create
+(a searchable input over the entity's synced contacts — `BillContactPicker.tsx`; it opens with the note "Type a supplier name to add a new supplier" on top, even with no supplier yet (owner, 2026-11-12); "create
 new" makes the contact in Xero; if that fails — e.g. the entity has no Xero connection —
 the menu closes, the field turns red and the API's message shows under it until the name
 is edited; a new supplier's name over 100 characters says "Keep the supplier's name to 100

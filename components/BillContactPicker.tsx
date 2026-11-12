@@ -9,6 +9,8 @@ import { SUPPLIER_ADDED } from "@/lib/formMessages";
 /** The API's cap (Bill.contact_name holds 100), checked as the name is typed. */
 const NEW_SUPPLIER_NAME_MAX = 100;
 const NAME_TOO_LONG = "Keep the supplier's name to 100 characters or fewer.";
+/** Shown on top as the list opens, before anything is typed (owner, 2026-11-12). */
+const TYPE_TO_ADD = "Type a supplier name to add a new supplier";
 
 const inputClassBase =
   "box-border h-11 min-h-[44px] w-full border bg-white px-3 text-base text-black placeholder:text-gray-700 focus:outline-none focus:ring-2 sm:min-h-11 sm:text-sm ";
@@ -61,7 +63,9 @@ export function BillContactPicker({
 
   const showAddNewRow = trimmedName.length > 0 && !nameMatchesExisting;
   const nameTooLong = showAddNewRow && trimmedName.length > NEW_SUPPLIER_NAME_MAX;
-  const menuHasContent = filtered.length > 0 || showAddNewRow;
+  const showHint = !trimmedName && !disabled;
+  // the hint alone opens the list, so a company with no supplier yet still learns how to add one
+  const menuHasContent = showHint || filtered.length > 0 || showAddNewRow;
 
   const updatePosition = useCallback(() => {
     const el = inputRef.current;
@@ -157,6 +161,15 @@ export function BillContactPicker({
           width: Math.max(menuPos.width, 120),
         }}
       >
+        {showHint ? (
+          // a note, never a choice
+          <li
+            role="presentation"
+            className="border-b border-gray-100 px-3 py-2 text-xs text-gray-700"
+          >
+            {TYPE_TO_ADD}
+          </li>
+        ) : null}
         {filtered.map((c) => (
           <li
             key={c.xero_contact_id}
