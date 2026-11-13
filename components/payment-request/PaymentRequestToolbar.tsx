@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { DateTextField } from "@/components/DateTextField";
+import { BillCsvDownload } from "./BillCsvDownload";
 import { PaymentRequestModal } from "@/components/PaymentRequestModal";
 import { ThemedSelect } from "@/components/ThemedSelect";
 import { useEntityCurrencyDecimals } from "@/lib/entityCurrency";
@@ -77,6 +78,12 @@ type PaymentRequestToolbarProps = {
   bulkSelectedCount?: number;
   onBulkDeleteSelected?: () => void;
   onBulkPublishSelected?: () => void;
+  /** What Download CSV sends: the ticked bills, else every bill the filters show. */
+  csvIds?: readonly string[];
+  /** True when `csvIds` are the ticked bills. */
+  csvTicked?: boolean;
+  /** The range the CSV's file name carries (`billsCsvRange`). */
+  csvRange?: { start?: string; end?: string };
   /** Persists advanced filters to the list (only when the user clicks Save changes). */
   onApplyFilters?: (filters: AdvancedFilters) => void;
   /** Advanced filters currently applied to the list — used to fill the panel when it opens. */
@@ -98,6 +105,7 @@ type BulkMenuState = { top: number; left: number; minWidth: number };
 type StatusMenuState = { top: number; left: number; width: number };
 
 const BULK_MENU_MIN_WIDTH_PX = 200;
+const NO_IDS: readonly string[] = [];
 
 export function PaymentRequestToolbar({
   activeStatuses,
@@ -110,6 +118,9 @@ export function PaymentRequestToolbar({
   bulkSelectedCount = 0,
   onBulkDeleteSelected,
   onBulkPublishSelected,
+  csvIds = NO_IDS,
+  csvTicked = false,
+  csvRange,
   onApplyFilters,
   appliedMinAmount = "",
   appliedMaxAmount = "",
@@ -739,6 +750,12 @@ export function PaymentRequestToolbar({
                   )
                 : null}
             </div>
+            <BillCsvDownload
+              ids={csvIds}
+              ticked={csvTicked}
+              startDate={csvRange?.start}
+              endDate={csvRange?.end}
+            />
             <div ref={bulkWrapRef} className="relative hidden sm:block">
               <button
                 ref={bulkButtonRef}

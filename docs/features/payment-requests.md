@@ -23,6 +23,19 @@ this page is what the person sees and where each piece of the screen lives.
   `role="menu"`, "More options for <supplier>"), toggled in the header
   (`components/layout/EasyViewToggle.tsx`); `PaymentRequestTotalsBanner` sums what is
   shown; pagination in `PaymentRequestPagination`. Bulk delete of drafts from the table.
+- **Download CSV** (owner, 2026-11-13; `components/payment-request/BillCsvDownload.tsx`), beside
+  Bulk Actions and shown at every width, with no dialog: the list's own ticks and filters choose.
+  With bills ticked it downloads those ("Download CSV (N)"); with none ticked, every bill the
+  filters leave - status, search, amount, dates, Xero - as shown. The file is `bills_` (or
+  `bills_selected_`) plus a range, `<start>_to_<end>`: the list's date filter, and for an end it leaves
+  open the downloaded bills' own earliest or latest date (invoice date, or Submitted Date when the
+  filter's type says so) - so with no filter, the bills' whole span (`billsCsvRange`,
+  `billsCsvFileName`; today's day only when no bill has a date). It sends their ids to `POST /api/v1/bills/export.csv` (`downloadBillsCsv`
+  in `lib/api.ts`, on `apiFetch`'s own auth and errors) and saves the file through
+  `lib/saveExport.ts` - the one place excused from the "no download" lock in
+  `__tests__/no_new_tab_file_links.test.ts`, because it saves an export the person asked for,
+  never an uploaded file. "Your CSV is downloading."; a refusal's sentence is a toast. Held only
+  when the list is empty. One line per bill (the API's `docs/features/payment-requests.md`).
 - Every amount is shown in the **entity's currency** (`lib/entityCurrency.ts` from
   `GET /api/auth/entity-currency`), never the bill's stored code.
 - Every amount **input** (Add Payment, the detail and Easy View edits, Record Payment, the

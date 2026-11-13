@@ -18,6 +18,12 @@ const NOT_A_FILE_LINK = new Set([
   "app/maintenance/page.tsx", // the status page
 ]);
 
+/**
+ * The one place that may mark an anchor as a download: saving an export the person asked for
+ * (the bills CSV, 2026-11-13). Never an uploaded file - those stay in the full-screen viewer.
+ */
+const AN_EXPORT_NOT_A_FILE = new Set(["lib/saveExport.ts"]);
+
 function sources(dir: string): string[] {
   const out: string[] = [];
   const walk = (d: string) => {
@@ -71,11 +77,19 @@ describe("no file ever leaves the app", () => {
   });
 
   it("marks no anchor as a download", () => {
-    const offenders = FILES.filter((f) => /\bdownload\s*=|\.download\s*=/.test(f.text)).map(
-      (f) => f.path,
-    );
+    const offenders = FILES.filter(
+      (f) => !AN_EXPORT_NOT_A_FILE.has(f.path) && /\bdownload\s*=|\.download\s*=/.test(f.text),
+    ).map((f) => f.path);
 
     expect(offenders).toEqual([]);
+  });
+
+  it("keeps its export exception honest", () => {
+    for (const path of AN_EXPORT_NOT_A_FILE) {
+      const f = FILES.find((x) => x.path === path);
+      expect(f, `${path} is excused but no longer exists`).toBeDefined();
+      expect(f!.text, `${path} is excused but no longer downloads`).toMatch(/\.download\s*=/);
+    }
   });
 
   it("keeps the one full-screen viewer, and only one", () => {

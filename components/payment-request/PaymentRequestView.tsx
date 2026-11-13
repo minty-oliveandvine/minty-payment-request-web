@@ -16,6 +16,7 @@ import {
 } from "./PaymentRequestToolbar";
 import { PaymentRequestPagination, PAGE_SIZE_OPTIONS } from "./PaymentRequestPagination";
 import { PaymentRequestTotalsBanner } from "./PaymentRequestTotalsBanner";
+import { billsCsvRange } from "./BillCsvDownload";
 import { BulkDeleteConfirmModal } from "./BulkDeleteConfirmModal";
 import { RecordPaymentModal } from "./RecordPaymentModal";
 import { RowDeleteConfirmModal } from "./RowDeleteConfirmModal";
@@ -332,6 +333,22 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
     [activeSelectedRows],
   );
   const bulkActionsEnabled = activeSelectedIds.length >= 2;
+  /** Download CSV: the ticked bills, else every bill the filters show (owner, 2026-11-13). */
+  const csvIds = useMemo(
+    () => (activeSelectedIds.length > 0 ? activeSelectedIds : filteredBills.map((r) => r.id)),
+    [activeSelectedIds, filteredBills],
+  );
+  /** The CSV's name carries a range: the date filter's, each missing end from those bills' dates. */
+  const csvRange = useMemo(
+    () =>
+      billsCsvRange(
+        (activeSelectedRows.length > 0 ? activeSelectedRows : filteredBills).map((r) =>
+          dateType === "Submitted Date" ? r.submittedDateIso : r.invoiceDateIso,
+        ),
+        { start: startDate, end: endDate },
+      ),
+    [activeSelectedRows, filteredBills, dateType, startDate, endDate],
+  );
 
   const onToggleRow = useCallback(
     (id: string) => {
@@ -856,6 +873,9 @@ export function PaymentRequestView({ easyView }: PaymentRequestViewProps) {
         bulkSelectedCount={activeSelectedIds.length}
         onBulkDeleteSelected={openBulkDeleteModal}
         onBulkPublishSelected={runBulkPublishSelected}
+        csvIds={csvIds}
+        csvTicked={activeSelectedIds.length > 0}
+        csvRange={csvRange}
         appliedMinAmount={minAmount}
         appliedMaxAmount={maxAmount}
         appliedDateType={dateType}

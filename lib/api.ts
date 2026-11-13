@@ -187,6 +187,13 @@ async function requireAuthenticatedSession(): Promise<AuthInfo> {
 // ── Core fetch wrapper ───────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await apiResponse(path, options);
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
+/** The authenticated request behind `apiFetch`: the answer when it is ok, else an `ApiError`. */
+async function apiResponse(path: string, options: RequestInit = {}): Promise<Response> {
   const auth = await requireAuthenticatedSession();
 
   const headers = new Headers(options.headers);
@@ -238,8 +245,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     );
   }
 
-  if (res.status === 204) return undefined as T;
-  return res.json();
+  return res;
 }
 
 function resolveBackendFileUrl(url: string): string {
@@ -599,6 +605,19 @@ export function fetchBills(params?: {
   if (params?.date_to) qs.set("date_to", params.date_to);
   const q = qs.toString();
   return apiFetch<BillListItem[]>(`/bills/${q ? `?${q}` : ""}`);
+}
+
+/**
+ * The bills CSV (`POST /bills/export.csv`, 2026-11-13): the bills the list shows - the ticked
+ * ones, else every bill its filters leave - one line per bill. A refusal is an `ApiError` carrying
+ * the API's sentence.
+ */
+export async function downloadBillsCsv(body: { ids: string[] }): Promise<Blob> {
+  const res = await apiResponse("/bills/export.csv", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return res.blob();
 }
 
 export function fetchBill(billId: string): Promise<BillDetail> {
