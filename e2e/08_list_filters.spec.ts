@@ -282,6 +282,72 @@ test("the bulk menu asks before voiding what is checked", async ({ page }) => {
   await expect(confirm).toContainText("void 2 selected bills?");
 });
 
+/** The rows with their own invoice dates, so a download's name has a span to show. */
+const DATED = ROWS.map((row, i) => ({ ...row, invoice_date: `2026-0${i + 1}-1${i}` }));
+
+/** Answer `POST /bills/export.csv`, recording the ids asked for. */
+async function stubExport(page: import("@playwright/test").Page) {
+  const asked: string[][] = [];
+  await page.route("**/api/v1/bills/export.csv", async (route) => {
+    if (route.request().method() === "OPTIONS") return route.fallback();
+    asked.push((route.request().postDataJSON() as { ids: string[] }).ids);
+    await route.fulfill({
+      status: 200,
+      headers: { "access-control-allow-origin": "*", "content-type": "text/csv; charset=utf-8" },
+      body: "Payment No.,Supplier\nPR-300,Three Hundred\n",
+    });
+  });
+  return asked;
+}
+
+test("Download CSV: with nothing ticked, every bill the list shows, named by their dates", async ({
+  page,
+}) => {
+  await openList(page, DATED);
+  const asked = await stubExport(page);
+
+  const button = page.getByRole("button", { name: "Download CSV of the 4 bills shown" });
+  const download = page.waitForEvent("download");
+  await button.click();
+  const file = await download;
+
+  // the voided bill is not shown, so it is not downloaded
+  expect(asked).toHaveLength(1);
+  expect([...asked[0]!].sort()).toEqual(["b-13000", "b-300", "b-3000", "b-draft"]);
+  expect(file.suggestedFilename()).toBe("bills_2026-01-10_to_2026-04-13.csv");
+  await expect(page.getByText("Your CSV is downloading.")).toBeVisible();
+});
+
+test("Download CSV: the ticked bills, named by their own dates", async ({ page }) => {
+  await openList(page, DATED);
+  const asked = await stubExport(page);
+  const table = page.getByRole("table");
+  await table.getByRole("checkbox", { name: "Select row Thirteen Thousand Fifty" }).check();
+  await table.getByRole("checkbox", { name: "Select row Three Hundred" }).check();
+
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download CSV of 2 ticked bills" }).click();
+  const file = await download;
+
+  expect([...asked[0]!].sort()).toEqual(["b-13000", "b-300"]);
+  expect(file.suggestedFilename()).toBe("bills_selected_2026-02-11_to_2026-03-12.csv");
+});
+
+for (const width of [360, 768, 1440]) {
+  test(`Download CSV is on screen and a finger's size at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await stubApi(page, { bills: DATED });
+    await handoff(page, creds(), pagesOf(creds()).list);
+    const button = page.getByRole("button", { name: /^Download CSV/ });
+    await expect(button).toBeVisible();
+    await expect(button).toBeEnabled();
+    const box = await button.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+    await expectNoSideScroll(page, width);
+  });
+}
+
 for (const width of [360, 768, 1440]) {
   test(`nothing is wider than the screen at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
