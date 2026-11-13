@@ -155,6 +155,12 @@ address (Flask's `?request=<id>` hand-off, an old link) is replaced by the Payme
 edit that changes the Payment No. moves the address with it (`router.replace`, so Back is
 unchanged). A Payment No. the company does not have shows "I couldn't find that payment request".
 
+**"‹ Back"** in the header (`components/layout/Header.tsx`, "‹ Payments" until 2026-11-13) goes
+back to the page the person came from - the list, or another request whose payment history linked
+here (`@minty/shared/backLink` v0.20). With nothing in this app before it (a link, a new tab, the
+hand-off), it goes to the list, which is also its `href` for a middle-click. The list's tabs and
+filters live in the page, not the address, so the list comes back at its default view.
+
 A **voided** request is always addressed by its id (`pages.request(id, reference, status)` with
 `void` / `Voided`; every list link, row click and payment-history link passes the status): void
 bills are left out of the Payment No. uniqueness check, so a live request may reuse it, and the
@@ -263,4 +269,5 @@ return, mime resolution) and the preview cases in `PaymentRequestModal.test.tsx`
 `e2e/02_bill_lifecycle.spec.ts` (draft → listed under Draft; the amount is required;
 Confirm without attachment/due date shows both alerts; the draft's detail page) and
 `e2e/04_xero_publish.spec.ts` with `E2E_XERO=1` (a complete request confirmed → Payment
-Requested → Publish → Republish offered, also after a reload).
+Requested → Publish → Republish offered, also after a reload). `e2e/16_back.spec.ts` (stubbed):
+the detail page's Back from the list, from another request, and with nothing before it.

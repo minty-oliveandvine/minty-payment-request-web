@@ -6,7 +6,7 @@ npm run test:e2e        # everything, against a stack that is already running
 
 # the stubbed half - Next alone, no Flask, no Django, no Postgres:
 npm run dev             # in another terminal
-npx playwright test e2e/08 e2e/11 e2e/12 e2e/13
+npx playwright test e2e/08 e2e/11 e2e/12 e2e/13 e2e/16
 ```
 
 Real browser, stack already up (Next :3020 `npm run dev`, minty-payment-request-api :8020, minty-accounts-api :8000,
@@ -14,7 +14,7 @@ Postgres). Nothing is started here. Specs skip with a reason when a service or t
 are missing.
 
 **Two kinds of spec.** `01`-`07`, `09` and `10` drive the LIVE stack and need the seeded shop.
-`08`, `11`, `12` and `13` answer every `/api/v1/**` call themselves from `lib/__fixtures__/*`
+`08`, `11`, `12`, `13` and `16` answer every `/api/v1/**` call themselves from `lib/__fixtures__/*`
 (`stubApi` in `helpers.ts`) and need only `npm run dev` - those are the ones worth running often,
 and they work on a bare checkout. The fixture modules are the same ones the Vitest tests read, so
 an API-shape change breaks both layers together.
@@ -63,6 +63,7 @@ Run the seed in the Minty repo before every run. Never commit any of these value
 | `11_landing_safety.spec.ts`      | **Next only.** `/landing` with `next` spelled eight off-site ways (`//evil.com`, `/\evil.com`, a tab, a newline, a CR, an absolute URL, `javascript:`, a bare host) never leaves the app; a same-origin path is honoured; the three cookies read back with `path=/`, eight hours, `SameSite=Lax` and no `Secure` over http; no token at all, and a page with no cookie, leave for Minty                                                                                 |
 | `12_read_only.spec.ts`           | **stubbed.** A system superuser on a company they are not a member of: the banner, the list readable, Add Payment dead with its reason, no row offering a payment, the request's Edit dead, Payment Settings' ticks and Save dead. Plus 360/768/1440                                                                                                                                                                                                                    |
 | `13_subscription_notice.spec.ts` | **stubbed.** The notice once on the way in, the payer's way to fix it through `/enter`, dismissed and never in the way of the list, NOT shown again on a reload in the same sign-in, shown again under a new `sid`, a failed read showing nothing and blocking nothing, nothing to report not interrupting, and a non-payer told who to ask                                                                                                                             |
+| `16_back.spec.ts`                | **stubbed.** The detail page's ‹ Back: to the list it came from, to the other request it came from, and to the list with nothing before it (2026-11-13)                                                                                                                                                                                                                                                                                                                 |
 
 ## Findings the suite records
 

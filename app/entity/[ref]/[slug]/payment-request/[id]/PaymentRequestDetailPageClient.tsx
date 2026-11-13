@@ -46,7 +46,6 @@ export function PaymentRequestDetailPageClient() {
         showLogo={false}
         brandHref={null}
         backHref={pages.list}
-        backLabel="Payments"
         companyName={auth?.entityName || "Loading…"}
         statusBadge={<PaymentRequestDetailStatusBadge refreshSignal={billStatusRefresh} />}
         xeroConnected={xeroConnected}

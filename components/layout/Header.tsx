@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BackLink } from "@minty/shared/backLink";
 import { NavMenu } from "@/components/ui/NavMenu";
 import { ViewerBadge } from "@/components/ui/ViewerBadge";
 
@@ -8,7 +9,11 @@ type HeaderProps = {
   title?: string;
   showLogo?: boolean;
   brandHref?: string | null;
-  /** When set, shows a back link to the payment request dashboard (Bills table). Title is not linked to home. */
+  /**
+   * When set, shows a way back: to the page the person came from (`@minty/shared/backLink` - the
+   * list as they left it, or the bill they came from), and to this address when nothing in this
+   * app came before (a link, a new tab). Title is not linked to home.
+   */
   backHref?: string;
   backLabel?: string;
   statusBadge?: ReactNode;
@@ -27,7 +32,7 @@ export function Header({
   showLogo = false,
   brandHref,
   backHref,
-  backLabel = "Payments",
+  backLabel = "Back",
   statusBadge,
   titleActions,
   companyName = "Insert Company Here",
@@ -59,7 +64,7 @@ export function Header({
   const leftSection =
     showBack && backHref ? (
       <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-3">
-        <Link
+        <BackLink
           href={backHref}
           className="inline-flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary transition-colors hover:text-secondary sm:text-base"
         >
@@ -70,7 +75,7 @@ export function Header({
             chevron_left
           </span>
           {backLabel}
-        </Link>
+        </BackLink>
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           {showLogo ? (
             <Image
